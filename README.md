@@ -1,0 +1,2 @@
+# inventario
+Microservicio de inventario
