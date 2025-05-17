@@ -10,11 +10,25 @@ Este repositorio contiene el frontend del módulo de **inventario y despacho** d
 - Registro y actualización de productos.
 - Gestión de despachos y movimientos de inventario.
 
-## 📦 Instalación
+## Contribución
+
+1. Crea una rama para tu funcionalidad/tarea:
+
 ```bash
-npm install
-npm run dev
+git switch -c feature/<nombre-funcionalidad>
 ```
 
-## 📌 Notas
-- Se conecta con `backend-inventario` a través del API Gateway.
+2. Realiza cambios y haz commit:
+
+```bash
+git add <archivos-cambiados>
+git commit -m "<descripcion pequeña del cambio>"
+```
+
+3. Pushea tus cambios de la rama:
+
+```bash
+git push origin feature/<nombre-funcionalidad> 
+```
+
+4. Crea un Pull Request (PR) a la rama ´develop´ desde GitHub para que sea revisado por otro desarrollador
