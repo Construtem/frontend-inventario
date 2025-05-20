@@ -1,34 +1,36 @@
-# Frontend - Inventario
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Este repositorio contiene el frontend del módulo de **inventario y despacho** del sistema Construtem.
+## Getting Started
 
-## 🛠️ Tecnologías
-- Next.js
-  
-## 🚀 Funcionalidades
-- Visualización del stock en bodegas y sucursales.
-- Registro y actualización de productos.
-- Gestión de despachos y movimientos de inventario.
-
-## Contribución
-
-1. Crea una rama para tu funcionalidad/tarea:
+First, run the development server:
 
 ```bash
-git switch -c feature/<nombre-funcionalidad>
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-2. Realiza cambios y haz commit:
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-```bash
-git add <archivos-cambiados>
-git commit -m "<descripcion pequeña del cambio>"
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-3. Pushea tus cambios de la rama:
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-```bash
-git push origin feature/<nombre-funcionalidad> 
-```
+## Learn More
 
-4. Crea un Pull Request (PR) a la rama ´develop´ desde GitHub para que sea revisado por otro desarrollador
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
