@@ -10,6 +10,11 @@ Este repositorio contiene el frontend del módulo de **inventario y despacho** d
 - Registro y actualización de productos.
 - Gestión de despachos y movimientos de inventario.
 
+## Requisitos
+
+- Docker Desktop instalado
+- Git instalado  
+
 ## Instalación (entorno de desarrollo)
 
 1. Clonar el repositorio en el directorio deseado:
