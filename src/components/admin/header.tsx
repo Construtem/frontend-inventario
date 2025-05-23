@@ -5,29 +5,42 @@ import Image from "next/image";
 import logo from "@/styles/images/contrutem_png.png"; // Usa alias @ si está configurado en tsconfig.json
 import exit from "@/styles/images/exit.png";
 
-const Header = () => (
-  <header style={styles.header}>
-    <div style={styles.left}>
-      <Image src={logo} alt="ConstrUTEM Logo" style={styles.logoImg as React.CSSProperties} />
-    </div>
-    <div style={styles.right}>
-      <span style={styles.userInfo}>
-        <span style={styles.userIcon}>👤</span>
-        <span style={styles.userText}>
-          <span style={styles.userName}>Usuario</span>
-          <span style={styles.userEmail}>correo@example.com</span>
+import { useRouter } from "next/navigation"; // Cambia esto
+
+// Elimina esta línea:
+// const router = require("next/router").useRouter();
+
+const Header = () => {
+  const router = useRouter(); // Usa el hook dentro del componente
+
+  return (
+    <header style={styles.header}>
+      <div style={styles.left}>
+        <Image src={logo} alt="ConstrUTEM Logo" style={styles.logoImg as React.CSSProperties} />
+      </div>
+      <div style={styles.right}>
+        <span style={styles.userInfo}>
+          <span style={styles.userIcon}>👤</span>
+          <span style={styles.userText}>
+            <span style={styles.userName}>Usuario</span>
+            <span style={styles.userEmail}>correo@example.com</span>
+          </span>
         </span>
-      </span>
-      <Image
-        src={exit}
-        alt="Cerrar sesión"
-        style={styles.logout as React.CSSProperties}
-        width={32}
-        height={32}
-      />
-    </div>
-  </header>
-);
+        <Image
+          src={exit}
+          alt="Cerrar sesión"
+          style={styles.logout as React.CSSProperties}
+          width={32}
+          height={32}
+          onClick={() => {
+            router.push("/auth/login");
+          }}
+        />
+      </div>
+    </header>
+  );
+};
+// ...existing code...
 
 const styles: { [key: string]: React.CSSProperties } = {
   header: {
