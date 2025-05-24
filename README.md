@@ -38,17 +38,10 @@ cd .\Desktop\
 git clone https://github.com/Construtem/frontend-inventario
 cd frontend-inventario
 ```
-2. Construir imagen desde el directorio creado (ej "C:\Users\Admin\Desktop\frontend-inventario"), debe ejecutar el siguiente comando:
-
+2. Correr aplicación desde directorio creado (ej "C:\Users\Admin\Desktop\frontend-inventario"),
+ejecutando el siguiente comando:
 ```bash
-docker build -t front-inventario .
-```
-*Esto creará una imagen que contiene todas las dependencias y lo necesario para correr su app en forma local*
-
-3. Correr la imagen creada:
-
-```bash
-docker run -p 3000:3000 front-inventario
+docker compose up
 ```
 *Luego de ejecutar este comando, su app se encontrará corriendo en el puerto 3000 en "http://localhost:3000"*
 

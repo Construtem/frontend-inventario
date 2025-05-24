@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  app:
+    # Instrucciones para construir la imagen Docker para este servicio.
+    build:
+      # El contexto de construcción es el directorio actual (donde se encuentra este docker-compose.yml y el Dockerfile).
+      context: .
+      dockerfile: Dockerfile 
+    
+    # El puerto 3000 del host se mapea al puerto 3000 del contenedor,
+    # permitiendo acceder a tu aplicación desde tu máquina local (ej. http://localhost:3000).
+    ports:
+      - "3000:3000"
+    
+    # Asigna un nombre específico al contenedor para una fácil identificación.
+    container_name: front-inventario
+    
+    # Política de reinicio: el contenedor se reiniciará automáticamente a menos que sea detenido explícitamente.
+    # Útil para desarrollo si el contenedor falla, pero puedes ajustarlo según tu preferencia.
+    restart: unless-stopped
+    
+    # Opcional: Define variables de entorno específicas para el contenedor en desarrollo.
+    # Por ejemplo, para configurar el entorno de Node.js.
+    # environment:
+    #   - NODE_ENV=development
+    #   - API_URL=http://backend-service:8080 # Si tuvieras un servicio de backend en docker-compose
