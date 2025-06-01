@@ -5,8 +5,6 @@ import Link from 'next/link';
 import {
   FaHome,
   FaBoxes,
-  FaWarehouse,
-  FaTruck,
   FaStore,
   FaCog,
   FaChevronDown,
@@ -16,10 +14,21 @@ import {
 const Sidebar: FC = () => {
   const [sucursalSeleccionada, setSucursalSeleccionada] = useState<string>('Sucursal 1');
   const [inventarioAbierto, setInventarioAbierto] = useState<boolean>(false);
+  const [bodegaAbierta, setBodegaAbierta] = useState<boolean>(false);
+  const [proveedoresAbierto, setProveedorAbierto] = useState<boolean>(false);
+
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   const toggleInventario = () => {
     setInventarioAbierto(!inventarioAbierto);
+  };
+
+  const toggleBodegas = () => {
+    setBodegaAbierta(!bodegaAbierta);
+  };
+
+    const toggleProveedores = () => {
+    setProveedorAbierto(!proveedoresAbierto);
   };
 
   const handleMouseEnter = (id: string) => setHoveredItem(id);
@@ -86,24 +95,79 @@ const Sidebar: FC = () => {
         </div>
       )}
 
-      <Link
-        href="/admin/bodega"
+      <div
         style={getMenuItemStyle('bodega')}
+        onClick={toggleBodegas}
         onMouseEnter={() => handleMouseEnter('bodega')}
         onMouseLeave={handleMouseLeave}
       >
-        <FaWarehouse />
-        <span>Bodega</span>
-      </Link>
-      <Link
-        href="/admin/proveedores"
+        <FaBoxes />
+        <span style={{ flex: 1 }}>Bodega</span>
+        {bodegaAbierta ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
+      </div>
+
+      {bodegaAbierta && (
+        <div style={styles.subMenu}>
+          {[
+            { name: 'Bodega general', path: '/admin/bodega/bodega-general' },
+            { name: 'Lista de bodegas', path: '/admin/bodega/lista-de-bodegas' },
+          ].map((item) => {
+            const isActive = window.location.pathname === item.path;
+
+            return (
+              <Link
+                key={item.name}
+                href={item.path}
+                style={getSubMenuItemStyle(item.path, isActive)}
+                onClick={() => {
+                }}
+                onMouseEnter={() => handleMouseEnter(item.path)}
+                onMouseLeave={handleMouseLeave}
+              >
+                {item.name}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      <div
         style={getMenuItemStyle('proveedores')}
+        onClick={toggleProveedores}
         onMouseEnter={() => handleMouseEnter('proveedores')}
         onMouseLeave={handleMouseLeave}
       >
-        <FaTruck />
-        <span>Proveedores</span>
-      </Link>
+        <FaBoxes />
+        <span style={{ flex: 1 }}>Proveedores</span>
+        {proveedoresAbierto ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
+      </div>
+
+      {proveedoresAbierto && (
+        <div style={styles.subMenu}>
+          {[
+            { name: 'Inventario de proveedores', path: '/admin/proveedores/inventario-de-proveedores' },
+            { name: 'Gestión de proveedores', path: '/admin/proveedores/gestion-de-proveedores' },
+          ].map((item) => {
+
+            const isActive = window.location.pathname === item.path;
+
+            return (
+              <Link
+                key={item.name}
+                href={item.path} 
+                style={getSubMenuItemStyle(item.path, isActive)}
+                onClick={() => {
+                }}
+                onMouseEnter={() => handleMouseEnter(item.path)}
+                onMouseLeave={handleMouseLeave}
+              >
+                {item.name}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
       <Link
         href="/admin/sucursales"
         style={getMenuItemStyle('sucursales')}
@@ -136,7 +200,7 @@ const styles: {
   sidebar: {
     width: '180px',
     height: '100vh',
-    backgroundColor: '#2f2f2f',
+    backgroundColor: '#23395B',
     color: 'white',
     paddingTop: '90px',
     boxSizing: 'border-box',

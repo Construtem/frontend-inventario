@@ -20,6 +20,7 @@ const Header = () => {
       </div>
       <div style={styles.right}>
         <span style={styles.userInfo}>
+          <span style={styles.userRole}>Admin</span>
           <span style={styles.userIcon}>👤</span>
           <span style={styles.userText}>
             <span style={styles.userName}>Usuario</span>
@@ -46,7 +47,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   header: {
     width: '100%',
     height: '58px',
-    background: 'linear-gradient(90deg, #003366 0%, #00A859 60%, #00A859 100%)',
+    background: '#23395B',
     color: 'white',
     display: 'flex',
     alignItems: 'center',
@@ -63,6 +64,20 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'center',
     height: '100%',
+  },
+  userRole: {
+    backgroundColor: '#ff8000',
+    borderRadius: '20px', 
+    padding: '8px 15px', 
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',     
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
+    color: '#222222',
+    fontWeight: 'medium',
+    fontFamily: 'Roboto, sans-serif',
+    fontSize: '0.9375rem',
+    whiteSpace: 'nowrap',
   },
   logoImg: {
     height: 'auto',

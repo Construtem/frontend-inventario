@@ -1,12 +1,12 @@
 "use client";
 
-export default function SucursalesPage() {
+export default function BodegaPage() {
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-        <h1 style={titleStyle}>Lista de sucursales</h1>
+        <h1 style={titleStyle}>Lista de bodegas</h1>
         <p style={textStyle}>
-          Informacion de las sucursales
+          Informacion de la lista de bodegas.
         </p>
       </div>
     </div>

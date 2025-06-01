@@ -1,12 +1,12 @@
 "use client";
 
-export default function BodegaPage() {
+export default function ProveedoresPage() {
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-        <h1 style={titleStyle}>Bodega</h1>
+        <h1 style={titleStyle}>Gestión de Proveedores</h1>
         <p style={textStyle}>
-          Informacion de la bodega.
+          Información relacionada a Gestión de Proveedores
         </p>
       </div>
     </div>
