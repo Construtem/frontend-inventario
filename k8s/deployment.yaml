@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-inventario
+  labels:
+    app: frontend-inventario
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-inventario
+  template:
+    metadata:
+      labels:
+        app: frontend-inventario
+    spec:
+      containers:
+        - name: frontend-inventario
+          image: gcr.io/construtem/frontend-inventario:latest
+          ports:
+            - containerPort: 3000
