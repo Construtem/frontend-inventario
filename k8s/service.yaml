@@ -1,12 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: front-inventario
+  name: front-inventario-service
+  labels:
+    app: front-inventario
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: front-inventario
   ports:
     - protocol: TCP
-      port: 80          # Puerto externo (para acceder desde navegador)
-      targetPort: 3000     # Puerto expuesto en el nodo
+      port: 80
+      targetPort: 3000
