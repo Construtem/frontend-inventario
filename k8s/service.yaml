@@ -7,7 +7,6 @@ spec:
   selector:
     app: front-inventario
   ports:
-    - name: http
-      port: 80             # Puerto interno del service
-      targetPort: 3000     # Puerto del contenedor
-      nodePort: 30080      # Puerto expuesto en el nodo
+    - protocol: TCP
+      port: 80          # Puerto externo (para acceder desde navegador)
+      targetPort: 3000     # Puerto expuesto en el nodo
