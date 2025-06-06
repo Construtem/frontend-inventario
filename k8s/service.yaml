@@ -2,12 +2,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: front-inventario
-spec:
-  type: NodePort
-  selector:
-    app: front-inventario
-  ports:
-    - name: http
-      port: 80             # Puerto interno del service
-      targetPort: 3000     # Puerto del contenedor
-      nodePort: 30080      # Puerto expuesto en el nodo
+    spec:
+      type: LoadBalancer
+      selector:
+        app: front-inventario
+      ports:
+        - protocol: TCP
+          port: 80          # Puerto externo (para acceder desde navegador)
+          targetPort: 3000     # Puerto expuesto en el nodo
