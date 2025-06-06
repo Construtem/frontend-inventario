@@ -1,19 +1,19 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: frontend-inventario-ingress
+  name: front-inventario-ingress
   annotations:
-    kubernetes.io/ingress.class: "gce" # GKE Autopilot usa este controlador por defecto
-    networking.gke.io/managed-certificates: "frontend-inventario-cert" # opcional si vas a usar certificado SSL de GKE
+    networking.gke.io/managed-certificates: "front-inventario-cert" # opcional
 spec:
+  ingressClassName: gce
   rules:
     - host: tssw.cl
       http:
         paths:
-          - path: /
+          - path: /inventario
             pathType: Prefix
             backend:
               service:
-                name: frontend-inventario-service
+                name: front-inventario-service
                 port:
                   number: 80
