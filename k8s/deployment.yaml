@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend-ventas
+  name: frontend-inventario
   labels:
-    app: frontend-ventas
+    app: frontend-inventario
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: frontend-ventas
+      app: frontend-inventario
   template:
     metadata:
       labels:
-        app: frontend-ventas
+        app: frontend-inventario
     spec:
       containers:
-        - name: frontend-ventas
-          image: southamerica-east1-docker.pkg.dev/construtem/microservicios-construtem/frontend-ventas:latest
+        - name: frontend-inventario
+          image: southamerica-east1-docker.pkg.dev/construtem/microservicios-construtem/frontend-inventario:latest
           ports:
             - containerPort: 3000
           resources:
