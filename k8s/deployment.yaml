@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: front-ventas
+  name: front-inventario
   labels:
-    app: front-ventas
+    app: front-inventario
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: front-ventas
+      app: front-inventario
   template:
     metadata:
       labels:
-        app: front-ventas
+        app: front-inventario
     spec:
       containers:
-        - name: front-ventas
-          image: southamerica-east1-docker.pkg.dev/construtem/microservicios-construtem/front-ventas:latest
+        - name: front-inventario
+          image: southamerica-east1-docker.pkg.dev/construtem/microservicios-construtem/front-inventario:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
