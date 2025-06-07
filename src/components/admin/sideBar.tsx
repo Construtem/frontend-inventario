@@ -11,48 +11,49 @@ import {
   FaChevronUp,
 } from 'react-icons/fa';
 
-const Sidebar: FC = () => {
+interface SidebarProps {
+  isOpen: boolean;
+}
+
+const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
   const [sucursalSeleccionada, setSucursalSeleccionada] = useState<string>('Sucursal 1');
   const [inventarioAbierto, setInventarioAbierto] = useState<boolean>(false);
   const [bodegaAbierta, setBodegaAbierta] = useState<boolean>(false);
   const [proveedoresAbierto, setProveedorAbierto] = useState<boolean>(false);
-
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
-  const toggleInventario = () => {
-    setInventarioAbierto(!inventarioAbierto);
-  };
-
-  const toggleBodegas = () => {
-    setBodegaAbierta(!bodegaAbierta);
-  };
-
-    const toggleProveedores = () => {
-    setProveedorAbierto(!proveedoresAbierto);
-  };
+  const toggleInventario = () => setInventarioAbierto(!inventarioAbierto);
+  const toggleBodegas = () => setBodegaAbierta(!bodegaAbierta);
+  const toggleProveedores = () => setProveedorAbierto(!proveedoresAbierto);
 
   const handleMouseEnter = (id: string) => setHoveredItem(id);
   const handleMouseLeave = () => setHoveredItem(null);
 
   const getMenuItemStyle = (id: string) => ({
     ...styles.menuItem,
-    backgroundColor: hoveredItem === id ? '#444' : 'transparent',
-    color: hoveredItem === id ? '#00ff99' : 'inherit',
+    backgroundColor: hoveredItem === id ? '#5E7ACC' : 'transparent',
+    color: hoveredItem === id ? '#F9EFF4' : 'inherit',
   });
 
   const getSubMenuItemStyle = (id: string, isActive: boolean) => ({
     ...styles.subMenuItem,
     ...(isActive ? styles.subMenuItemActive : {}),
-    backgroundColor: hoveredItem === id ? '#444' : 'transparent',
+    backgroundColor: hoveredItem === id ? '#5E7ACC' : 'transparent',
     color: hoveredItem === id
-      ? '#00ff99'
+      ? '#77E6FF'
       : isActive
-      ? '#00a859'
+      ? '#77E6FF'
       : '#bdbdbd',
   });
 
   return (
-    <aside style={styles.sidebar}>
+    <aside
+      style={{
+        ...styles.sidebar,
+        transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.3s ease-in-out',
+      }}
+    >
       <Link
         href="/admin/inicio"
         style={getMenuItemStyle('inicio')}
@@ -112,15 +113,12 @@ const Sidebar: FC = () => {
             { name: 'Bodega general', path: '/admin/bodega/bodega-general' },
             { name: 'Lista de bodegas', path: '/admin/bodega/lista-de-bodegas' },
           ].map((item) => {
-            const isActive = window.location.pathname === item.path;
-
+            const isActive = typeof window !== 'undefined' && window.location.pathname === item.path;
             return (
               <Link
                 key={item.name}
                 href={item.path}
                 style={getSubMenuItemStyle(item.path, isActive)}
-                onClick={() => {
-                }}
                 onMouseEnter={() => handleMouseEnter(item.path)}
                 onMouseLeave={handleMouseLeave}
               >
@@ -148,16 +146,12 @@ const Sidebar: FC = () => {
             { name: 'Inventario de proveedores', path: '/admin/proveedores/inventario-de-proveedores' },
             { name: 'Gestión de proveedores', path: '/admin/proveedores/gestion-de-proveedores' },
           ].map((item) => {
-
-            const isActive = window.location.pathname === item.path;
-
+            const isActive = typeof window !== 'undefined' && window.location.pathname === item.path;
             return (
               <Link
                 key={item.name}
-                href={item.path} 
+                href={item.path}
                 style={getSubMenuItemStyle(item.path, isActive)}
-                onClick={() => {
-                }}
                 onMouseEnter={() => handleMouseEnter(item.path)}
                 onMouseLeave={handleMouseLeave}
               >
@@ -190,13 +184,7 @@ const Sidebar: FC = () => {
   );
 };
 
-const styles: {
-  sidebar: React.CSSProperties;
-  menuItem: React.CSSProperties;
-  subMenu: React.CSSProperties;
-  subMenuItem: React.CSSProperties;
-  subMenuItemActive: React.CSSProperties;
-} = {
+const styles = {
   sidebar: {
     width: '180px',
     height: '100vh',
@@ -206,9 +194,10 @@ const styles: {
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
-    position: 'fixed',
+    position: 'fixed' as const,
     top: 0,
     left: 0,
+    zIndex: 40,
   },
   menuItem: {
     display: 'flex',

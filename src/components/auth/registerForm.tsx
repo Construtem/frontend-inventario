@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import Image from "next/image";
-import logo from "@/styles/images/contrutem.png"; // Ajusta si cambia la ubicación
+import logo from '@/styles/images/logo_barra_superior.png'
 
 import Link from "next/link";
 
@@ -21,20 +21,18 @@ const Register = () => {
     <div style={styles.pageBackground}>
       <div style={styles.loginWrapper}>
         <div style={styles.loginBox}>
-          <h2 style={styles.title}>Registro de Administrador</h2>
+          <h2 style={styles.title}>Crear nueva cuenta</h2>
           <p
             style={{
               fontSize: "16px",
               textAlign: "center",
               color: "#444",
               marginBottom: "20px",
-              fontFamily: '"Montserrat", sans-serif',
             }}
           >
-            Completa el formulario para crear una nueva cuenta de administrador
-            en el sistema de la ferretería.
+            Ingresa tus datos para registrarte en el sistema de la ferretería.
           </p>
-          <form onSubmit={handleSubmit} style={styles.form}>
+            <form onSubmit={handleSubmit} style={styles.form}>
             <input
               type="text"
               placeholder="Nombre completo"
@@ -67,8 +65,8 @@ const Register = () => {
               style={styles.input}
               required
             />
-            <button type="submit" style={styles.button}>Registrar</button>
-          </form>
+            <button type="submit" style={styles.button}>Crear cuenta</button>
+            </form>
           <p style={styles.footerText}>
             ¿Ya tienes una cuenta?{" "}
             <Link href="/auth/login" style={styles.link}>
@@ -92,7 +90,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     left: 0,
     height: '100vh',
     width: '100vw',
-    background: 'linear-gradient(90deg, #003366 0%, #00A859 60%, #FFFFFF 100%)',
+    background: '#F5F5F5',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
@@ -142,7 +140,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '16px',
     borderRadius: '5px',
     border: 'none',
-    background: '#00A859',
+    background: '#FF9933',
     color: '#fff',
     fontWeight: 'bold',
     cursor: 'pointer',

@@ -3,7 +3,7 @@
 import { useState, FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import logo from "@/styles/images/contrutem.png"; // Asegúrate de que esta ruta sea válida
+import logo from '@/styles/images/logo_barra_superior.png'
 
 const ResetPassword = () => {
   const [newPassword, setNewPassword] = useState<string>("");
@@ -25,9 +25,9 @@ const ResetPassword = () => {
     <div style={styles.pageBackground}>
       <div style={styles.wrapper}>
         <div style={styles.box}>
-          <h2 style={styles.title}>Restablecer Contraseña</h2>
+          <h2 style={styles.title}>Nueva contraseña</h2>
           <p style={styles.description}>
-            Ingresa tu nueva contraseña dos veces para confirmar el cambio.
+            Escribe y confirma tu nueva contraseña para actualizar el acceso a tu cuenta.
           </p>
           <form onSubmit={handleSubmit} style={styles.form}>
             <input
@@ -71,7 +71,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     left: 0,
     height: "100vh",
     width: "100vw",
-    background: "linear-gradient(90deg, #003366 0%, #00A859 60%, #FFFFFF 100%)",
+    background: '#F5F5F5',
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
@@ -127,7 +127,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: "16px",
     borderRadius: "5px",
     border: "none",
-    background: "#00A859",
+    background: '#FF9933',
     color: "#fff",
     fontWeight: "bold",
     cursor: "pointer",
