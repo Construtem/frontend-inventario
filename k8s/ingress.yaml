@@ -1,17 +1,20 @@
-# Aun no funciona este
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: front-inventario-ingress
   annotations:
-    kubernetes.io/ingress.class: "nginx" # ojo aqui pq debe coincidir con el controlador de ingress que se esta usando
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
-#OJO: falta configurar DNS y el TSL para https (luego de configurar este, se agrega abajo)
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - inventario.tssw.cl
+      secretName: front-inventario-tls
   rules:
-    - host: tssw.cl
+    - host: inventario.tssw.cl
       http:
         paths:
-          - path: /inventario # OJO: este path debe ser modificado luego de configurar el DNS
+          - path: /
             pathType: Prefix
             backend:
               service:
