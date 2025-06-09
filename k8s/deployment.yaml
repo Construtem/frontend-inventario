@@ -22,11 +22,11 @@ spec:
             - containerPort: 3000
           resources:
             requests:
-              memory: "64Mi"
-              cpu: "50m"
-            limits:
               memory: "128Mi"
               cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
           #Descomentar si se necesita configurar el backend URL para ser usado por el frontend como variable de entorno
           #env:
             #- name: BACKEND_URL
