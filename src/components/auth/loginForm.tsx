@@ -17,7 +17,7 @@ const Login = () => {
   const [fadeOut, setFadeOut] = useState(false); // para animar el mensaje
   const router = useRouter();
 
-  const allowedEmail = "jriquelme@utem.cl";
+  const allowedEmail = "jriquelme@utem.cl"; //CAMBIAR GMAIL PARA LA DEMOSTRACION ESTE ES PARA EL ADMINISTRADOR
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
