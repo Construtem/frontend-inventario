@@ -4,9 +4,9 @@ export default function ProveedoresPage() {
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-        <h1 style={titleStyle}>Proveedores</h1>
+        <h1 style={titleStyle}>Inventario de Proveedores</h1>
         <p style={textStyle}>
-          Provedoresxdxd.
+          Información relacionada a Inventario de Proveedores
         </p>
       </div>
     </div>
