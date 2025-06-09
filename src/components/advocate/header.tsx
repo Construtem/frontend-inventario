@@ -30,11 +30,11 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
       <div style={styles.right}>
         <span style={styles.userInfo}>
-          <span style={styles.userRole}>Admin</span>
+          <span style={styles.userRole}>Vendedor</span>
           <span style={styles.userIcon}>👤</span>
           <span style={styles.userText}>
             <span style={styles.userName}>Usuario</span>
-            <span style={styles.userEmail}>admin@admin.com</span>
+            <span style={styles.userEmail}>vendedor@vendedor.com</span>
           </span>
         </span>
         <Image
