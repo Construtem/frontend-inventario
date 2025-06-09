@@ -1,0 +1,82 @@
+# PENDIENTE: utilizar secrets para id del proyecto y env para no hardcodear tanta cosa xd
+name: CI/CD Frontend
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  ci-validacion:
+    name: Validacion del codigo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Ejecutar build
+        run: npm run build
+
+      - name: Ejecutar linter
+        run: npm run lint
+      
+      - name: Validar Dockerfile (build local)
+        run: docker build -t test/front-ventas .
+
+  ci-imagen:
+    name: Construccion y push de imagen docker
+    needs: ci-validacion
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+
+      - name: Autenticarse en Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configurar Docker para usar Artifact Registry
+        run: gcloud auth configure-docker southamerica-east1-docker.pkg.dev
+
+      - name: Construir imagen Docker
+        run: docker build -t southamerica-east1-docker.pkg.dev/construtem/microservicios-construtem/front-inventario:latest .
+
+      - name: Subir imagen a Artifact Registry
+        run: docker push southamerica-east1-docker.pkg.dev/construtem/microservicios-construtem/front-inventario:latest
+
+  cd:
+    name: Despliegue Continuo
+    needs: ci-imagen
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+
+      - name: Autenticarse en GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configurar acceso a GKE
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: construtem-testing
+          location: southamerica-east1
+          project_id: construtem
+
+      - name: Aplicar manifiestos de Kubernetes
+        run: kubectl apply -f k8s/
+
+      - name: Verificar estado de pods
+        run: kubectl get pods -n default
