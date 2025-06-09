@@ -18,6 +18,7 @@ spec:
         - name: front-inventario
           # Pendiente: utilizar forma de no hardcodear la imagen y actualizar versiones
           image: southamerica-east1-docker.pkg.dev/construtem/microservicios-construtem/front-inventario:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
           resources:
