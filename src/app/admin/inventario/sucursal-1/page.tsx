@@ -84,12 +84,12 @@ export default function Sucursal1Page() {
 
 // --- Estilos en variables ---
 const containerStyle: React.CSSProperties = {
-  marginLeft: "180px",
   marginTop: "70px",
   padding: "2rem",
   boxSizing: "border-box",
   minHeight: "calc(100vh - 70px)",
   backgroundColor: "#f5f5f5",
+  borderRadius: "20px",
 };
 
 const cardStyle: React.CSSProperties = {

@@ -20,9 +20,7 @@ interface CardProps {
 }
 
 export default function InicioPage() {
-
   const cardData = [
-    
     { id: 1, mainText: '12', subText: 'Clientes', imageUrl: clientesIcon.src},
     { id: 2, mainText: '20', subText: 'Proveedores', imageUrl: proveedoresIcon.src},
     { id: 3, mainText: '4', subText: 'Bodegas', imageUrl: bodegasIcon.src },    
@@ -39,55 +37,51 @@ export default function InicioPage() {
   ];
 
   return (
-  <div style={containerStyle}>
-    <div style={cardStyle}>
+    <div style={containerStyle}>
+      <div style={cardStyle}>
         <h1 style={titleStyle}>Inicio</h1>
         <h3 style={textStyle}>Bienvenido a su panel de gestión, (nombre de usuario)!</h3>
         <div style={subtleLineStyle}></div>
         <h1 style={titleStyle}>Resumen general</h1>
-
         <div style={cardGridStyle}>
-        {cardData.map(card => (
-                <Card
-                  key={card.id}
-                  id={card.id}
-                  mainText={card.mainText}
-                  subText={card.subText}
-                  imageUrl={card.imageUrl}/>
-              ))}
+          {cardData.map(card => (
+            <Card
+              key={card.id}
+              id={card.id}
+              mainText={card.mainText}
+              subText={card.subText}
+              imageUrl={card.imageUrl}
+            />
+          ))}
         </div> 
+      </div>
     </div>
-  </div>
   );
 }
 
-// --- CSS en JS ---
+// ...existing code...
 const containerStyle: React.CSSProperties = {
-  marginLeft: "180px", // ancho del sidebar
-  marginTop: "70px",   // alto del header
-  borderRadius:"20px",
   padding: "2rem",
   boxSizing: "border-box",
   minHeight: "calc(100vh - 70px)",
-  backgroundColor: "#f5f5f5",
+  backgroundColor: "#f5f5f5", // fondo general gris claro
+  borderRadius: '20px',
+  marginTop: "40px", // <-- Esto baja el contenido
 };
+// ...existing code...
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: "white",
+  backgroundColor: "white", // tarjeta principal blanca
   borderRadius: "12px",
   padding: "2rem",
   boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
 };
 
-//Formato de la card
 const Card: React.FC<CardProps> = ({ id, mainText, subText, imageUrl }) => {
-
   const [isHovered, setIsHovered] = React.useState(false);  
 
   const cardContainerStyle: React.CSSProperties = {
     backgroundColor: '#FF7300',
-    //backgroundImage: 'linear-gradient(90deg, #007070 0%, #008C8C 100%)', //degradado verde utem hacia un tono más claro
-    //backgroundImage: 'linear-gradient(90deg, #007070 10%, #004D4D 50%, #003333 200%)', //degradado verde utem hacia un tono más azul oscuro
     borderRadius: '20px',
     padding: '20px',
     width: '250px',
@@ -102,19 +96,17 @@ const Card: React.FC<CardProps> = ({ id, mainText, subText, imageUrl }) => {
     cursor: 'pointer',
     transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
     fontFamily: 'Montserrat, sans-serif'
-    };
+  };
 
-  //Estilo para imágenes dentro de la card
   const cardImageStyle: React.CSSProperties = {
-    width: '75px', // Ancho de la imagen
-    height: '75px', // Alto de la imagen
+    width: '75px',
+    height: '75px',
     objectFit: 'contain', 
     marginLeft: '15px',
     opacity: 0.5,
     transition: 'transform 0.3s ease-out, opacity 0.3s ease-out', 
   };
 
-  //Animación para la imagen de la card cuando está en hover
   const cardImageHoverStyle: React.CSSProperties = {
     transform: 'scale(1.1)',
     opacity: 1.2, 
@@ -122,12 +114,11 @@ const Card: React.FC<CardProps> = ({ id, mainText, subText, imageUrl }) => {
 
   const cardImageCombinedStyle: React.CSSProperties = {
     ...cardImageStyle,
-    ...(isHovered ? cardImageHoverStyle : {}), // Aplica cardImageHoverStyle si isHovered es true
+    ...(isHovered ? cardImageHoverStyle : {}),
   };
 
-  //Animación hover para la card
   const cardHoverStyle: React.CSSProperties = {
-    transform: 'scale(1.1)', // Agranda la card un 10%
+    transform: 'scale(1.1)',
     boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)',
     opacity: 1.2, 
   };
@@ -156,7 +147,6 @@ const Card: React.FC<CardProps> = ({ id, mainText, subText, imageUrl }) => {
     flexDirection: 'column', 
     justifyContent: 'center',
     flexGrow: 1, 
-
   };
 
   return (
@@ -170,7 +160,6 @@ const Card: React.FC<CardProps> = ({ id, mainText, subText, imageUrl }) => {
         <p style={cardMainTextStyle}>{mainText}</p>
         <p style={cardSubTextStyle}>{subText}</p>
       </div>
-
       {imageUrl && (
         <img
           src={imageUrl}
@@ -184,7 +173,7 @@ const Card: React.FC<CardProps> = ({ id, mainText, subText, imageUrl }) => {
 
 const cardGridStyle: React.CSSProperties = {
   display: 'grid',
-  gap: '20px',
+  gap: '29.8px',
   gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
 };
 
@@ -194,6 +183,7 @@ const titleStyle: React.CSSProperties = {
   fontWeight: "bold",
   marginBottom: "2rem",
   fontFamily: 'Montserrat, sans-serif',
+  borderRadius: '20px',
 };
 
 const textStyle: React.CSSProperties = {
@@ -202,12 +192,13 @@ const textStyle: React.CSSProperties = {
   fontWeight:"regular",
   lineHeight: "1.6",
   fontFamily: 'Roboto, sans-serif',
+  borderRadius: '20px',
 };
 
-//Línea divisoria de Inicio y Resumen general
 const subtleLineStyle: React.CSSProperties = {
-  backgroundColor: '#e0e0e0', // Color gris muy claro
-  height: '1px', // Altura de la línea
+  backgroundColor: '#e0e0e0',
+  height: '1px',
   opacity: 0.7,
-  margin: '20px 0', // Espacio arriba y abajo
+  margin: '20px 0',
+  borderRadius: '20px',
 };

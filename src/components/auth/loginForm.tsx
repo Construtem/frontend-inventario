@@ -9,6 +9,9 @@ import { auth, provider } from "../../../firebase";
 import logo from '@/styles/images/logo_barra_superior.png'
 import google_sign_in from "@/styles/images/logo_google.png";
 
+const allowedAdminEmail = "jriquelme@utem.cl"; // Administrador
+const allowedAdvocateEmail = "jriquelme.harrysev@gmail.com"; // Vendedor
+
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -17,11 +20,11 @@ const Login = () => {
   const [fadeOut, setFadeOut] = useState(false); // para animar el mensaje
   const router = useRouter();
 
-  const allowedEmail = "jriquelme@utem.cl"; //CAMBIAR GMAIL PARA LA DEMOSTRACION ESTE ES PARA EL ADMINISTRADOR
-
+  // Login tradicional (solo muestra alert, puedes poner tu lógica real aquí)
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     alert(`Username: ${username}\nPassword: ${password}`);
+    // Aquí podrías agregar lógica para login tradicional si lo necesitas
   };
 
   const handleGoogleLogin = async () => {
@@ -38,19 +41,29 @@ const Login = () => {
         return;
       }
 
-      if (user.email !== allowedEmail) {
-        setGoogleError("Este correo no está registrado como usuario autorizado en el sistema.");
+      if (user.email === allowedAdminEmail) {
+        localStorage.setItem("user", JSON.stringify({
+          name: user.displayName,
+          email: user.email,
+          uid: user.uid,
+          photoURL: user.photoURL,
+        }));
+        router.push("/admin/inicio");
         return;
       }
 
-      localStorage.setItem("user", JSON.stringify({
-        name: user.displayName,
-        email: user.email,
-        uid: user.uid,
-        photoURL: user.photoURL,
-      }));
+      if (user.email === allowedAdvocateEmail) {
+        localStorage.setItem("user", JSON.stringify({
+          name: user.displayName,
+          email: user.email,
+          uid: user.uid,
+          photoURL: user.photoURL,
+        }));
+        router.push("/advocate/inicio");
+        return;
+      }
 
-      router.push("/admin/inicio");
+      setGoogleError("Este correo no está registrado como usuario autorizado en el sistema.");
     } catch (error: any) {
       if (error.code === "auth/popup-closed-by-user") {
         setGoogleError("El inicio de sesión fue cancelado.");
@@ -62,6 +75,7 @@ const Login = () => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     if (googleError) {
       setFadeOut(false);
