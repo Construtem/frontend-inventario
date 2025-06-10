@@ -83,5 +83,5 @@ jobs:
         run: kubectl get pods -n default
 
       - name: Mostrar URL de acceso
-        run: echo "Despliegue exitoso. Accede a: https://inventario.tssw.cl"
+        run: echo "Despliegue exitoso. Accede a inventario.tssw.cl"
 
