@@ -24,11 +24,9 @@ jobs:
 
       - name: Ejecutar build
         run: npm run build
-        continue-on-error: true
 
       - name: Ejecutar linter
         run: npm run lint
-        continue-on-error: true
       
       - name: Validar Dockerfile (build local)
         run: docker build -t test/front-ventas .
