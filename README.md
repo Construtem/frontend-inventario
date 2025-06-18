@@ -67,3 +67,11 @@ git push origin feature/<nombre-funcionalidad>
 ```
 
 4. Crea un Pull Request (PR) a la rama ´develop´ desde GitHub para que sea revisado por otro desarrollador
+   
+## Figma actualizado (14-06-2025)
+
+Recomendado el presionar la tecla "R" para reiniciar el flujo del prototipo
+
+```
+https://www.figma.com/proto/ygP5mPt65d8en1cby2jYLy/Vistas-para-primer-sprint?node-id=296-2563&p=f&t=wcbC6NsTfl34sHR5-1&scaling=contain&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=243%3A39
+```
