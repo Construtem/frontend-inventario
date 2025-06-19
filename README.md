@@ -1,6 +1,7 @@
 # Frontend - Inventario
 
-Este repositorio contiene el frontend del módulo de **inventario y despacho** del sistema Construtem.
+- Este repositorio contiene el frontend del módulo de **inventario y despacho** del sistema Construtem.
+- Este microservicio será desplegado en la siguiente URL: https://inventario.tssw.cl
 
 ## 🛠️ Tecnologías
 - Next.js
