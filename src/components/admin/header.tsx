@@ -44,7 +44,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           width={32}
           height={32}
           onClick={() => {
-            router.push("/auth/login");
+            router.push("/auth/login"); // AQUI DEBE HACER LA CONEXION CON EL OTRO REPO DE LOGIN
           }}
         />
       </div>
