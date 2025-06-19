@@ -13,14 +13,15 @@ export default function ProveedoresPage() {
   );
 }
 
-// --- CSS en JS ---
+// --- Estilos en variables ---
 const containerStyle: React.CSSProperties = {
-  marginLeft: "180px", // ancho del sidebar
-  marginTop: "70px",   // alto del header
+  marginLeft: "0px",
+  marginTop: "70px",
   padding: "2rem",
   boxSizing: "border-box",
   minHeight: "calc(100vh - 70px)",
   backgroundColor: "#f5f5f5",
+  borderRadius: "20px",
 };
 
 const cardStyle: React.CSSProperties = {

@@ -25,43 +25,55 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
-    setGoogleError("");
-    setFadeOut(false);
-    setLoading(true);
+  setGoogleError("");
+  setFadeOut(false);
+  setLoading(true);
 
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
 
-      if (!user.email) {
-        setGoogleError("No se pudo obtener el correo del usuario.");
-        return;
-      }
+    if (!user.email) {
+      setGoogleError("No se pudo obtener el correo del usuario.");
+      return;
+    }
 
-      if (user.email !== allowedEmail) {
-        setGoogleError("Este correo no está registrado como usuario autorizado en el sistema.");
-        return;
-      }
+    if (user.email !== allowedEmail) {
+      setGoogleError("Este correo no está registrado como usuario autorizado en el sistema.");
+      return;
+    }
 
-      localStorage.setItem("user", JSON.stringify({
-        name: user.displayName,
-        email: user.email,
-        uid: user.uid,
-        photoURL: user.photoURL,
-      }));
+    localStorage.setItem("user", JSON.stringify({
+      name: user.displayName,
+      email: user.email,
+      uid: user.uid,
+      photoURL: user.photoURL,
+    }));
 
-      router.push("/admin/inicio");
-    } catch (error: any) {
-      if (error.code === "auth/popup-closed-by-user") {
+    router.push("/admin/inicio");
+  } catch (error: unknown) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      typeof (error as { code: string }).code === "string"
+    ) {
+      const code = (error as { code: string }).code;
+
+      if (code === "auth/popup-closed-by-user") {
         setGoogleError("El inicio de sesión fue cancelado.");
       } else {
         setGoogleError("Error al iniciar sesión con Google.");
       }
-      console.error("Error en Google Login:", error);
-    } finally {
-      setLoading(false);
+    } else {
+      setGoogleError("Ocurrió un error inesperado.");
     }
-  };
+
+    console.error("Error en Google Login:", error);
+  } finally {
+    setLoading(false);
+  }
+};
   useEffect(() => {
     if (googleError) {
       setFadeOut(false);

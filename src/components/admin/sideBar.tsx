@@ -1,6 +1,6 @@
 'use client';
 
-import React, { FC, useState } from 'react';
+import React, { FC, useState, CSSProperties } from 'react';
 import Link from 'next/link';
 import {
   FaHome,
@@ -29,24 +29,21 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
   const handleMouseEnter = (id: string) => setHoveredItem(id);
   const handleMouseLeave = () => setHoveredItem(null);
 
-  // Un color que combina bien con un fondo naranja brillante es un azul claro o celeste.
-  // Ejemplo: '#1E90FF' (azul dodger) o '#F9EFF4' (blanco rosado, como tienes).
-  // Aquí te sugiero un azul claro para mejor contraste:
-  const getMenuItemStyle = (id: string) => ({
+  const getMenuItemStyle = (id: string): CSSProperties => ({
     ...styles.menuItem,
     backgroundColor: hoveredItem === id ? '#FF7A00' : 'transparent',
-    color: hoveredItem === id ? '#000000' : 'inherit', // Azul claro para buen contraste
+    color: hoveredItem === id ? '#000000' : 'inherit',
   });
 
-  const getSubMenuItemStyle = (id: string, isActive: boolean) => ({
+  const getSubMenuItemStyle = (id: string, isActive: boolean): CSSProperties => ({
     ...styles.subMenuItem,
     ...(isActive ? styles.subMenuItemActive : {}),
     backgroundColor: hoveredItem === id ? '#FF7A00' : 'transparent',
     color: hoveredItem === id
       ? '#000000'
       : isActive
-      ? '#000000' // color negro seleccionado
-      : '#bdbdbd', // color blanco sin seleccionar
+      ? '#000000'
+      : '#bdbdbd',
   });
 
   return (
@@ -116,7 +113,8 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
             { name: 'Bodega general', path: '/admin/bodega/bodega-general' },
             { name: 'Lista de bodegas', path: '/admin/bodega/lista-de-bodegas' },
           ].map((item) => {
-            const isActive = typeof window !== 'undefined' && window.location.pathname === item.path;
+            const isActive =
+              typeof window !== 'undefined' && window.location.pathname === item.path;
             return (
               <Link
                 key={item.name}
@@ -146,10 +144,17 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
       {proveedoresAbierto && (
         <div style={styles.subMenu}>
           {[
-            { name: 'Inventario de proveedores', path: '/admin/proveedores/inventario-de-proveedores' },
-            { name: 'Gestión de proveedores', path: '/admin/proveedores/gestion-de-proveedores' },
+            {
+              name: 'Inventario de proveedores',
+              path: '/admin/proveedores/inventario-de-proveedores',
+            },
+            {
+              name: 'Gestión de proveedores',
+              path: '/admin/proveedores/gestion-de-proveedores',
+            },
           ].map((item) => {
-            const isActive = typeof window !== 'undefined' && window.location.pathname === item.path;
+            const isActive =
+              typeof window !== 'undefined' && window.location.pathname === item.path;
             return (
               <Link
                 key={item.name}
@@ -174,6 +179,7 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
         <FaStore />
         <span>Sucursales</span>
       </Link>
+
       <Link
         href="/admin/configuracion"
         style={getMenuItemStyle('config')}
@@ -187,7 +193,7 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
   );
 };
 
-const styles = {
+const styles: Record<string, CSSProperties> = {
   sidebar: {
     width: '180px',
     height: '100vh',
@@ -197,7 +203,7 @@ const styles = {
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
-    position: 'fixed' as const,
+    position: 'fixed',
     top: 0,
     left: 0,
     zIndex: 40,
