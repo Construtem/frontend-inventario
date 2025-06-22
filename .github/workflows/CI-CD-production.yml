@@ -3,7 +3,7 @@ name: CI/CD Frontend
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
 
 jobs:
   ci-validacion:
@@ -76,7 +76,7 @@ jobs:
           project_id: construtem
 
       - name: Aplicar manifiestos de Kubernetes
-        run: kubectl apply -f k8s/testing/
+        run: kubectl apply -f k8s/produccion/
 
       - name: Verificar estado de pods
         run: kubectl get pods -n default
