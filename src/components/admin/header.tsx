@@ -56,7 +56,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   header: {
     width: '100%',
     height: '58px',
-    background: '#373330',
+    background: '#2d2d2d',
     color: 'white',
     display: 'flex',
     alignItems: 'center',

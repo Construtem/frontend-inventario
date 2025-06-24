@@ -197,7 +197,7 @@ const styles: Record<string, CSSProperties> = {
   sidebar: {
     width: '180px',
     height: '100vh',
-    backgroundColor: '#3f3833',
+    backgroundColor: '#2d2d2d',
     color: 'white',
     paddingTop: '90px',
     boxSizing: 'border-box',
