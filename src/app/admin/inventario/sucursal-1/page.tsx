@@ -7,11 +7,13 @@ import React, { useRef, useState, useMemo, useEffect } from "react";
 import Papa from 'papaparse';
 import Head from "next/head";
 import Swal from 'sweetalert2'; // Importa SweetAlert2
+import Image from "next/image"; // Para reemplazar <img> por <Image />
 
 // Importaciones de imágenes (considerando que están en @/styles/images)
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import logo1Img from "@/styles/images/logo1.png";
+import buscarImg from "@/styles/images/buscar.png";
 
 // =====================
 // 2. INTERFACES
@@ -105,14 +107,11 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
 
   // Animación para aparecer/desaparecer el modal
   const [visible, setVisible] = useState(isOpen);
-  const [showAnim, setShowAnim] = useState(isOpen);
 
   useEffect(() => {
     if (isOpen) {
       setVisible(true);
-      setTimeout(() => setShowAnim(true), 10);
     } else {
-      setShowAnim(false);
       const timeout = setTimeout(() => setVisible(false), 250);
       return () => clearTimeout(timeout);
     }
@@ -147,10 +146,10 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
         return;
       }
 
-      Papa.parse(file, {
+      Papa.parse<ProductData>(file, {
         header: true,
         skipEmptyLines: true,
-        complete: (results) => {
+        complete: (results: Papa.ParseResult<ProductData>) => {
           if (results.errors.length) {
             const errorMsg = `Error al parsear el CSV: ${results.errors[0].message}`;
             setErrorMessage(errorMsg);
@@ -241,7 +240,7 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
           let hasRowErrors = false;
           const allRowErrors: string[] = []; // Para acumular todos los errores de fila
 
-          results.data.forEach((row: any, index: number) => {
+          (results.data as any[]).forEach((row: any, index: number) => {
             const rowErrors: string[] = [];
 
             const idProductoParsed = parseInt(row["ID Producto"], 10);
@@ -347,10 +346,10 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
           
 
         },
-        error: (err: any) => {
-          const errorMsg = `Error al leer el archivo: ${err.message}`;
+        error: (error: Error, file: File) => {
+          const errorMsg = `Error al leer el archivo: ${error.message}`;
           setErrorMessage(errorMsg);
-          
+
           Swal.fire({
             icon: 'error',
             html: `
@@ -373,8 +372,8 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
 
   const handleUploadConfirm = async () => {
     if (parsedData.length > 0 && !errorMessage) {
-      // Obtener productos ya cargados desde el padre
-      // @ts-ignore
+
+      // @ts-expect-error
       const loadedProducts: ProductData[] = (window.__LOADED_PRODUCTS__ || []);
 
       const existingSkus = new Set<string>(loadedProducts.map(p => p.sku));
@@ -853,7 +852,7 @@ export default function Sucursal1Page() {
   const renderPaginationButtons = () => {
     const buttons = [];
     // Lógica para mostrar un rango limitado de botones de página si hay muchas páginas
-    const maxButtonsToShow = 5; // Número máximo de botones de página a mostrar
+    const maxButtonsToShow = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
     let endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
 
@@ -934,71 +933,58 @@ export default function Sucursal1Page() {
 
   // Guardar los productos cargados en window para que el modal los pueda leer
   useEffect(() => {
-    // @ts-ignore
+    // @ts-expect-error
     window.__LOADED_PRODUCTS__ = loadedProducts;
   }, [loadedProducts]);
 
   return (
     <>
-      <Head>
-        <link
-          href="https://fonts.googleapis.com/css?family=Montserrat:400,500,600,700&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap"
-          rel="stylesheet"
-        />
-      </Head>
       <div style={containerStyle}>
         <div style={cardStyle}>
           <h1 style={titleStyle}>Inventario de Productos (Sucursal 1)</h1>
-
           <div style={toolbarStyle}>
-            {/* INICIO: GRUPO IZQUIERDO (Barra de búsqueda Y Botón Filtros, separados) */}
             <div style={leftControlsGroupStyle}>
-              {/* Barra de búsqueda - AHORA COMO FLEX CONTAINER DIRECTO */}
               <div style={searchContainerStyle}>
                 <input
                   type="text"
                   placeholder="Buscar por ID Producto, SKU, Nombre..."
                   style={inputStyle}
                 />
-                {/* Lupa como botón - AHORA COMO ITEM FLEX DIRECTO */}
                 <button style={lupaButtonStyle}>
-                  <img
-                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E"
-                    alt="Buscar"
-                    style={lupaIconInsideButtonStyle}
-                  />
+                <Image
+                  src={buscarImg.src}
+                  alt="Buscar"
+                  width={40}
+                  height={40}
+                  style={searchIconStyle}
+                />
                 </button>
               </div>
-
-              {/* Botón Filtros (separado de la barra de búsqueda) con icono */}
               <button
                 style={filterButtonStyle}
                 onClick={handleFiltersProduct}
               >
-                {/* Icono de filtro */}
-                <img
+                <Image
                   src={filtrosImg.src}
                   alt="Filtros"
+                  width={20}
+                  height={20}
                   style={filterIconStyle}
                 />
                 Filtros
               </button>
             </div>
-            {/* FIN: GRUPO IZQUIERDO */}
-
             <div style={rightControlsWrapperStyle}>
               <div style={columnButtonsStyle}>
                 <button
                   style={editButtonStyle}
                   onClick={() => setIsUploadModalOpen(true)}
                 >
-                  <img
+                  <Image
                     src={agregarImg.src}
                     alt="Agregar productos"
+                    width={20}
+                    height={20}
                     style={filterIconStyle}
                   />
                   AGREGAR PRODUCTOS
@@ -1006,14 +992,13 @@ export default function Sucursal1Page() {
               </div>
             </div>
           </div>
-
           <div style={{ overflowX: "auto", borderRadius: "10px", overflow: "hidden" }}>
             <div style={{ width: "100%", maxHeight: "none", overflowY: "visible" }}>
               <table
                 style={{
                   ...tableStyle,
                   tableLayout: "fixed",
-                  width: "100%", // Ocupa el 100% del contenedor
+                  width: "100%",
                   minWidth: "0",
                   maxWidth: "100%",
                 }}
@@ -1190,13 +1175,12 @@ export default function Sucursal1Page() {
 
 // Estilos para UploadCsvModal
 const modalOverlayStyle: React.CSSProperties = {
-  position: 'fixed' as 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
   backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  display: 'flex', // Se cambia a 'flex' siempre y el 'visible' del estado controla si se muestra
+  display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
   zIndex: 1000,
-  // Opacidad y puntero manejados por el estado 'showAnim' en el JSX
 };
 
 const modalContentStyle: React.CSSProperties = {
@@ -1207,11 +1191,10 @@ const modalContentStyle: React.CSSProperties = {
   width: '90%',
   maxWidth: '800px',
   maxHeight: '90%',
-  overflowY: 'auto' as 'auto',
+  overflowY: 'auto' as const,
   display: 'flex',
-  flexDirection: 'column' as 'column',
+  flexDirection: 'column' as const,
   gap: '20px',
-  // Opacidad y transformación manejados por el estado 'showAnim' en el JSX
 };
 
 const modalHeaderStyle: React.CSSProperties = {
@@ -1242,7 +1225,7 @@ const closeButtonStyle: React.CSSProperties = {
 };
 
 const fileInputContainerStyle: React.CSSProperties = {
-  display: 'flex', flexDirection: 'column' as 'column', alignItems: 'center',
+  display: 'flex', flexDirection: 'column' as const, alignItems: 'center',
   gap: '10px', padding: '20px', border: '2px dashed #ccc', borderRadius: '8px',
   cursor: 'pointer', backgroundColor: '#f9f9f9',
 };
@@ -1283,16 +1266,16 @@ const preVisualTextStyle: React.CSSProperties = {
 };
 
 const previewTableStyle: React.CSSProperties = {
-  width: '100%', borderCollapse: 'collapse' as 'collapse', marginTop: '20px',
+  width: '100%', borderCollapse: 'collapse' as const, marginTop: '20px',
 };
 
 const tableHeaderStyle: React.CSSProperties = {
   backgroundColor: '#f2f2f2', padding: '10px', borderBottom: '1px solid #ddd',
-  textAlign: 'left' as 'left',
+  textAlign: 'left' as const,
 };
 
 const tdModalStyle: React.CSSProperties = {
-  padding: '10px', borderBottom: '1px solid #eee', textAlign: 'left' as 'left',
+  padding: '10px', borderBottom: '1px solid #eee', textAlign: 'left' as const,
 };
 
 const confirmButtonStyle: React.CSSProperties = {
@@ -1445,6 +1428,11 @@ const filterIconStyle: React.CSSProperties = {
   width: '1.2rem',
   height: '1.2rem',
   color: 'white',
+};
+
+const searchIconStyle: React.CSSProperties = {
+  width: '30px',
+  height: '30px',
 };
 
 const modifyProductButtonStyle: React.CSSProperties = {
