@@ -5,8 +5,8 @@
 // =====================
 import React, { useRef, useState, useMemo, useEffect } from "react";
 import Papa from 'papaparse';
-import Head from "next/head";
-import Swal from 'sweetalert2'; // Importa SweetAlert2
+// import Head from "next/head"; // <-- Eliminar Head, no se usa
+import Swal from 'sweetalert2';
 import Image from "next/image"; // Para reemplazar <img> por <Image />
 
 // Importaciones de imágenes (considerando que están en @/styles/images)
@@ -240,7 +240,9 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
           let hasRowErrors = false;
           const allRowErrors: string[] = []; // Para acumular todos los errores de fila
 
-          (results.data as any[]).forEach((row: any, index: number) => {
+          // (results.data as any[]).forEach((row: any, index: number) => {
+          // Corrige los tipos de PapaParse: usa Record<string, string> para filas CSV genéricas
+          ((results.data as unknown) as Record<string, string>[]).forEach((row, index: number) => {
             const rowErrors: string[] = [];
 
             const idProductoParsed = parseInt(row["ID Producto"], 10);
@@ -346,7 +348,7 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
           
 
         },
-        error: (error: Error, file: File) => {
+        error: (error: Error /*, file: File*/) => { // <-- Elimina 'file' no usado
           const errorMsg = `Error al leer el archivo: ${error.message}`;
           setErrorMessage(errorMsg);
 
@@ -373,7 +375,7 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
   const handleUploadConfirm = async () => {
     if (parsedData.length > 0 && !errorMessage) {
 
-      // @ts-expect-error
+      // @ts-expect-error: window.__LOADED_PRODUCTS__ es una variable global para comunicación con el modal
       const loadedProducts: ProductData[] = (window.__LOADED_PRODUCTS__ || []);
 
       const existingSkus = new Set<string>(loadedProducts.map(p => p.sku));
@@ -854,7 +856,7 @@ export default function Sucursal1Page() {
     // Lógica para mostrar un rango limitado de botones de página si hay muchas páginas
     const maxButtonsToShow = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
-    let endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
+    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1); // Usa const
 
     if (endPage - startPage + 1 < maxButtonsToShow) {
       startPage = Math.max(1, endPage - maxButtonsToShow + 1);
@@ -933,7 +935,7 @@ export default function Sucursal1Page() {
 
   // Guardar los productos cargados en window para que el modal los pueda leer
   useEffect(() => {
-    // @ts-expect-error
+    // @ts-expect-error: window.__LOADED_PRODUCTS__ es una variable global para comunicación con el modal
     window.__LOADED_PRODUCTS__ = loadedProducts;
   }, [loadedProducts]);
 
@@ -1378,12 +1380,6 @@ const lupaButtonStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   padding: 0,
-};
-
-const lupaIconInsideButtonStyle: React.CSSProperties = {
-  width: '1.2rem',
-  height: '1.2rem',
-  filter: 'invert(34%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(90%)',
 };
 
 const rightControlsWrapperStyle: React.CSSProperties = {
