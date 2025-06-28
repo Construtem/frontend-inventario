@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
 interface CardProps {
@@ -10,7 +10,29 @@ interface CardProps {
   imagePath: string;
 }
 
+interface UserData {
+  name: string;
+  email: string;
+  photoURL: string;
+  rol: string;
+}
+
 export default function InicioPage() {
+  const [user, setUser] = useState<UserData | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser) as UserData;
+        setUser(parsedUser);
+        console.log("✅ Usuario cargado en InicioPage:", parsedUser);
+      } catch (err) {
+        console.error("Error al parsear user en InicioPage:", err);
+      }
+    }
+  }, []);
+
   const cardData: CardProps[] = [
     { id: 1, mainText: '12', subText: 'Clientes', imagePath: '/images/inicio/clientes.png' },
     { id: 2, mainText: '20', subText: 'Proveedores', imagePath: '/images/inicio/proveedores.png' },
@@ -31,7 +53,13 @@ export default function InicioPage() {
     <div style={containerStyle}>
       <div style={cardStyle}>
         <h1 style={titleStyle}>Inicio</h1>
-        <h3 style={textStyle}>Bienvenido a su panel de gestión, (nombre de usuario)!</h3>
+        <h3 style={textStyle}>
+          Bienvenido a su panel de gestión,{" "}
+          <span style={{ fontWeight: "bold" }}>
+            {user ? user.name : "Invitado"}
+          </span>
+          !
+        </h3>
         <div style={subtleLineStyle}></div>
         <h1 style={titleStyle}>Resumen general</h1>
         <div style={cardGridStyle}>
@@ -45,7 +73,7 @@ export default function InicioPage() {
 }
 
 const Card: React.FC<CardProps> = ({ id, mainText, subText, imagePath }) => {
-  const [isHovered, setIsHovered] = React.useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const cardContainerStyle: React.CSSProperties = {
     backgroundColor: '#FF7300',
@@ -79,7 +107,6 @@ const Card: React.FC<CardProps> = ({ id, mainText, subText, imagePath }) => {
 
   return (
     <div
-      key={id}
       style={cardContainerStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

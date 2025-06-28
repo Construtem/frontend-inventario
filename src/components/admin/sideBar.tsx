@@ -217,7 +217,6 @@ const styles: Record<string, CSSProperties> = {
     fontSize: '15px',
     userSelect: 'none',
     textDecoration: 'none',
-    color: 'inherit',
     transition: 'background-color 0.2s, color 0.2s',
   },
   subMenu: {
@@ -229,14 +228,14 @@ const styles: Record<string, CSSProperties> = {
     padding: '8px 12px',
     fontSize: '14px',
     cursor: 'pointer',
-    color: '#bdbdbd',
+    color: '#rgb(189, 189, 189)',
     textDecoration: 'none',
     transition: 'background-color 0.2s, color 0.2s',
     borderRadius: '4px',
   },
   subMenuItemActive: {
     fontWeight: 'bold',
-    color: '#00a859',
+    color: '#rgb(189, 189, 189)',
   },
 };
 
