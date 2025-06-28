@@ -72,7 +72,7 @@ export default function InicioPage() {
   );
 }
 
-const Card: React.FC<CardProps> = ({ id, mainText, subText, imagePath }) => {
+const Card: React.FC<CardProps> = ({ mainText, subText, imagePath }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const cardContainerStyle: React.CSSProperties = {
