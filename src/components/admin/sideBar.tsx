@@ -9,6 +9,7 @@ import {
   FaCog,
   FaChevronDown,
   FaChevronUp,
+  FaTruck,
 } from 'react-icons/fa';
 
 interface SidebarProps {
@@ -178,6 +179,16 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
       >
         <FaStore />
         <span>Sucursales</span>
+      </Link>
+
+      <Link
+        href="/admin/despacho"
+        style={getMenuItemStyle('despacho')}
+        onMouseEnter={() => handleMouseEnter('despacho')}
+        onMouseLeave={handleMouseLeave}
+      >
+        <FaTruck />
+        <span>Despacho</span>
       </Link>
 
       <Link
