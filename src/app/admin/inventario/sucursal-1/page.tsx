@@ -16,6 +16,121 @@ import logo1Img from "@/styles/images/logo1.png";
 import buscarImg from "@/styles/images/buscar.png";
 
 // =====================
+// 1.1 CONFIGURACIÓN DEL BACKEND
+// =====================
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+
+// Headers comunes para las peticiones
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  // Agrega aquí tokens de autenticación si los usas
+  // 'Authorization': `Bearer ${token}`,
+});
+
+// =====================
+// 1.2 FUNCIONES DE API
+// =====================
+
+// Obtener todos los productos
+const fetchProducts = async (): Promise<ProductData[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/productos`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error al obtener productos:', error);
+    throw error;
+  }
+};
+
+// Obtener un producto por SKU
+const fetchProductBySKU = async (sku: string): Promise<ProductData> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error al obtener producto por SKU:', error);
+    throw error;
+  }
+};
+
+// Crear un producto
+const createProduct = async (product: Omit<ProductData, 'idProducto'>): Promise<ProductData> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/productos`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(product),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error al crear producto:', error);
+    throw error;
+  }
+};
+
+// Actualizar un producto por SKU
+const updateProduct = async (sku: string, product: Partial<ProductData>): Promise<ProductData> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(product),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error al actualizar producto:', error);
+    throw error;
+  }
+};
+
+// Eliminar un producto por SKU
+const deleteProduct = async (sku: string): Promise<void> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Error al eliminar producto:', error);
+    throw error;
+  }
+};
+
+// =====================
 // 2. INTERFACES
 // =====================
 interface ProductData {
@@ -768,10 +883,59 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
 export default function Sucursal1Page() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [loadedProducts, setLoadedProducts] = useState<ProductData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // --- ESTADOS DE PAGINACIÓN ---
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15; // 10 resultados por página
+  const itemsPerPage = 15; // 15 resultados por página
+
+  // Agregar CSS para la animación de carga
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  // Cargar productos desde el backend al inicializar
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const products = await fetchProducts();
+        setLoadedProducts(products);
+      } catch (err) {
+        console.error('Error al cargar productos:', err);
+        setError('Error al cargar productos desde el servidor');
+        Swal.fire({
+          icon: 'error',
+          html: `
+            <div style="${swalTituloCssString}">
+              ¡Error al cargar productos!
+            </div>
+            <div style="${swalTextoConMargenCssString}">
+              No se pudieron cargar los productos desde el servidor.
+            </div>
+          `,
+          confirmButtonText: 'ACEPTAR',
+          confirmButtonColor: '#ff7300',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
 
   // Calcular los datos a mostrar en la página current
   const currentTableData = useMemo(() => {
@@ -785,22 +949,43 @@ export default function Sucursal1Page() {
     return Math.ceil(loadedProducts.length / itemsPerPage);
   }, [loadedProducts, itemsPerPage]);
 
-  const handleConfirmBulkUpload = (data: ProductData[]) => {
-    console.log("Datos para cargar masivamente (simulado):", data);
-    setLoadedProducts(data);
-    setCurrentPage(1); // Reset a la primera página cuando se cargan nuevos datos
-    // La alerta de éxito ahora se maneja dentro de handleUploadConfirm en el modal
+  const handleConfirmBulkUpload = async (data: ProductData[]) => {
+    try {
+      console.log("Datos para cargar masivamente:", data);
+      // Aquí podrías implementar la carga masiva real al backend
+      // const newProducts = await bulkCreateProducts(data);
+      
+      // Por ahora, agregamos los productos localmente
+      setLoadedProducts(prev => [...prev, ...data]);
+      setCurrentPage(1); // Reset a la primera página cuando se cargan nuevos datos
+    } catch (error) {
+      console.error('Error en carga masiva:', error);
+      Swal.fire({
+        icon: 'error',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error en carga masiva
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No se pudieron cargar los productos al servidor.
+          </div>
+        `,
+        confirmButtonText: 'ACEPTAR',
+        confirmButtonColor: '#ff7300',
+      });
+    }
   };
 
   // Función para el botón MODIFICAR
-  const handleModifyProduct = () => {
+  const handleModifyProduct = (sku: string) => {
     Swal.fire({
       html: `
         <div style="${swalTituloCssString}">
           ¡<b>Funcionalidad en Desarrollo</b>!
         </div>
         <div style="${swalTextoConMargenCssString}">
-          La opción de modificar productos estará disponible próximamente.
+          Modificar producto con SKU: <b>${sku}</b><br>
+          Esta funcionalidad estará disponible próximamente.
         </div>
       `,
       imageUrl: logo1Img.src,
@@ -810,6 +995,64 @@ export default function Sucursal1Page() {
       confirmButtonText: 'ACEPTAR',
       confirmButtonColor: '#ff7300',
     });
+  };
+
+  // Función para el botón ELIMINAR
+  const handleDeleteProduct = async (sku: string) => {
+    const result = await Swal.fire({
+      html: `
+        <div style="${swalTituloCssString}">
+          ¿Eliminar producto?
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          ¿Estás seguro de que deseas eliminar el producto con SKU: <b>${sku}</b>?<br>
+          Esta acción no se puede deshacer.
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'ELIMINAR',
+      confirmButtonColor: '#d33',
+      cancelButtonText: 'Cancelar',
+      cancelButtonColor: '#5c5c5c',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteProduct(sku);
+        // Actualizar la lista local removiendo el producto eliminado
+        setLoadedProducts(prev => prev.filter(p => p.sku !== sku));
+        
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          html: `
+            <div style="${swalTextoCssString}">
+              Producto eliminado exitosamente
+            </div>
+          `,
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
+      } catch (error) {
+        console.error('Error al eliminar producto:', error);
+        Swal.fire({
+          icon: 'error',
+          html: `
+            <div style="${swalTituloCssString}">
+              Error al eliminar
+            </div>
+            <div style="${swalTextoConMargenCssString}">
+              No se pudo eliminar el producto del servidor.
+            </div>
+          `,
+          confirmButtonText: 'ACEPTAR',
+          confirmButtonColor: '#ff7300',
+        });
+      }
+    }
   };
 
     // Función para el botón FILTROS
@@ -1044,9 +1287,31 @@ export default function Sucursal1Page() {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentTableData.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={13} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
+                        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px" }}>
+                          <div style={{ 
+                            width: "20px", 
+                            height: "20px", 
+                            border: "2px solid #f3f3f3", 
+                            borderTop: "2px solid #ff7300", 
+                            borderRadius: "50%", 
+                            animation: "spin 1s linear infinite" 
+                          }}></div>
+                          Cargando productos...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : error ? (
+                    <tr>
+                      <td colSpan={13} style={{ ...tdStyle, textAlign: "center", padding: "2rem", color: "#d33" }}>
+                        {error}
+                      </td>
+                    </tr>
+                  ) : currentTableData.length > 0 ? (
                     currentTableData.map((product) => (
-                      <tr key={product.idProducto}>
+                      <tr key={`${product.idProducto}-${product.sku}`}>
                         <td style={tdStyle}>{product.idProducto}</td>
                         <td style={tdStyle}>{product.sku}</td>
                         <td style={tdStyle}>{product.nombre}</td>
@@ -1055,17 +1320,45 @@ export default function Sucursal1Page() {
                         <td style={tdStyle}>{product.largoCm}</td>
                         <td style={tdStyle}>{product.anchoCm}</td>
                         <td style={tdStyle}>{product.altoCm}</td>
-                        <td style={tdStyle}>{product.costoBaseCu}</td>
-                        <td style={tdStyle}>{product.precioVentaCu}</td>
-                        <td style={tdStyle}>{product.activo ? 'Activo' : 'Inactivo'}</td>
+                        <td style={tdStyle}>${product.costoBaseCu}</td>
+                        <td style={tdStyle}>${product.precioVentaCu}</td>
+                        <td style={tdStyle}>
+                          <span style={{
+                            backgroundColor: product.activo ? '#10b981' : '#ef4444',
+                            color: 'white',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '12px',
+                            fontSize: '0.75rem',
+                            fontWeight: '500'
+                          }}>
+                            {product.activo ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </td>
                         <td style={tdStyle}>{product.stock}</td>
                         <td style={tdStyle}>
-                          <div style={{ display: "flex", justifyContent: "center" }}>
+                          <div style={{ display: "flex", justifyContent: "center", gap: "5px" }}>
                             <button
-                              style={modifyProductButtonStyle}
-                              onClick={handleModifyProduct} 
+                              style={{
+                                ...modifyProductButtonStyle,
+                                fontSize: '0.75rem',
+                                padding: '0.25rem 0.5rem',
+                                maxWidth: '60px'
+                              }}
+                              onClick={() => handleModifyProduct(product.sku)}
                             >
-                              MODIFICAR
+                              EDITAR
+                            </button>
+                            <button
+                              style={{
+                                ...modifyProductButtonStyle,
+                                backgroundColor: '#ef4444',
+                                fontSize: '0.75rem',
+                                padding: '0.25rem 0.5rem',
+                                maxWidth: '60px'
+                              }}
+                              onClick={() => handleDeleteProduct(product.sku)}
+                            >
+                              ELIMINAR
                             </button>
                           </div>
                         </td>
@@ -1073,8 +1366,8 @@ export default function Sucursal1Page() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={13} style={{ ...tdStyle, textAlign: 'center', color: '#888' }}>
-                        No hay productos cargados. Por favor, carga un CSV.
+                      <td colSpan={13} style={{ ...tdStyle, textAlign: 'center', color: '#888', padding: "2rem" }}>
+                        No hay productos disponibles. Usa &quot;AGREGAR PRODUCTOS&quot; para cargar productos desde CSV o contacta al administrador.
                       </td>
                     </tr>
                   )}

@@ -1,13 +1,69 @@
 "use client";
 
-import React, { useState } from "react";
-import { FaSearch, FaPlus } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import { FaSearch } from "react-icons/fa";
 
+// =====================
+// 1. INTERFAZ DE DATOS
+// =====================
+interface Despacho {
+  id: number;
+  cliente: string;
+  origen: string;
+  destino: string;
+  fechaDespacho: string;
+  valorDespacho: number;
+  estado: string;
+  camion: string;
+  cantidadItems: number;
+  totalKg: number;
+}
+
+// =====================
+// 2. COMPONENTE PRINCIPAL
+// =====================
 export default function DespachoPage() {
+  const [despachos, setDespachos] = useState<Despacho[]>([]);
+  const [loading, setLoading] = useState(true);
   const [sucursal, setSucursal] = useState("");
   const [estado, setEstado] = useState("");
   const [fecha, setFecha] = useState("");
 
+  // =====================
+  // 3. CARGA DE DATOS
+  // =====================
+  useEffect(() => {
+    fetch("http://localhost:8080/api/despachos")
+      .then((res) => res.json())
+      .then((data) => {
+        setDespachos(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error al obtener despachos:", error);
+        setLoading(false);
+      });
+  }, []);
+
+  // =====================
+  // 4. ELIMINAR DESPACHO
+  // =====================
+  const handleDelete = (id: number) => {
+    if (!confirm("¿Deseas eliminar este despacho?")) return;
+
+    fetch(`http://localhost:8080/api/despachos/${id}`, {
+      method: "DELETE",
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Error al eliminar despacho");
+        setDespachos((prev) => prev.filter((d) => d.id !== id));
+      })
+      .catch((err) => alert(err.message));
+  };
+
+  // =====================
+  // 5. UI  aaaaaa
+  // =====================
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
@@ -20,9 +76,9 @@ export default function DespachoPage() {
             value={sucursal}
             onChange={(e) => setSucursal(e.target.value)}
           >
-            <option value="">Sucursal</option>
             <option value="Sucursal 1">Sucursal 1</option>
             <option value="Sucursal 2">Sucursal 2</option>
+            <option value="Sucursal 3">Sucursal 3</option>
           </select>
 
           <select
@@ -30,68 +86,89 @@ export default function DespachoPage() {
             value={estado}
             onChange={(e) => setEstado(e.target.value)}
           >
-            <option value="">Estado</option>
             <option value="pendiente">Pendiente</option>
             <option value="enviado">Enviado</option>
+            <option value="aprobado">Aprobado</option>
+            <option value="cancelado">Cancelado</option>
           </select>
 
           <input
             type="text"
-            placeholder="dd/mm/aaaa - dd/mm/aaaa"
+            placeholder="Buscar por fecha..."
             style={selectStyle}
             value={fecha}
             onChange={(e) => setFecha(e.target.value)}
           />
 
           <button style={searchButtonStyle}>
-            <FaSearch style={{ marginRight: "8px" }} />
+            <FaSearch />
             Buscar
-          </button>
-
-          <button style={createButtonStyle}>
-            <FaPlus style={{ marginRight: "8px" }} />
-            Nuevo Despacho
           </button>
         </div>
 
         {/* Tabla */}
-        <div style={tableContainerStyle}>
+        <div style={tableWrapperStyle}>
           <table style={tableStyle}>
             <thead>
               <tr>
-                <th style={thStyle}>ID Despacho</th>
-                <th style={thStyle}>Cliente</th>
-                <th style={thStyle}>Dirección</th>
-                <th style={thStyle}>Fecha despacho</th>
-                <th style={thStyle}>Sucursal</th>
-                <th style={thStyle}>Estado</th>
-                <th style={thStyle}>Cant. Items</th>
-                <th style={thStyle}>Total kg</th>
-                <th style={thStyle}>Aprobar</th>
-                <th style={thStyle}>Eliminar</th>
+                {[
+                  "ID",
+                  "Cliente",
+                  "Origen",
+                  "Destino",
+                  "Fecha Despacho",
+                  "Valor Despacho",
+                  "Estado",
+                  "Camión",
+                  "Items",
+                  "Total Kg",
+                  "Accion",
+                ].map((col) => (
+                  <th key={col} style={thStyle}>
+                    {col}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 10 }).map((_, idx) => (
-                <tr key={idx}>
-                  <td style={tdStyle}>#00{idx + 1}</td>
-                  <td style={tdStyle}>Cliente {idx + 1}</td>
-                  <td style={tdStyle}>Dirección {idx + 1}</td>
-                  <td style={tdStyle}>01/07/2025</td>
-                  <td style={tdStyle}>Sucursal 1</td>
-                  <td style={tdStyle}>Pendiente</td>
-                  <td style={tdStyle}>3</td>
-                  <td style={tdStyle}>25</td>
-                  <td style={tdStyle}>
-                    <input type="checkbox" />
-                  </td>
-                  <td style={tdStyle}>
-                    <span style={{ cursor: "pointer", color: "crimson" }}>
-                      🗑️
-                    </span>
+              {loading ? (
+                <tr>
+                  <td colSpan={11} style={tdStyle}>
+                    Cargando...
                   </td>
                 </tr>
-              ))}
+              ) : despachos.length === 0 ? (
+                <tr>
+                  <td colSpan={11} style={tdStyle}>
+                    No hay despachos disponibles
+                  </td>
+                </tr>
+              ) : (
+                despachos.map((d) => (
+                  <tr key={d.id}>
+                    <td style={tdStyle}>#{d.id}</td>
+                    <td style={tdStyle}>{d.cliente}</td>
+                    <td style={tdStyle}>{d.origen}</td>
+                    <td style={tdStyle}>{d.destino}</td>
+                    <td style={tdStyle}>
+                      {new Date(d.fechaDespacho).toLocaleDateString()}
+                    </td>
+                    <td style={tdStyle}>${d.valorDespacho.toLocaleString()}</td>
+                    <td style={tdStyle}>{d.estado}</td>
+                    <td style={tdStyle}>{d.camion}</td>
+                    <td style={tdStyle}>{d.cantidadItems}</td>
+                    <td style={tdStyle}>{d.totalKg} kg</td>
+                    <td style={tdStyle}>
+                      <span
+                        onClick={() => handleDelete(d.id)}
+                        style={deleteIconStyle}
+                      >
+                        🗑️
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -100,12 +177,14 @@ export default function DespachoPage() {
   );
 }
 
-// ==================== ESTILOS ====================
+// =====================
+// 6. ESTILOS
+// =====================
 
 const containerStyle: React.CSSProperties = {
   padding: "2rem",
   minHeight: "calc(100vh - 70px)",
-  backgroundColor: "#f5f5f5",
+  backgroundColor: "#f3f4f6",
   borderRadius: "20px",
   marginTop: "40px",
 };
@@ -139,22 +218,11 @@ const selectStyle: React.CSSProperties = {
   border: "1px solid #ccc",
   fontSize: "1rem",
   flex: "1 1 200px",
+  fontFamily: "Roboto, sans-serif",
 };
 
 const searchButtonStyle: React.CSSProperties = {
-  backgroundColor: "#e5e5e5",
-  color: "#000",
-  padding: "0.6rem 1rem",
-  borderRadius: "10px",
-  border: "none",
-  fontWeight: "bold",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-};
-
-const createButtonStyle: React.CSSProperties = {
-  backgroundColor: "#FF7300",
+  backgroundColor: "#ff7300",
   color: "#fff",
   padding: "0.6rem 1.2rem",
   borderRadius: "10px",
@@ -163,25 +231,46 @@ const createButtonStyle: React.CSSProperties = {
   cursor: "pointer",
   display: "flex",
   alignItems: "center",
+  gap: "8px",
+  fontFamily: "Montserrat, sans-serif",
 };
 
-const tableContainerStyle: React.CSSProperties = {
+const tableWrapperStyle: React.CSSProperties = {
   overflowX: "auto",
+  borderRadius: "12px",
+  boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
+  backgroundColor: "#fff",
 };
 
 const tableStyle: React.CSSProperties = {
   width: "100%",
   borderCollapse: "collapse",
+  minWidth: "1100px",
 };
 
 const thStyle: React.CSSProperties = {
-  backgroundColor: "#333",
-  color: "#fff",
-  padding: "0.8rem",
-  textAlign: "left",
+  padding: "0.55rem 0.9rem",
+  backgroundColor: "#5C5C5C",
+  color: "white",
+  fontWeight: 600,
+  textAlign: "center",
+  fontSize: "1rem",
+  fontFamily: "Montserrat, sans-serif",
+  height: "38px",
 };
 
 const tdStyle: React.CSSProperties = {
-  padding: "0.8rem",
-  borderBottom: "1px solid #ccc",
+  padding: "0.55rem 0.9rem",
+  borderBottom: "1px solid #e5e7eb",
+  fontSize: "0.9375rem",
+  fontFamily: "Roboto, sans-serif",
+  fontWeight: 400,
+  textAlign: "center",
+  height: "38px",
+};
+
+const deleteIconStyle: React.CSSProperties = {
+  cursor: "pointer",
+  color: "crimson",
+  fontSize: "1.2rem",
 };

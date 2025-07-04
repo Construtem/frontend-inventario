@@ -8,6 +8,7 @@ interface CardProps {
   mainText: string;
   subText: string;
   imagePath: string;
+  onClick?: () => void;
 }
 
 interface UserData {
@@ -19,6 +20,7 @@ interface UserData {
 
 export default function InicioPage() {
   const [user, setUser] = useState<UserData | null>(null);
+  const [openCard, setOpenCard] = useState<number | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -32,6 +34,14 @@ export default function InicioPage() {
       }
     }
   }, []);
+
+  const handleCardClick = (cardId: number) => {
+    setOpenCard(cardId);
+  };
+
+  const handleCloseModal = () => {
+    setOpenCard(null);
+  };
 
   const cardData: CardProps[] = [
     { id: 1, mainText: '12', subText: 'Clientes', imagePath: '/images/inicio/clientes.png' },
@@ -64,15 +74,23 @@ export default function InicioPage() {
         <h1 style={titleStyle}>Resumen general</h1>
         <div style={cardGridStyle}>
           {cardData.map((card) => (
-            <Card key={card.id} {...card} />
+            <Card key={card.id} {...card} onClick={() => handleCardClick(card.id)} />
           ))}
         </div>
+
+        {/* Modal para mostrar el contenido de la card seleccionada */}
+        {openCard && (
+          <CardModal
+            card={cardData.find(c => c.id === openCard)!}
+            onClose={handleCloseModal}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-const Card: React.FC<CardProps> = ({ mainText, subText, imagePath }) => {
+const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const cardContainerStyle: React.CSSProperties = {
@@ -110,6 +128,7 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath }) => {
       style={cardContainerStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}
     >
       <div style={{
         display: 'flex',
@@ -140,6 +159,327 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath }) => {
       />
     </div>
   );
+};
+
+// Componente Modal para mostrar el contenido expandido de la card
+interface CardModalProps {
+  card: CardProps;
+  onClose: () => void;
+}
+
+const CardModal: React.FC<CardModalProps> = ({ card, onClose }) => {
+  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  
+  // Función para generar datos de ejemplo según el tipo de card
+  const generateSampleData = (cardSubText: string): Record<string, string | number>[] => {
+    const dataMap: { [key: string]: Record<string, string | number>[] } = {
+      'Clientes': [
+        { id: 1, nombre: 'Juan Pérez', email: 'juan@email.com', telefono: '123-456-7890', empresa: 'Tech Corp' },
+        { id: 2, nombre: 'María García', email: 'maria@email.com', telefono: '098-765-4321', empresa: 'Design LLC' },
+        { id: 3, nombre: 'Carlos López', email: 'carlos@email.com', telefono: '555-123-4567', empresa: 'Solutions Inc' },
+      ],
+      'Proveedores': [
+        { id: 1, nombre: 'Suministros ABC', contacto: 'Ana Torres', telefono: '111-222-3333', categoria: 'Materiales' },
+        { id: 2, nombre: 'Distribuidora XYZ', contacto: 'Luis Méndez', telefono: '444-555-6666', categoria: 'Equipos' },
+        { id: 3, nombre: 'Importadora DEF', contacto: 'Sofia Ruiz', telefono: '777-888-9999', categoria: 'Herramientas' },
+      ],
+      'Bodegas': [
+        { id: 1, nombre: 'Bodega Central', ubicacion: 'Zona Norte', capacidad: '1000 m²', responsable: 'Pedro Ramírez' },
+        { id: 2, nombre: 'Bodega Sur', ubicacion: 'Zona Sur', capacidad: '750 m²', responsable: 'Laura Jiménez' },
+        { id: 3, nombre: 'Bodega Este', ubicacion: 'Zona Este', capacidad: '500 m²', responsable: 'Miguel Santos' },
+      ],
+      'Productos registrados': [
+        { id: 1, codigo: 'P001', nombre: 'Laptop HP', categoria: 'Tecnología', precio: '$800', stock: 15 },
+        { id: 2, codigo: 'P002', nombre: 'Mouse Logitech', categoria: 'Accesorios', precio: '$25', stock: 50 },
+        { id: 3, codigo: 'P003', nombre: 'Monitor Samsung', categoria: 'Tecnología', precio: '$300', stock: 8 },
+      ],
+      'Productos disponibles': [
+        { id: 1, codigo: 'P001', nombre: 'Laptop HP', stock: 15, estado: 'Disponible', ubicacion: 'Bodega A' },
+        { id: 2, codigo: 'P002', nombre: 'Mouse Logitech', stock: 50, estado: 'Disponible', ubicacion: 'Bodega B' },
+      ],
+      'Productos no disponibles': [
+        { id: 1, codigo: 'P010', nombre: 'Teclado mecánico', stock: 0, estado: 'Agotado', fecha_restock: '2025-07-15' },
+        { id: 2, codigo: 'P011', nombre: 'Webcam 4K', stock: 0, estado: 'Descontinuado', fecha_restock: 'N/A' },
+      ],
+      'Pedidos': [
+        { id: 1, numero: 'PED-001', cliente: 'Juan Pérez', fecha: '2025-07-01', estado: 'Pendiente', total: '$1,200' },
+        { id: 2, numero: 'PED-002', cliente: 'María García', fecha: '2025-07-02', estado: 'Procesando', total: '$850' },
+      ],
+      'Facturas emitidas': [
+        { id: 1, numero: 'FAC-001', cliente: 'Tech Corp', fecha: '2025-07-01', monto: '$1,200', estado: 'Pagada' },
+        { id: 2, numero: 'FAC-002', cliente: 'Design LLC', fecha: '2025-07-02', monto: '$850', estado: 'Pendiente' },
+      ],
+      'Existencia total': [
+        { id: 1, producto: 'Laptop HP', categoria: 'Tecnología', cantidad: 15, valor_unitario: '$800', valor_total: '$12,000' },
+        { id: 2, producto: 'Mouse Logitech', categoria: 'Accesorios', cantidad: 50, valor_unitario: '$25', valor_total: '$1,250' },
+      ],
+      'Existencia vendida': [
+        { id: 1, producto: 'Laptop HP', cantidad_vendida: 5, fecha_venta: '2025-07-01', valor_total: '$4,000', cliente: 'Tech Corp' },
+        { id: 2, producto: 'Mouse Logitech', cantidad_vendida: 10, fecha_venta: '2025-07-02', valor_total: '$250', cliente: 'Design LLC' },
+      ],
+      'Sucursales': [
+        { id: 1, nombre: 'Sucursal Centro', direccion: 'Av. Principal 123', telefono: '123-456-7890', gerente: 'Ana López' },
+        { id: 2, nombre: 'Sucursal Norte', direccion: 'Calle Norte 456', telefono: '098-765-4321', gerente: 'Carlos Méndez' },
+      ],
+      'Ventas': [
+        { id: 1, numero: 'V-001', fecha: '2025-07-01', cliente: 'Juan Pérez', producto: 'Laptop HP', cantidad: 1, total: '$800' },
+        { id: 2, numero: 'V-002', fecha: '2025-07-02', cliente: 'María García', producto: 'Mouse Logitech', cantidad: 2, total: '$50' },
+      ],
+      'Usuarios registrados': [
+        { id: 1, nombre: 'Admin Principal', email: 'admin@empresa.com', rol: 'Administrador', estado: 'Activo', ultimo_acceso: '2025-07-04' },
+        { id: 2, nombre: 'Juan Operador', email: 'juan@empresa.com', rol: 'Operador', estado: 'Activo', ultimo_acceso: '2025-07-03' },
+      ],
+    };
+    
+    return dataMap[cardSubText] || [
+      { id: 1, campo1: 'Valor 1', campo2: 'Valor 2', campo3: 'Valor 3' },
+      { id: 2, campo1: 'Valor 4', campo2: 'Valor 5', campo3: 'Valor 6' },
+    ];
+  };
+
+  const sampleData = generateSampleData(card.subText);
+  const columns = sampleData.length > 0 ? Object.keys(sampleData[0]).filter(key => key !== 'id') : [];
+
+  const handleRowSelect = (id: number) => {
+    setSelectedRows(prev => 
+      prev.includes(id) 
+        ? prev.filter(rowId => rowId !== id)
+        : [...prev, id]
+    );
+  };
+
+  const handleAdd = () => {
+    alert(`Agregar nuevo elemento en ${card.subText}`);
+  };
+
+  const handleEdit = () => {
+    if (selectedRows.length === 0) {
+      alert('Selecciona al menos un elemento para editar');
+      return;
+    }
+    alert(`Editar elementos seleccionados: ${selectedRows.join(', ')}`);
+  };
+
+  const handleDelete = () => {
+    if (selectedRows.length === 0) {
+      alert('Selecciona al menos un elemento para eliminar');
+      return;
+    }
+    if (confirm(`¿Estás seguro de eliminar ${selectedRows.length} elemento(s)?`)) {
+      alert(`Eliminando elementos: ${selectedRows.join(', ')}`);
+      setSelectedRows([]);
+    }
+  };
+  
+  const modalOverlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(128, 128, 128, 0.8)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  };
+
+  const modalContentStyle: React.CSSProperties = {
+    backgroundColor: 'white',
+    borderRadius: '20px',
+    padding: '2rem',
+    minWidth: '800px',
+    maxWidth: '95vw',
+    maxHeight: '90vh',
+    overflow: 'auto',
+    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+    position: 'relative',
+  };
+
+  const closeButtonStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '15px',
+    right: '20px',
+    background: 'none',
+    border: 'none',
+    fontSize: '24px',
+    cursor: 'pointer',
+    color: '#666',
+    fontWeight: 'bold',
+  };
+
+  const modalHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '2rem',
+    borderBottom: '1px solid #e0e0e0',
+    paddingBottom: '1rem',
+  };
+
+  const modalTitleStyle: React.CSSProperties = {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: '#222222',
+    fontFamily: 'Montserrat, sans-serif',
+    marginLeft: '1rem',
+  };
+
+  const tableContainerStyle: React.CSSProperties = {
+    maxHeight: '400px',
+    overflowY: 'auto',
+    border: '1px solid #e0e0e0',
+    borderRadius: '8px',
+  };
+
+  const tableStyle: React.CSSProperties = {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '0.9rem',
+  };
+
+  const headerRowStyle: React.CSSProperties = {
+    backgroundColor: '#f8f9fa',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
+  };
+
+  const headerCellStyle: React.CSSProperties = {
+    padding: '12px 8px',
+    textAlign: 'left',
+    fontWeight: 'bold',
+    borderBottom: '2px solid #dee2e6',
+    color: '#333',
+  };
+
+  const dataRowStyle: React.CSSProperties = {
+    borderBottom: '1px solid #e9ecef',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s ease',
+  };
+
+  const dataCellStyle: React.CSSProperties = {
+    padding: '10px 8px',
+    borderBottom: '1px solid #e9ecef',
+  };
+
+  return (
+    <div style={modalOverlayStyle} onClick={onClose}>
+      <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
+        <button style={closeButtonStyle} onClick={onClose}>
+          ×
+        </button>
+        
+        <div style={modalHeaderStyle}>
+          <Image
+            src={card.imagePath}
+            alt={card.subText}
+            width={60}
+            height={60}
+          />
+          <div>
+            <h2 style={modalTitleStyle}>{card.subText}</h2>
+            <p style={{ color: '#FF7300', fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>
+              Total: {card.mainText}
+            </p>
+          </div>
+        </div>
+
+        {/* Botones de acción */}
+        <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button style={actionButtonStyle} onClick={handleAdd}>
+            ➕ Agregar
+          </button>
+          <button 
+            style={{...actionButtonStyle, backgroundColor: selectedRows.length > 0 ? '#28a745' : '#ccc'}} 
+            onClick={handleEdit}
+            disabled={selectedRows.length === 0}
+          >
+            ✏️ Editar ({selectedRows.length})
+          </button>
+          <button 
+            style={{...actionButtonStyle, backgroundColor: selectedRows.length > 0 ? '#dc3545' : '#ccc'}} 
+            onClick={handleDelete}
+            disabled={selectedRows.length === 0}
+          >
+            🗑️ Eliminar ({selectedRows.length})
+          </button>
+        </div>
+
+        {/* Tabla de datos */}
+        <div style={tableContainerStyle}>
+          <table style={tableStyle}>
+            <thead>
+              <tr style={headerRowStyle}>
+                <th style={headerCellStyle}>
+                  <input 
+                    type="checkbox" 
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedRows(sampleData.map(item => item.id as number));
+                      } else {
+                        setSelectedRows([]);
+                      }
+                    }}
+                    checked={selectedRows.length === sampleData.length && sampleData.length > 0}
+                  />
+                </th>
+                {columns.map((column) => (
+                  <th key={column} style={headerCellStyle}>
+                    {column.charAt(0).toUpperCase() + column.slice(1).replace(/_/g, ' ')}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sampleData.map((row) => (
+                <tr 
+                  key={row.id} 
+                  style={{
+                    ...dataRowStyle,
+                    backgroundColor: selectedRows.includes(row.id as number) ? '#e8f4fd' : 'white'
+                  }}
+                >
+                  <td style={dataCellStyle}>
+                    <input 
+                      type="checkbox"
+                      checked={selectedRows.includes(row.id as number)}
+                      onChange={() => handleRowSelect(row.id as number)}
+                    />
+                  </td>
+                  {columns.map((column) => (
+                    <td key={column} style={dataCellStyle}>
+                      {row[column]}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Información adicional */}
+        <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>
+            Total de registros: {sampleData.length} | Seleccionados: {selectedRows.length}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const actionButtonStyle: React.CSSProperties = {
+  backgroundColor: '#FF7300',
+  color: 'white',
+  border: 'none',
+  borderRadius: '8px',
+  padding: '10px 15px',
+  cursor: 'pointer',
+  fontSize: '0.9rem',
+  fontWeight: '500',
+  transition: 'background-color 0.2s ease',
+  fontFamily: 'Roboto, sans-serif',
 };
 
 // === Estilos Globales ===
