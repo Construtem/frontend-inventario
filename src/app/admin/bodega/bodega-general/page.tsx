@@ -220,14 +220,19 @@ const searchButtonStyle: React.CSSProperties = {
 };
 
 const filtrosButtonStyle: React.CSSProperties = {
-  backgroundColor: "#6b7280",
-  color: "#fff",
-  padding: "0.6rem 1.2rem",
-  borderRadius: "10px",
-  border: "none",
-  fontWeight: "bold",
-  cursor: "pointer",
+  backgroundColor: '#5c5c5c',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
   fontFamily: "Montserrat, sans-serif",
+  fontSize:"1rem",
+  fontWeight: 'semibold',
+  padding: '0.5rem 1.2rem',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  color: 'white',
 };
 
 const tableWrapperStyle: React.CSSProperties = {

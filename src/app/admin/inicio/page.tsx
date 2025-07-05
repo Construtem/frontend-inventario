@@ -96,8 +96,8 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick }) =>
   const cardContainerStyle: React.CSSProperties = {
     backgroundColor: '#FF7300',
     borderRadius: '20px',
-    padding: '20px',
-    width: '250px',
+    padding: '15px',
+    width: '400px',
     height: '120px',
     display: 'flex',
     flexDirection: 'row',
@@ -109,18 +109,47 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick }) =>
     cursor: 'pointer',
     transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
     fontFamily: 'Montserrat, sans-serif',
+    boxSizing: 'border-box',
+    maxWidth: '100%',
+    position: 'relative',
     ...(isHovered ? {
-      transform: 'scale(1.1)',
+      transform: 'scale(1.05)',
       boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)',
       opacity: 1.2,
     } : {})
   };
 
-  const imageStyle = {
+  const textContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    flexGrow: 1,
+    minWidth: 0,
+    marginRight: '10px',
+  };
+
+  const textStyle: React.CSSProperties = {
+    fontSize: '1.125rem',
+    marginBottom: '5px',
+    fontWeight: 'medium',
+    color: '#222222',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  };
+
+  const subTextStyle: React.CSSProperties = {
+    ...textStyle,
+    opacity: 0.8,
+    marginBottom: 0,
+  };
+
+  const imageStyle: React.CSSProperties = {
     opacity: isHovered ? 1 : 0.5,
     transform: isHovered ? 'scale(1.1)' : 'scale(1)',
     transition: 'transform 0.3s ease-out, opacity 0.3s ease-out',
     marginLeft: '15px',
+    flexShrink: 0,
   };
 
   return (
@@ -130,24 +159,9 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick }) =>
       onMouseLeave={() => setIsHovered(false)}
       onClick={onClick}
     >
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        flexGrow: 1,
-      }}>
-        <p style={{
-          fontSize: '1.125rem',
-          marginBottom: '5px',
-          fontWeight: 'medium',
-          color: '#222222',
-        }}>{mainText}</p>
-        <p style={{
-          fontSize: '1.125rem',
-          fontWeight: 'medium',
-          opacity: 0.8,
-          color: '#222222',
-        }}>{subText}</p>
+      <div style={textContainerStyle}>
+        <p style={textStyle}>{mainText}</p>
+        <p style={subTextStyle}>{subText}</p>
       </div>
 
       <Image
@@ -485,12 +499,14 @@ const actionButtonStyle: React.CSSProperties = {
 // === Estilos Globales ===
 
 const containerStyle: React.CSSProperties = {
-  padding: "2rem",
+  marginTop: "70px",
+  padding: "1.5rem",
   boxSizing: "border-box",
   minHeight: "calc(100vh - 70px)",
   backgroundColor: "#f5f5f5",
   borderRadius: '20px',
-  marginTop: "40px",
+  width: "100%",
+  overflowX: "hidden",
 };
 
 const cardStyle: React.CSSProperties = {
@@ -498,12 +514,20 @@ const cardStyle: React.CSSProperties = {
   borderRadius: "12px",
   padding: "2rem",
   boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+  maxWidth: "100%",
+  overflowX: "hidden",
+  marginTop: "1.5rem",
+  marginLeft: '1.5rem',
+  marginRight: '1.5rem',
 };
 
 const cardGridStyle: React.CSSProperties = {
   display: 'grid',
-  gap: '29.8px',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+  gap: '2rem',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+  width: '100%',
+  padding: '0.5rem',
+  boxSizing: 'border-box',
 };
 
 const titleStyle: React.CSSProperties = {
