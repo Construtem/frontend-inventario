@@ -28,21 +28,43 @@ export default function DespachoPage() {
   const [sucursal, setSucursal] = useState("");
   const [estado, setEstado] = useState("");
   const [fecha, setFecha] = useState("");
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState("");
 
   // =====================
   // 3. CARGA DE DATOS
   // =====================
   useEffect(() => {
-    fetch("http://localhost:8080/api/despachos")
-      .then((res) => res.json())
-      .then((data) => {
-        setDespachos(data);
+    const fetchDespachos = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/api/despachos");
+        if (!res.ok) throw new Error("Error al cargar despachos");
+
+        const raw = await res.json();
+
+        const clean: Despacho[] = raw.map((d: any) => ({
+          id: d.id,
+          cliente: d.cotizacion?.cliente?.nombre || "Cliente no definido",
+          origen: d.origen_sucursal?.nombre || "Sucursal desconocida",
+          destino: d.destino_dir_cliente?.direccion || "Direccion desconocida",
+          fechaDespacho: d.fecha_despacho,
+          valorDespacho: Number(d.valor_despacho),
+          estado: d.cotizacion?.estado || "Estado no definido",
+          camion: d.camion?.patente || "Camión no asignado",
+          cantidadItems: d.cantidad_items ?? 0,
+          totalKg: d.total_kg ?? 0,
+        }));
+
+        setDespachos(clean);
+      } catch (error: any) {
+        console.error("Error fetching despachos:", error);
+        setError(error.message);
+      } finally {
         setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error al obtener despachos:", error);
-        setLoading(false);
-      });
+      }
+    };
+
+    fetchDespachos();
   }, []);
 
   // =====================
@@ -60,6 +82,12 @@ export default function DespachoPage() {
       })
       .catch((err) => alert(err.message));
   };
+
+  const filtered = despachos.filter((d) => 
+    '${d.cliente} ${d.origen} ${d.destino} ${d.camion} ${d.estado}'
+    .toLowerCase()
+    .includes(search.toLowerCase())
+  );
 
   // =====================
   // 5. UI  aaaaaa
