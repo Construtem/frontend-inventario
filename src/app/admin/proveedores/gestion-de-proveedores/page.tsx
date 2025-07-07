@@ -1,73 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { FaSearch } from "react-icons/fa";
 
 interface Proveedor {
   id: number;
-  idProveedor: string;
-  nombre: string;
-  correoElectronico: string;
-  telefono: string;
-  direccion: string;
+  marca: string;
 }
 
 export default function GestionProveedoresPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [proveedoresData, setProveedoresData] = useState<Proveedor[]>([]);
 
-  // Datos de ejemplo para gestión de proveedores
-  const proveedoresData: Proveedor[] = [
-    {
-      id: 1,
-      idProveedor: "PROV001",
-      nombre: "Tech Solutions S.A.",
-      correoElectronico: "contacto@techsolutions.com",
-      telefono: "+1-555-0123",
-      direccion: "Av. Principal 123, Ciudad Tech"
-    },
-    {
-      id: 2,
-      idProveedor: "PROV002",
-      nombre: "Periféricos SA",
-      correoElectronico: "ventas@perifericos.com",
-      telefono: "+1-555-0456",
-      direccion: "Calle Comercio 456, Zona Industrial"
-    },
-    {
-      id: 3,
-      idProveedor: "PROV003",
-      nombre: "Displays Corp",
-      correoElectronico: "info@displayscorp.com",
-      telefono: "+1-555-0789",
-      direccion: "Boulevard Digital 789, Centro Empresarial"
-    },
-    {
-      id: 4,
-      idProveedor: "PROV004",
-      nombre: "Gaming Gear",
-      correoElectronico: "soporte@gaminggear.com",
-      telefono: "+1-555-0321",
-      direccion: "Plaza Gaming 321, Distrito Tecnológico"
-    },
-    {
-      id: 5,
-      idProveedor: "PROV005",
-      nombre: "Office Solutions",
-      correoElectronico: "admin@officesol.com",
-      telefono: "+1-555-0654",
-      direccion: "Sector Oficinas 654, Complejo Corporativo"
-    }
-  ];
+  // Datos de proveedores desde base de datos
+  useEffect(() => {
+    const fetchProveedores = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/api/proveedores");
+        const data = await res.json();
+        setProveedoresData(data);
+      } catch (error) {
+        console.error("Error fetching proveedores:", error);
+      }
+    };
+
+    fetchProveedores();
+  }, []);
 
   // Filtrar datos según búsqueda
-  const filteredData = proveedoresData.filter(item => {
+  const filteredData = proveedoresData.filter((item) => {
     const matchesSearch = 
-      item.idProveedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.correoElectronico.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.telefono.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.direccion.toLowerCase().includes(searchTerm.toLowerCase());
-
+      item.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.id.toString().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
@@ -132,11 +96,8 @@ export default function GestionProveedoresPage() {
               ) : (
                 filteredData.map((item) => (
                   <tr key={item.id}>
-                    <td style={tdStyle}>{item.idProveedor}</td>
-                    <td style={tdStyle}>{item.nombre}</td>
-                    <td style={tdStyle}>{item.correoElectronico}</td>
-                    <td style={tdStyle}>{item.telefono}</td>
-                    <td style={tdStyle}>{item.direccion}</td>
+                    <td style={tdStyle}>{item.id}</td>
+                    <td style={tdStyle}>{item.marca}</td>
                   </tr>
                 ))
               )}

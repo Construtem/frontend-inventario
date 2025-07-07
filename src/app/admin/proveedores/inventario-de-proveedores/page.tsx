@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FaSearch } from "react-icons/fa";
 
 interface InventarioProveedor {
@@ -14,83 +14,44 @@ interface InventarioProveedor {
   altoCm: number;
   precioCU: number;
   stock: number;
-  fechaIngreso: string;
+  fechaIngreso?: string;  //opcional ya que no esta el dato en el backend
 }
 
 export default function InventarioProveedoresPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [inventarioData, setInventarioData] = useState<InventarioProveedor[]>([]);
 
-  // Datos de ejemplo para inventario de proveedores
-  const inventarioData: InventarioProveedor[] = [
-    {
-      id: 1,
-      sku: "SKU001",
-      nombreProducto: "Laptop Dell Inspiron",
-      proveedor: "Tech Solutions",
-      pesoKg: 2.5,
-      largoCm: 35.6,
-      anchoCm: 23.4,
-      altoCm: 2.1,
-      precioCU: 850.00,
-      stock: 15,
-      fechaIngreso: "2025-01-15"
-    },
-    {
-      id: 2,
-      sku: "SKU002",
-      nombreProducto: "Mouse Logitech MX",
-      proveedor: "Periféricos SA",
-      pesoKg: 0.1,
-      largoCm: 12.5,
-      anchoCm: 8.5,
-      altoCm: 4.2,
-      precioCU: 75.00,
-      stock: 50,
-      fechaIngreso: "2025-02-10"
-    },
-    {
-      id: 3,
-      sku: "SKU003",
-      nombreProducto: "Monitor Samsung 27\"",
-      proveedor: "Displays Corp",
-      pesoKg: 5.8,
-      largoCm: 61.3,
-      anchoCm: 20.5,
-      altoCm: 45.7,
-      precioCU: 320.00,
-      stock: 8,
-      fechaIngreso: "2025-03-05"
-    },
-    {
-      id: 4,
-      sku: "SKU004",
-      nombreProducto: "Teclado Mecánico RGB",
-      proveedor: "Gaming Gear",
-      pesoKg: 1.2,
-      largoCm: 44.0,
-      anchoCm: 13.5,
-      altoCm: 3.8,
-      precioCU: 120.00,
-      stock: 25,
-      fechaIngreso: "2025-04-12"
-    },
-    {
-      id: 5,
-      sku: "SKU005",
-      nombreProducto: "Impresora HP LaserJet",
-      proveedor: "Office Solutions",
-      pesoKg: 18.5,
-      largoCm: 42.0,
-      anchoCm: 39.8,
-      altoCm: 31.2,
-      precioCU: 450.00,
-      stock: 5,
-      fechaIngreso: "2025-05-20"
+  // Datos de inventario desde base de datos
+  useEffect(() => {
+    const fetchInventario = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/api/stock-proveedor");
+        const data = await res.json();
+
+        const mappedData: InventarioProveedor[] = data.map((item: any) => ({
+          id: item.proveedor_id,
+          sku: item.producto.sku,
+          nombreProducto: item.producto.nombre,
+          proveedor: item.proveedor.marca,
+          pesoKg: item.producto.peso,
+          largoCm: item.producto.largo,
+          anchoCm: item.producto.ancho,
+          altoCm: item.producto.alto,
+          precioCU: item.producto.precio,
+          stock: item.stock,
+          fechaIngreso: "", //omitido ya que no esta en el backend
+      }));
+
+      setInventarioData(mappedData);
+    } catch (error) {
+      console.error("Error fetching inventario de proveedores:", error);
     }
-  ];
+  };
+  fetchInventario();
+  }, []);
 
   // Filtrar datos según búsqueda
-  const filteredData = inventarioData.filter(item => {
+  const filteredData = inventarioData.filter((item) => {
     const matchesSearch = 
       item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.nombreProducto.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -162,8 +123,10 @@ export default function InventarioProveedoresPage() {
                   </td>
                 </tr>
               ) : (
-                filteredData.map((item) => (
-                  <tr key={item.id}>
+                filteredData
+                .sort((a, b) => a.sku.localeCompare(b.sku))   // Este campo es para ordenar por SKU (opcional)
+                .map((item) => (
+                  <tr key={`${item.proveedor}-${item.sku}`}>
                     <td style={tdStyle}>{item.sku}</td>
                     <td style={tdStyle}>{item.nombreProducto}</td>
                     <td style={tdStyle}>{item.proveedor}</td>
@@ -173,7 +136,7 @@ export default function InventarioProveedoresPage() {
                     <td style={tdStyle}>{item.altoCm}</td>
                     <td style={tdStyle}>${item.precioCU.toFixed(2)}</td>
                     <td style={tdStyle}>{item.stock}</td>
-                    <td style={tdStyle}>{new Date(item.fechaIngreso).toLocaleDateString()}</td>
+                    <td style={tdStyle}>{item.fechaIngreso}</td>
                   </tr>
                 ))
               )}
