@@ -1,85 +1,57 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
+
+interface TipoSucursal {
+  id: number;
+  nombre: string;
+}
 
 interface Sucursal {
   id: number;
   nombre: string;
   direccion: string;
   telefono: string;
-  gerente: string;
-  estado: string;
-  fechaApertura: string;
-  empleados: number;
+  comuna: string;
+  ciudad: string;
+  tipo: TipoSucursal;
 }
 
 export default function SucursalesPage() {
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Datos de ejemplo para sucursales
-  const sucursalesData: Sucursal[] = [
-    { 
-      id: 1, 
-      nombre: 'Sucursal Centro', 
-      direccion: 'Av. Principal 123, Centro', 
-      telefono: '123-456-7890', 
-      gerente: 'Ana López Martínez',
-      estado: 'Activa',
-      fechaApertura: '2020-01-15',
-      empleados: 25
-    },
-    { 
-      id: 2, 
-      nombre: 'Sucursal Norte', 
-      direccion: 'Calle Norte 456, Zona Norte', 
-      telefono: '098-765-4321', 
-      gerente: 'Carlos Méndez García',
-      estado: 'Activa',
-      fechaApertura: '2021-03-20',
-      empleados: 18
-    },
-    { 
-      id: 3, 
-      nombre: 'Sucursal Sur', 
-      direccion: 'Blvd. Sur 789, Zona Sur', 
-      telefono: '555-123-4567', 
-      gerente: 'María Rodríguez Silva',
-      estado: 'Activa',
-      fechaApertura: '2021-08-10',
-      empleados: 22
-    },
-    { 
-      id: 4, 
-      nombre: 'Sucursal Este', 
-      direccion: 'Av. Este 321, Zona Este', 
-      telefono: '111-222-3333', 
-      gerente: 'Pedro Sánchez López',
-      estado: 'En Mantenimiento',
-      fechaApertura: '2022-02-28',
-      empleados: 15
-    },
-    { 
-      id: 5, 
-      nombre: 'Sucursal Oeste', 
-      direccion: 'Calle Oeste 654, Zona Oeste', 
-      telefono: '777-888-9999', 
-      gerente: 'Laura Jiménez Torres',
-      estado: 'Activa',
-      fechaApertura: '2022-11-05',
-      empleados: 20
-    },
-  ];
+  const [sucursales, setSucursales] = useState<Sucursal[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function fetchSucursales() {
+      try {
+        const response = await fetch("http://localhost:8080/api/sucursales");
+        if (!response.ok) {
+          throw new Error("Error al cargar las sucursales");
+        }
+        const data = await response.json();
+        setSucursales(data);
+      } catch (error) {
+        console.error("Error fetching sucursales:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchSucursales();
+  }, []);
 
   // Filtrar datos según búsqueda
-  const filteredData = sucursalesData.filter(sucursal => {
-    const matchesSearch = 
-      sucursal.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sucursal.direccion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sucursal.gerente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sucursal.telefono.includes(searchTerm);
-
-    return matchesSearch;
+  const filteredData = sucursales.filter((sucursal) => {
+    const lowerSearch  = searchTerm.toLowerCase();
+    return (
+      sucursal.nombre.toLowerCase().includes(lowerSearch) ||
+      sucursal.direccion.toLowerCase().includes(lowerSearch) ||
+      sucursal.telefono.includes(searchTerm) ||
+      sucursal.comuna.toLowerCase().includes(lowerSearch) ||
+      sucursal.ciudad.toLowerCase().includes(lowerSearch) ||
+      sucursal.tipo.nombre.toLowerCase().includes(lowerSearch)
+    );
   });
 
   const handleModificar = () => {
@@ -125,16 +97,23 @@ export default function SucursalesPage() {
           <table style={tableStyle}>
             <thead>
               <tr>
-                <th style={thStyle}>ID Sucursal</th>
+                <th style={thStyle}>ID</th>
                 <th style={thStyle}>Nombre</th>
                 <th style={thStyle}>Dirección</th>
                 <th style={thStyle}>Teléfono</th>
+                <th style={thStyle}>Comuna</th>
+                <th style={thStyle}>Ciudad</th>
+                <th style={thStyle}>Tipo</th>
               </tr>
             </thead>
             <tbody>
-              {filteredData.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan={4} style={tdStyle}>
+                  <td colSpan={7} style={tdStyle}>Cargando...</td>
+                </tr>
+              ) : filteredData.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={tdStyle}>
                     No hay sucursales disponibles
                   </td>
                 </tr>
@@ -145,6 +124,9 @@ export default function SucursalesPage() {
                     <td style={tdStyle}>{sucursal.nombre}</td>
                     <td style={tdStyle}>{sucursal.direccion}</td>
                     <td style={tdStyle}>{sucursal.telefono}</td>
+                    <td style={tdStyle}>{sucursal.comuna}</td>
+                    <td style={tdStyle}>{sucursal.ciudad}</td>
+                    <td style={tdStyle}>{sucursal.tipo.nombre || "Sin tipo"}</td>
                   </tr>
                 ))
               )}
