@@ -53,6 +53,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           src={logo}
           alt="ConstrUTEM Logo"
           style={styles.logoImg as React.CSSProperties}
+          onClick={() => router.push("/admin/inicio")}
         />
       </div>
 
@@ -129,6 +130,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     maxHeight: "58px",
     objectFit: "contain",
     width: "auto",
+    cursor: "pointer",
   },
   right: {
     display: "flex",
