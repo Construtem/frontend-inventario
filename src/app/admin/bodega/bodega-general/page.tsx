@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { Suspense } from "react";
 import { FaSearch } from "react-icons/fa";
 
 // =====================
@@ -19,14 +19,19 @@ interface StockBodega {
 // =====================
 export default function StockBodegaCentralPage() {
   return (
-    <Suspense fallback={<div>Cargando...</div>}>
-      <StockBodegaCentralContent />
-    </Suspense>
+    <div style={containerStyle}>
+      <Suspense fallback={<div style={loadingStyle}>Cargando...</div>}>
+        <StockBodegaCentralContent />
+      </Suspense>
+    </div>
   );
 }
 
-function StockBodegaCentralContent() {
-  const [searchTerm, setSearchTerm] = useState("");
+// =====================
+// 3. COMPONENTE DE CONTENIDO
+// =====================
+const StockBodegaCentralContent = () => {
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   // =====================
   // 3. DATOS DE EJEMPLO
@@ -107,60 +112,58 @@ function StockBodegaCentralContent() {
   // 5. UI
   // =====================
   return (
-    <div style={containerStyle}>
-      <div style={cardStyle}>
-        <h1 style={titleStyle}>Stock bodega central</h1>
+    <div style={cardStyle}>
+      <h1 style={titleStyle}>Stock bodega central</h1>
 
-        {/* Filtros */}
-        <div style={filterRowStyle}>
-          <input
-            type="text"
-            placeholder="Escriba su búsqueda..."
-            style={searchInputStyle}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      {/* Filtros */}
+      <div style={filterRowStyle}>
+        <input
+          type="text"
+          placeholder="Escriba su búsqueda..."
+          style={searchInputStyle}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
 
-          <button style={searchButtonStyle}>
-            <FaSearch />
-          </button>
+        <button style={searchButtonStyle}>
+          <FaSearch />
+        </button>
 
-          <button style={filtrosButtonStyle}>
-            Filtros
-          </button>
-        </div>
+        <button style={filtrosButtonStyle}>
+          Filtros
+        </button>
+      </div>
 
-        {/* Tabla */}
-        <div style={tableWrapperStyle}>
-          <table style={tableStyle}>
-            <thead>
+      {/* Tabla */}
+      <div style={tableWrapperStyle}>
+        <table style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>ID Stock</th>
+              <th style={thStyle}>ID Bodega</th>
+              <th style={thStyle}>ID Producto</th>
+              <th style={thStyle}>Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredData.length === 0 ? (
               <tr>
-                <th style={thStyle}>ID Stock</th>
-                <th style={thStyle}>ID Bodega</th>
-                <th style={thStyle}>ID Producto</th>
-                <th style={thStyle}>Cantidad</th>
+                <td colSpan={4} style={tdStyle}>
+                  No hay registros de stock disponibles
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredData.length === 0 ? (
-                <tr>
-                  <td colSpan={4} style={tdStyle}>
-                    No hay registros de stock disponibles
-                  </td>
+            ) : (
+              filteredData.map((item) => (
+                <tr key={item.id}>
+                  <td style={tdStyle}>{item.idStock}</td>
+                  <td style={tdStyle}>{item.idBodega}</td>
+                  <td style={tdStyle}>{item.idProducto}</td>
+                  <td style={tdStyle}>{item.cantidad}</td>
                 </tr>
-              ) : (
-                filteredData.map((item) => (
-                  <tr key={item.id}>
-                    <td style={tdStyle}>{item.idStock}</td>
-                    <td style={tdStyle}>{item.idBodega}</td>
-                    <td style={tdStyle}>{item.idProducto}</td>
-                    <td style={tdStyle}>{item.cantidad}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -176,6 +179,17 @@ const containerStyle: React.CSSProperties = {
   backgroundColor: "#f3f4f6",
   borderRadius: "20px",
   marginTop: "40px",
+};
+
+const loadingStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  height: '100%',
+  width: '100%',
+  backgroundColor: '#f3f4f6',
+  borderRadius: '20px',
+  marginTop: '40px',
 };
 
 const cardStyle: React.CSSProperties = {
