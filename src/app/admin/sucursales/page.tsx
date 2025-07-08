@@ -161,7 +161,7 @@ export default function SucursalesPage() {
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-        {/* Header con título y botón */}
+        {/* Header con título y botón *}
         <div style={headerStyle}>
           <h1 style={titleStyle}>Gestion de Sucursales</h1>
           <button style={modificarButtonStyle} onClick={handleModificar}>
@@ -169,9 +169,9 @@ export default function SucursalesPage() {
           </button>
         </div>
 
-        {/* Fila de búsqueda y filtros */}
+        {/* Fila de búsqueda y filtros /}
         <div style={filterRowStyle}>
-          {/* Input de búsqueda con ícono */}
+          {/* Input de búsqueda con ícono /}
           <div style={searchContainerStyle}>
             <input
               type="text"
@@ -303,7 +303,7 @@ export default function SucursalesPage() {
     </div>
   );
 }
-
+*/
 // Estilos
 const containerStyle: React.CSSProperties = {
   marginTop: "70px",
@@ -554,4 +554,3 @@ const paginationButtonsWrapperStyle: React.CSSProperties = {
   justifyContent: 'center'
 };
 
-*/
