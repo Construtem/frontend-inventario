@@ -117,7 +117,7 @@ export default function DespachoPage() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
         
-        const res = await fetch("http://localhost:8080/api/despachos", {
+        const res = await fetch("https://api-inventario.tssw.cl/api/despachos", {
           signal: controller.signal,
           headers: {
             'Content-Type': 'application/json',
@@ -197,7 +197,7 @@ export default function DespachoPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8080/api/despachos/${id}`, {
+      const res = await fetch(`https://api-inventario.tssw.cl/api/despachos/${id}`, {
         method: "DELETE",
         headers: {
           'Content-Type': 'application/json',
@@ -387,7 +387,7 @@ export default function DespachoPage() {
                     <td style={tdStyle}>{d.totalKg} kg</td>
                     <td style={tdStyle}>
                       <a
-                        href={`http://localhost:8080/api/despachos/${d.id}/pdf`}
+                        href={`https://api-inventario.tssw.cl/api/despachos/${d.id}/pdf`}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
