@@ -55,9 +55,9 @@ function useWindowSize() {
 }
 
 export default function InventarioProveedoresPage() {
-  const { width, isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
+  const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 

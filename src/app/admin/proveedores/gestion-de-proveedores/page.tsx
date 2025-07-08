@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 
 // Importaciones de imágenes
@@ -50,9 +50,9 @@ function useWindowSize() {
 }
 
 export default function GestionProveedoresPage() {
-  const { width, isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
+  const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 

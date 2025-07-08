@@ -59,8 +59,8 @@ interface UserData {
 
 export default function InventarioPage() {
   const router = useRouter();
-  const [user, setUser] = useState<UserData | null>(null);
-  const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
+  const [, setUser] = useState<UserData | null>(null);
+  const { isSmall, isMobile } = useWindowSize();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");

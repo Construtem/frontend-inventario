@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo} from "react";
 import Image from "next/image";
 
 // Importaciones de imágenes
@@ -52,9 +52,9 @@ function useWindowSize() {
 }
 
 export default function SucursalesPage() {
-  const { width, isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
+  const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
@@ -627,24 +627,6 @@ const searchIconStyle: React.CSSProperties = {
   height: '30px',
 };
 
-const modifyProductButtonStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  color: 'white',
-  padding: '0.2rem 0.4rem',
-  borderRadius: '4px',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: '1rem',
-  fontWeight: 'semibold',
-  fontFamily: 'Montserrat, sans-serif',
-  transition: 'background-color 0.2s ease',
-  whiteSpace: 'nowrap',
-  boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-  maxWidth: '120px',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  display: 'block',
-};
 
 const paginationContainerStyle: React.CSSProperties = {
   display: 'flex',
