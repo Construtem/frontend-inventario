@@ -16,6 +16,121 @@ import logo1Img from "@/styles/images/logo1.png";
 import buscarImg from "@/styles/images/buscar.png";
 
 // =====================
+// 1.1 CONFIGURACIÓN DEL BACKEND
+// =====================
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+
+// Headers comunes para las peticiones
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  // Agrega aquí tokens de autenticación si los usas
+  // 'Authorization': `Bearer ${token}`,
+});
+
+// =====================
+// 1.2 FUNCIONES DE API
+// =====================
+
+// Obtener todos los productos
+const fetchProducts = async (): Promise<ProductData[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/productos`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error al obtener productos:', error);
+    throw error;
+  }
+};
+
+// Obtener un producto por SKU
+/*const fetchProductBySKU = async (sku: string): Promise<ProductData> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error al obtener producto por SKU:', error);
+    throw error;
+  }
+};
+
+// Crear un producto
+const createProduct = async (product: Omit<ProductData, 'idProducto'>): Promise<ProductData> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/productos`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(product),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error al crear producto:', error);
+    throw error;
+  }
+};
+
+// Actualizar un producto por SKU
+const updateProduct = async (sku: string, product: Partial<ProductData>): Promise<ProductData> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(product),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error al actualizar producto:', error);
+    throw error;
+  }
+};*/
+
+// Eliminar un producto por SKU
+const deleteProduct = async (sku: string): Promise<void> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Error al eliminar producto:', error);
+    throw error;
+  }
+};
+
+// =====================
 // 2. INTERFACES
 // =====================
 interface ProductData {
@@ -29,14 +144,21 @@ interface ProductData {
   altoCm: number;
   costoBaseCu: number;
   precioVentaCu: number;
-  activo: boolean;
   stock: number;
+  categoria: string;
+  activo: boolean;
 }
 
 interface UploadCsvModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUploadConfirm: (data: ProductData[]) => void;
+}
+
+interface FiltersModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onApplyFilters: (filters: { categoria: string; estado: string }) => void;
 }
 
 // =====================
@@ -81,13 +203,12 @@ const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
 const swalTextoCssString = objToInlineCss(estiloSwalTextoObj);
 const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 
-
 // =====================
 // 4. FUNCIONES AUXILIARES
 // =====================
 
-// Función para parsear el campo "Activo"
-function parseActivo(value: string): boolean | null {
+// Función para parsear el campo "estado"
+function parseestado(value: string): boolean | null {
   const lowerCaseValue = value?.toLowerCase().trim();
   if (lowerCaseValue === 'activo') return true;
   if (lowerCaseValue === 'inactivo') return false;
@@ -196,7 +317,6 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
           }
 
           const requiredHeaders = [
-            "ID Producto",
             "SKU",
             "Nombre",
             "Descripción",
@@ -206,7 +326,7 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             "Alto (CM)",
             "Costo base (C/U)",
             "Precio venta (C/U)",
-            "Activo",
+            "Estado",
             "Stock"
           ];
 
@@ -258,8 +378,8 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             const costoBaseCu = parseFloat(row["Costo base (C/U)"]);
             const precioVentaCu = parseFloat(row["Precio venta (C/U)"]);
 
-            const activoParsed = parseActivo(row["Activo"]);
-            const activo = activoParsed === null ? null : activoParsed;
+            const estadoParsed = parseestado(row["Activo"]);
+            const estado = estadoParsed === null ? null : estadoParsed;
 
             const stock = parseInt(row["Stock"], 10);
 
@@ -275,7 +395,7 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             if (isNaN(costoBaseCu) || costoBaseCu < 0) rowErrors.push('Costo base (C/U) debe ser un número positivo');
             if (isNaN(precioVentaCu) || precioVentaCu < 0) rowErrors.push('Precio venta (C/U) debe ser un número positivo');
 
-            if (activo === null) rowErrors.push('Activo debe ser "Activo" o "Inactivo"');
+            if (estado === null) rowErrors.push('Estado debe ser "Activo" o "Inactivo"');
 
             if (isNaN(stock) || stock < 0) rowErrors.push('Stock debe ser un número entero positivo');
 
@@ -294,8 +414,9 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
                 altoCm,
                 costoBaseCu,
                 precioVentaCu,
-                activo: activo as boolean,
-                stock
+                stock,
+                categoria: '', // No disponible en CSV, se puede dejar vacío o manejar en backend
+                activo: estado as boolean,
               });
             }
           });
@@ -765,42 +886,396 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
   );
 };
 
+const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFilters }) => {
+  const [categoria, setCategoria] = useState("");
+  const [estado, setEstado] = useState("");
+  const [visible, setVisible] = useState(isOpen);
+
+  useEffect(() => {
+    if (isOpen) {
+      setVisible(true);
+    } else {
+      const timeout = setTimeout(() => setVisible(false), 250);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen]);
+
+  const handleApplyFilters = () => {
+    onApplyFilters({ categoria, estado });
+    onClose();
+
+    // Mostrar mensaje de éxito con los filtros aplicados
+    Swal.fire({
+      html: `
+        <div style="${swalTituloCssString}">
+          ¡Filtros Aplicados!
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          ${categoria ? `Categoría: <b>${categoria}</b><br/>` : ''}
+          ${estado ? `Estado: <b>${estado}</b>` : ''}
+          ${!categoria && !estado ? 'Se han eliminado todos los filtros' : ''}
+        </div>
+      `,
+      icon: 'success',
+      confirmButtonText: 'ACEPTAR',
+      confirmButtonColor: '#ff7300',
+    });
+  };
+
+  const handleClearFilters = () => {
+    setCategoria("");
+    setEstado("");
+    onApplyFilters({ categoria: "", estado: "" });
+    onClose();
+
+    // Mostrar mensaje de éxito al limpiar filtros
+    Swal.fire({
+      html: `
+        <div style="${swalTituloCssString}">
+          Filtros Eliminados
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          Se han eliminado todos los filtros aplicados.
+        </div>
+      `,
+      icon: 'info',
+      confirmButtonText: 'ACEPTAR',
+      confirmButtonColor: '#ff7300',
+    });
+  };
+
+  if (!visible) return null;
+
+  return (
+    <div style={modalOverlayStyle}>
+      <div style={modalContentStyle}>
+        <div style={modalHeaderStyle}>
+          <h2 style={modalTitleStyle}>Filtrar Productos</h2>
+          <button style={closeButtonStyle} onClick={onClose}>&times;</button>
+        </div>
+
+        <div style={modalBodyStyle}>
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Categoría:</label>
+            <select 
+              value={categoria} 
+              onChange={(e) => setCategoria(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Todas las categorías</option>
+              <option value="electronica">Electrónica</option>
+              <option value="ropa">Ropa</option>
+              <option value="hogar">Hogar</option>
+              <option value="alimentos">Alimentos</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Estado:</label>
+            <select 
+              value={estado} 
+              onChange={(e) => setEstado(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Todos los estados</option>
+              <option value="activo">Activo</option>
+              <option value="inactivo">Inactivo</option>
+            </select>
+          </div>
+
+          <div style={{
+            ...buttonContainerStyle,
+            display: 'flex',
+            gap: '1rem',
+            justifyContent: 'space-between'
+          }}>
+            <button 
+              onClick={handleClearFilters}
+              style={{
+                ...editButtonStyle,
+                backgroundColor: '#5c5c5c',
+                width: "48%",
+                justifyContent: "center"
+              }}
+            >
+              LIMPIAR FILTROS
+            </button>
+            <button 
+              onClick={handleApplyFilters}
+              style={{
+                ...editButtonStyle,
+                width: "48%",
+                justifyContent: "center"
+              }}
+            >
+              APLICAR FILTROS
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Modificar el hook useWindowSize para incluir más breakpoints
+function useWindowSize() {
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+  });
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      handleResize();
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
+
+  return {
+    ...windowSize,
+    isExtraLarge: windowSize.width > 1440,
+    isLarge: windowSize.width <= 1440 && windowSize.width > 1200,
+    isMedium: windowSize.width <= 1200 && windowSize.width > 992,
+    isSmall: windowSize.width <= 992 && windowSize.width > 768,
+    isMobile: windowSize.width <= 768
+  };
+}
+
 export default function Sucursal1Page() {
+  const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
+
+  // Calcular estilos dinámicos basados en el ancho
+  const getSearchWidth = () => {
+    if (isExtraLarge) return "700px";
+    if (isLarge) return "600px";
+    if (isMedium) return "500px";
+    if (isSmall) return "400px";
+    return "100%";
+  };
+
+  const getToolbarLayout = () => {
+    if (isMobile) {
+      return {
+        flexDirection: "column" as const,
+        alignItems: "stretch" as const
+      };
+    }
+    if (isSmall) {
+      return {
+        flexDirection: "row" as const,
+        flexWrap: "wrap" as const,
+        alignItems: "flex-start" as const
+      };
+    }
+    return {
+      flexDirection: "row" as const,
+      alignItems: "center" as const
+    };
+  };
+
+  const getControlsLayout = () => {
+    if (isMobile) {
+      return {
+        flexDirection: "column" as const,
+        width: "100%"
+      };
+    }
+    if (isSmall) {
+      return {
+        flexDirection: "row" as const,
+        flexWrap: "wrap" as const,
+        width: "100%"
+      };
+    }
+    return {
+      flexDirection: "row" as const,
+      width: "auto"
+    };
+  };
+
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [loadedProducts, setLoadedProducts] = useState<ProductData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeFilters, setActiveFilters] = useState<{ categoria: string; estado: string }>({
+    categoria: "",
+    estado: ""
+  });
 
   // --- ESTADOS DE PAGINACIÓN ---
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15; // 10 resultados por página
+  const itemsPerPage = 15; // 15 resultados por página
 
-  // Calcular los datos a mostrar en la página current
+  // Agregar CSS para la animación de carga
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  // Cargar productos desde el backend al inicializar
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const products = await fetchProducts();
+        setLoadedProducts(products);
+      } catch (err) {
+        console.error('Error al cargar productos:', err);
+        setError('Error al cargar productos desde el servidor');
+        Swal.fire({
+          icon: 'error',
+          html: `
+            <div style="${swalTituloCssString}">
+              ¡Error al cargar productos!
+            </div>
+            <div style="${swalTextoConMargenCssString}">
+              No se pudieron cargar los productos desde el servidor.
+            </div>
+          `,
+          confirmButtonText: 'ACEPTAR',
+          confirmButtonColor: '#ff7300',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
+
+  // Función para el botón FILTROS
+  const handleFiltersProduct = () => {
+    setIsFiltersModalOpen(true);
+  };
+
+  // Función para aplicar filtros
+  const handleApplyFilters = (filters: { categoria: string; estado: string }) => {
+    setActiveFilters(filters);
+    setCurrentPage(1); // Reset a la primera página cuando se aplican filtros
+
+    // Calcular resultados con los nuevos filtros
+    const newFilteredProducts = loadedProducts.filter(product => {
+      const matchesCategoria = !filters.categoria || product.categoria === filters.categoria;
+      const matchesEstado = !filters.estado || 
+        (filters.estado === "activo" ? product.activo : !product.activo);
+      return matchesCategoria && matchesEstado;
+    });
+
+    // Mostrar mensaje según los resultados
+    if (newFilteredProducts.length === 0 && (filters.categoria || filters.estado)) {
+      Swal.fire({
+        html: `
+          <div style="${swalTituloCssString}">
+            No se encontraron resultados
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No hay productos que coincidan con los filtros seleccionados:<br/><br/>
+            ${filters.categoria ? `Categoría: <b>${filters.categoria}</b><br/>` : ''}
+            ${filters.estado ? `Estado: <b>${filters.estado}</b>` : ''}
+          </div>
+        `,
+        icon: 'warning',
+        confirmButtonText: 'ACEPTAR',
+        confirmButtonColor: '#ff7300',
+      });
+    } else if (filters.categoria || filters.estado) {
+      Swal.fire({
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡Filtros Aplicados!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Se encontraron <b>${newFilteredProducts.length}</b> productos con los siguientes filtros:<br/><br/>
+            ${filters.categoria ? `Categoría: <b>${filters.categoria}</b><br/>` : ''}
+            ${filters.estado ? `Estado: <b>${filters.estado}</b>` : ''}
+          </div>
+        `,
+        icon: 'success',
+        confirmButtonText: 'ACEPTAR',
+        confirmButtonColor: '#ff7300',
+      });
+    }
+  };
+
+  // Filtrar productos según los filtros activos
+  const filteredProducts = useMemo(() => {
+    return loadedProducts.filter(product => {
+      const matchesCategoria = !activeFilters.categoria || product.categoria === activeFilters.categoria;
+      const matchesEstado = !activeFilters.estado || 
+        (activeFilters.estado === "activo" ? product.activo : !product.activo);
+      return matchesCategoria && matchesEstado;
+    });
+  }, [loadedProducts, activeFilters]);
+
+  // Calcular los datos a mostrar en la página actual usando los productos filtrados
   const currentTableData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return loadedProducts.slice(startIndex, endIndex);
-  }, [loadedProducts, currentPage, itemsPerPage]);
+    return filteredProducts.slice(startIndex, endIndex);
+  }, [filteredProducts, currentPage]);
 
-  // Calcular el número total de páginas
+  // Calcular el número total de páginas con los productos filtrados
   const totalPages = useMemo(() => {
-    return Math.ceil(loadedProducts.length / itemsPerPage);
-  }, [loadedProducts, itemsPerPage]);
+    return Math.ceil(filteredProducts.length / itemsPerPage);
+  }, [filteredProducts]);
 
-  const handleConfirmBulkUpload = (data: ProductData[]) => {
-    console.log("Datos para cargar masivamente (simulado):", data);
-    setLoadedProducts(data);
-    setCurrentPage(1); // Reset a la primera página cuando se cargan nuevos datos
-    // La alerta de éxito ahora se maneja dentro de handleUploadConfirm en el modal
+  const handleConfirmBulkUpload = async (data: ProductData[]) => {
+    try {
+      console.log("Datos para cargar masivamente:", data);
+      // Aquí podrías implementar la carga masiva real al backend
+      // const newProducts = await bulkCreateProducts(data);
+      
+      // Por ahora, agregamos los productos localmente
+      setLoadedProducts(prev => [...prev, ...data]);
+      setCurrentPage(1); // Reset a la primera página cuando se cargan nuevos datos
+    } catch (error) {
+      console.error('Error en carga masiva:', error);
+      Swal.fire({
+        icon: 'error',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error en carga masiva
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No se pudieron cargar los productos al servidor.
+          </div>
+        `,
+        confirmButtonText: 'ACEPTAR',
+        confirmButtonColor: '#ff7300',
+      });
+    }
   };
 
   // Función para el botón MODIFICAR
-  const handleModifyProduct = () => {
+  const handleModifyProduct = (sku: string) => {
     Swal.fire({
       html: `
         <div style="${swalTituloCssString}">
           ¡<b>Funcionalidad en Desarrollo</b>!
         </div>
         <div style="${swalTextoConMargenCssString}">
-          La opción de modificar productos estará disponible próximamente.
+          Modificar producto con SKU: <b>${sku}</b><br>
+          Esta funcionalidad estará disponible próximamente.
         </div>
       `,
       imageUrl: logo1Img.src,
@@ -812,26 +1287,63 @@ export default function Sucursal1Page() {
     });
   };
 
-    // Función para el botón FILTROS
-  const handleFiltersProduct = () => {
-    Swal.fire({
+  // Función para el botón ELIMINAR
+  const handleDeleteProduct = async (sku: string) => {
+    const result = await Swal.fire({
       html: `
         <div style="${swalTituloCssString}">
-          ¡<b>Funcionalidad en Desarrollo</b>!
+          ¿Eliminar producto?
         </div>
         <div style="${swalTextoConMargenCssString}">
-          La opción de filtrado de productos estará disponible próximamente.
+          ¿Estás seguro de que deseas eliminar el producto con SKU: <b>${sku}</b>?<br>
+          Esta acción no se puede deshacer.
         </div>
       `,
-      imageUrl: logo1Img.src,
-      imageWidth: 400,
-      imageHeight: 200,
-      imageAlt: "Funcionalidad en Desarrollo",
-      confirmButtonText: 'ACEPTAR',
-      confirmButtonColor: '#ff7300',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'ELIMINAR',
+      confirmButtonColor: '#d33',
+      cancelButtonText: 'Cancelar',
+      cancelButtonColor: '#5c5c5c',
     });
-  };
 
+    if (result.isConfirmed) {
+      try {
+        await deleteProduct(sku);
+        // Actualizar la lista local removiendo el producto eliminado
+        setLoadedProducts(prev => prev.filter(p => p.sku !== sku));
+        
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          html: `
+            <div style="${swalTextoCssString}">
+              Producto eliminado exitosamente
+            </div>
+          `,
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
+      } catch (error) {
+        console.error('Error al eliminar producto:', error);
+        Swal.fire({
+          icon: 'error',
+          html: `
+            <div style="${swalTituloCssString}">
+              Error al eliminar
+            </div>
+            <div style="${swalTextoConMargenCssString}">
+              No se pudo eliminar el producto del servidor.
+            </div>
+          `,
+          confirmButtonText: 'ACEPTAR',
+          confirmButtonColor: '#ff7300',
+        });
+      }
+    }
+  };
 
   // Funciones para manejar el cambio de página
   const handleNextPage = () => {
@@ -903,8 +1415,8 @@ export default function Sucursal1Page() {
   };
 
   // --- ANIMACIÓN PARA PAGINACIÓN FLOTANTE ---
-  const [showFloatingPagination, setShowFloatingPagination] = useState(false);
-  const [isAtBottom, setIsAtBottom] = useState(false);
+  const [, setShowFloatingPagination] = useState(false);
+  const [, setIsAtBottom] = useState(false);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
@@ -939,33 +1451,128 @@ export default function Sucursal1Page() {
     window.__LOADED_PRODUCTS__ = loadedProducts;
   }, [loadedProducts]);
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    flexGrow: 1,
+    padding: "0.3rem 2.5rem 0.3rem 1rem",
+    borderTop: "1px solid #ccc",
+    borderRight: "1px solid #ccc",
+    borderBottom: "1px solid #ccc",
+    borderLeft: "1px solid #ccc",
+    outline: "none",
+    height: '40px',
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    boxSizing: 'border-box',
+    fontSize: '0.875rem',
+    fontFamily: 'Roboto, sans-serif',
+    fontWeight: 400,
+  };
+
+  const lupaButtonStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    height: '40px',
+    width: '2.2rem',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+  };
+
+  // Función para verificar si hay filtros activos
+  const hasActiveFilters = useMemo(() => {
+    return activeFilters.categoria !== "" || activeFilters.estado !== "";
+  }, [activeFilters]);
+
+  // Función para limpiar filtros desde la barra de herramientas
+  const handleClearFiltersFromToolbar = () => {
+    setActiveFilters({ categoria: "", estado: "" });
+    setCurrentPage(1);
+
+    // Mostrar mensaje de éxito al limpiar filtros
+    Swal.fire({
+      html: `
+        <div style="${swalTituloCssString}">
+          Filtros Eliminados
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          Se han eliminado todos los filtros aplicados.
+        </div>
+      `,
+      icon: 'info',
+      confirmButtonText: 'ACEPTAR',
+      confirmButtonColor: '#ff7300',
+    });
+  };
+
   return (
-    <>
-      <div style={containerStyle}>
-        <div style={cardStyle}>
-          <h1 style={titleStyle}>Inventario de Productos (Sucursal 2)</h1>
-          <div style={toolbarStyle}>
-            <div style={leftControlsGroupStyle}>
-              <div style={searchContainerStyle}>
-                <input
-                  type="text"
-                  placeholder="Buscar por ID Producto, SKU, Nombre..."
-                  style={inputStyle}
-                />
-                <button style={lupaButtonStyle}>
+    <div style={{
+      ...containerStyle
+    }}>
+      <div style={{
+        ...cardStyle
+      }}>
+        <h1 style={{
+          ...titleStyle,
+          fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
+          marginBottom: "1.5rem"
+        }}>Inventario de Productos (Sucursal 1)</h1>
+        
+        <div style={{
+          ...toolbarStyle,
+          ...getToolbarLayout(),
+          flexWrap: "wrap",
+          gap: "1rem",
+          marginBottom: "1rem",
+          width: "100%",
+          boxSizing: "border-box"
+        }}>
+          <div style={{
+            ...leftControlsGroupStyle,
+            ...getControlsLayout(),
+            gap: isMobile ? "1rem" : "0.75rem",
+            boxSizing: "border-box"
+          }}>
+            <div style={{
+              ...searchContainerStyle,
+              width: getSearchWidth(),
+              minWidth: isMobile ? "unset" : "300px",
+              marginBottom: isMobile ? "1rem" : "0",
+              boxSizing: "border-box"
+            }}>
+              <input
+                type="text"
+                placeholder="Buscar por SKU, Nombre..."
+                style={{
+                  ...inputStyle,
+                  fontSize: isMobile ? "0.875rem" : "1rem"
+                }}
+              />
+              <button style={lupaButtonStyle}>
                 <Image
                   src={buscarImg.src}
                   alt="Buscar"
-                  width={40}
-                  height={40}
+                  width={isMobile ? 30 : 40}
+                  height={isMobile ? 30 : 40}
                   style={searchIconStyle}
                 />
-                </button>
-              </div>
-              <button
-                style={filterButtonStyle}
-                onClick={handleFiltersProduct}
-              >
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button style={{
+                ...filterButtonStyle,
+                width: isMobile ? "100%" : "auto",
+                fontSize: isMobile ? "0.875rem" : "1rem",
+                padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                backgroundColor: hasActiveFilters ? '#ff7300' : '#5c5c5c',
+                position: 'relative'
+              }} onClick={handleFiltersProduct}>
                 <Image
                   src={filtrosImg.src}
                   alt="Filtros"
@@ -974,200 +1581,253 @@ export default function Sucursal1Page() {
                   style={filterIconStyle}
                 />
                 Filtros
+                {hasActiveFilters && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '-5px',
+                    right: '-5px',
+                    width: '10px',
+                    height: '10px',
+                    backgroundColor: '#10b981',
+                    borderRadius: '50%',
+                    border: '2px solid white'
+                  }} />
+                )}
+              </button>
+
+              {hasActiveFilters && (
+                <button 
+                  onClick={handleClearFiltersFromToolbar}
+                  style={{
+                    ...filterButtonStyle,
+                    backgroundColor: '#ef4444',
+                    width: isMobile ? "100%" : "auto",
+                    fontSize: isMobile ? "0.875rem" : "1rem",
+                    padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                  }}
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div style={{
+            ...rightControlsWrapperStyle,
+            width: isMobile ? "100%" : "auto",
+            marginTop: isMobile ? "1rem" : isSmall ? "1rem" : "0"
+          }}>
+            <button style={{
+              ...editButtonStyle,
+              width: isMobile ? "100%" : "auto",
+              fontSize: isMobile ? "0.875rem" : "1rem",
+              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
+            }} onClick={() => setIsUploadModalOpen(true)}>
+              <Image
+                src={agregarImg.src}
+                alt="Agregar productos"
+                width={20}
+                height={20}
+                style={filterIconStyle}
+              />
+              AGREGAR PRODUCTOS
+            </button>
+          </div>
+        </div>
+
+        <div style={{
+          ...tableContainerStyle,
+          maxWidth: "100%",
+          marginTop: "1rem"
+        }}>
+          <table style={{
+            ...tableStyle,
+            fontSize: isMobile ? "0.875rem" : "1rem",
+            maxWidth: "100%"
+          }}>
+            <colgroup>
+              <col style={{ width: isMobile ? "8%" : "6%" }} />
+              <col style={{ width: isMobile ? "10%" : "8%" }} />
+              <col style={{ width: isMobile ? "12%" : "10%" }} />
+              <col style={{ width: isMobile ? "15%" : "13%" }} />
+              <col style={{ width: isMobile ? "8%" : "7%" }} />
+              <col style={{ width: isMobile ? "8%" : "7%" }} />
+              <col style={{ width: isMobile ? "8%" : "7%" }} />
+              <col style={{ width: isMobile ? "8%" : "7%" }} />
+              <col style={{ width: isMobile ? "11%" : "9%" }} />
+              <col style={{ width: isMobile ? "12%" : "10%" }} />
+              <col style={{ width: isMobile ? "8%" : "6%" }} />
+              <col style={{ width: isMobile ? "8%" : "6%" }} />
+              <col style={{ width: isMobile ? "16%" : "14%" }} />
+            </colgroup>
+            <thead style={{ 
+              position: "sticky", 
+              top: 0, 
+              zIndex: 2, 
+              background: "#5C5C5C",
+              fontSize: isMobile ? "0.75rem" : "0.875rem"
+            }}>
+              <tr>
+                {[
+                  "SKU",
+                  "Nombre",
+                  "Descripción",
+                  "Categoría",
+                  "Peso (KG)",
+                  "Largo (CM)",
+                  "Ancho (CM)",
+                  "Alto (CM)",
+                  "Costo base (C/U)",
+                  "Precio venta (C/U)",
+                  "Estado",
+                  "Stock",
+                  "Acción",
+                ].map((col) => (
+                  <th key={col} style={thStyle}>
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={13} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px" }}>
+                      <div style={{ 
+                        width: "20px", 
+                        height: "20px", 
+                        border: "2px solid #f3f3f3", 
+                        borderTop: "2px solid #ff7300", 
+                        borderRadius: "50%", 
+                        animation: "spin 1s linear infinite" 
+                      }}></div>
+                      Cargando productos...
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={13} style={{ ...tdStyle, textAlign: "center", padding: "2rem", color: "#d33" }}>
+                    {error}
+                  </td>
+                </tr>
+              ) : currentTableData.length > 0 ? (
+                currentTableData.map((product) => (
+                  <tr key={`${product.idProducto}-${product.sku}`}>
+                    <td style={tdStyle}>{product.idProducto}</td>
+                    <td style={tdStyle}>{product.sku}</td>
+                    <td style={tdStyle}>{product.nombre}</td>
+                    <td style={tdStyle}>{product.descripcion}</td>
+                    <td style={tdStyle}>{product.pesoKg}</td>
+                    <td style={tdStyle}>{product.largoCm}</td>
+                    <td style={tdStyle}>{product.anchoCm}</td>
+                    <td style={tdStyle}>{product.altoCm}</td>
+                    <td style={tdStyle}>${product.costoBaseCu}</td>
+                    <td style={tdStyle}>${product.precioVentaCu}</td>
+                    <td style={tdStyle}>
+                      <span style={{
+                        backgroundColor: product.activo ? '#10b981' : '#ef4444',
+                        color: 'white',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '12px',
+                        fontSize: '0.75rem',
+                        fontWeight: '500'
+                      }}>
+                        {product.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td style={tdStyle}>{product.stock}</td>
+                    <td style={tdStyle}>
+                      <div style={{ display: "flex", justifyContent: "center", gap: "5px" }}>
+                        <button
+                          style={{
+                            ...modifyProductButtonStyle,
+                            fontSize: '0.75rem',
+                            padding: '0.25rem 0.5rem',
+                            maxWidth: '60px'
+                          }}
+                          onClick={() => handleModifyProduct(product.sku)}
+                        >
+                          EDITAR
+                        </button>
+                        <button
+                          style={{
+                            ...modifyProductButtonStyle,
+                            backgroundColor: '#ef4444',
+                            fontSize: '0.75rem',
+                            padding: '0.25rem 0.5rem',
+                            maxWidth: '60px'
+                          }}
+                          onClick={() => handleDeleteProduct(product.sku)}
+                        >
+                          ELIMINAR
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={13} style={{ ...tdStyle, textAlign: 'center', color: '#888', padding: "2rem" }}>
+                    No hay productos disponibles. Usa &quot;AGREGAR PRODUCTOS&quot; para cargar productos desde CSV o contacta al administrador.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {loadedProducts.length > 0 && (
+          <div style={{
+            ...paginationContainerStyle,
+            flexDirection: isMobile ? "column" : "row",
+            padding: "1rem",
+            marginTop: "1rem",
+            width: "100%",
+            boxSizing: "border-box"
+          }}>
+            <div style={{
+              ...paginationControlsStyle,
+              flexWrap: "wrap",
+              gap: isMobile ? "0.5rem" : "0.75rem"
+            }}>
+              <button onClick={handlePrevPage} disabled={currentPage === 1} style={paginationButtonBaseStyle}>
+                Anterior
+              </button>
+              <div style={paginationButtonsWrapperStyle}>
+                {renderPaginationButtons()}
+              </div>
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
+              >
+                Siguiente
               </button>
             </div>
-            <div style={rightControlsWrapperStyle}>
-              <div style={columnButtonsStyle}>
-                <button
-                  style={editButtonStyle}
-                  onClick={() => setIsUploadModalOpen(true)}
-                >
-                  <Image
-                    src={agregarImg.src}
-                    alt="Agregar productos"
-                    width={20}
-                    height={20}
-                    style={filterIconStyle}
-                  />
-                  AGREGAR PRODUCTOS
-                </button>
-              </div>
+            <div style={{ 
+              fontSize: isMobile ? "0.75rem" : "0.9rem", 
+              color: "#666",
+              marginTop: isMobile ? "0.5rem" : 0
+            }}>
             </div>
-          </div>
-          <div style={{ overflowX: "auto", borderRadius: "10px", overflow: "hidden" }}>
-            <div style={{ width: "100%", maxHeight: "none", overflowY: "visible" }}>
-              <table
-                style={{
-                  ...tableStyle,
-                  tableLayout: "fixed",
-                  width: "100%",
-                  minWidth: "0",
-                  maxWidth: "100%",
-                }}
-              >
-                <colgroup>
-                  <col style={{ width: "6%" }} />
-                  <col style={{ width: "8%" }} />
-                  <col style={{ width: "10%" }} />
-                  <col style={{ width: "13%" }} />
-                  <col style={{ width: "7%" }} />
-                  <col style={{ width: "7%" }} />
-                  <col style={{ width: "7%" }} />
-                  <col style={{ width: "7%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "10%" }} />
-                  <col style={{ width: "6%" }} />
-                  <col style={{ width: "6%" }} />
-                  <col style={{ width: "14%" }} />
-                </colgroup>
-                <thead style={{ position: "sticky", top: 0, zIndex: 2, background: "#5C5C5C" }}>
-                  <tr>
-                    {[
-                      "ID Producto",
-                      "SKU",
-                      "Nombre",
-                      "Descripción",
-                      "Peso (KG)",
-                      "Largo (CM)",
-                      "Ancho (CM)",
-                      "Alto (CM)",
-                      "Costo base (C/U)",
-                      "Precio venta (C/U)",
-                      "Activo",
-                      "Stock",
-                      "Acción",
-                    ].map((col) => (
-                      <th key={col} style={thStyle}>
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentTableData.length > 0 ? (
-                    currentTableData.map((product) => (
-                      <tr key={product.idProducto}>
-                        <td style={tdStyle}>{product.idProducto}</td>
-                        <td style={tdStyle}>{product.sku}</td>
-                        <td style={tdStyle}>{product.nombre}</td>
-                        <td style={tdStyle}>{product.descripcion}</td>
-                        <td style={tdStyle}>{product.pesoKg}</td>
-                        <td style={tdStyle}>{product.largoCm}</td>
-                        <td style={tdStyle}>{product.anchoCm}</td>
-                        <td style={tdStyle}>{product.altoCm}</td>
-                        <td style={tdStyle}>{product.costoBaseCu}</td>
-                        <td style={tdStyle}>{product.precioVentaCu}</td>
-                        <td style={tdStyle}>{product.activo ? 'Activo' : 'Inactivo'}</td>
-                        <td style={tdStyle}>{product.stock}</td>
-                        <td style={tdStyle}>
-                          <div style={{ display: "flex", justifyContent: "center" }}>
-                            <button
-                              style={modifyProductButtonStyle}
-                              onClick={handleModifyProduct} 
-                            >
-                              MODIFICAR
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={13} style={{ ...tdStyle, textAlign: 'center', color: '#888' }}>
-                        No hay productos cargados. Por favor, carga un CSV.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* --- CONTROLES DE PAGINACIÓN --- */}
-        </div>
-        {/* Floating pagination: aparece al hacer scroll arriba, desaparece al bajar */}
-        {loadedProducts.length > 0 && (
-          <div
-            style={{
-              ...paginationContainerStyle,
-              position: "fixed",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 100,
-              margin: "0 auto",
-              maxWidth: '1000px',
-              opacity: showFloatingPagination && !isAtBottom ? 1 : 0,
-              pointerEvents: showFloatingPagination && !isAtBottom ? "auto" : "none",
-              transform: showFloatingPagination && !isAtBottom ? "translateY(0)" : "translateY(60px)",
-              filter: showFloatingPagination && !isAtBottom ? "blur(0)" : "blur(8px)",
-              transition:
-                "opacity 0.45s cubic-bezier(.4,0,.2,1), " +
-                "transform 0.55s cubic-bezier(.4,0,.2,1), " +
-                "filter 0.45s cubic-bezier(.4,0,.2,1)",
-              willChange: "opacity, transform, filter",
-            }}
-          >
-            <button onClick={handlePrevPage} disabled={currentPage === 1} style={paginationButtonBaseStyle}>
-              Anterior
-            </button>
-            <div style={paginationButtonsWrapperStyle}>
-              {renderPaginationButtons()}
-            </div>
-            <button
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
-            >
-              Siguiente
-            </button>
           </div>
         )}
-
-        {loadedProducts.length > 0 && (
-          <div
-            style={{
-              ...paginationContainerStyle,
-              margin: "40px auto 0 auto",
-              maxWidth: '1000px',
-              position: isAtBottom ? "relative" : "absolute",
-              left: "unset",
-              right: "unset",
-              bottom: "unset",
-              zIndex: 10,
-              opacity: isAtBottom ? 1 : 0,
-              pointerEvents: isAtBottom ? "auto" : "none",
-              transform: isAtBottom ? "translateY(0)" : "translateY(60px)",
-              filter: isAtBottom ? "blur(0)" : "blur(8px)",
-              transition:
-                "opacity 0.45s cubic-bezier(.4,0,.2,1), " +
-                "transform 0.55s cubic-bezier(.4,0,.2,1), " +
-                "filter 0.45s cubic-bezier(.4,0,.2,1)",
-              willChange: "opacity, transform, filter",
-            }}
-          >
-            <button onClick={handlePrevPage} disabled={currentPage === 1} style={paginationButtonBaseStyle}>
-              Anterior
-            </button>
-            <div style={paginationButtonsWrapperStyle}>
-              {renderPaginationButtons()}
-            </div>
-            <button
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
-            >
-              Siguiente
-            </button>
-          </div>
-        )}
-        <UploadCsvModal
-          isOpen={isUploadModalOpen}
-          onClose={() => setIsUploadModalOpen(false)}
-          onUploadConfirm={handleConfirmBulkUpload}
-        />
       </div>
-    </>
+
+      <UploadCsvModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onUploadConfirm={handleConfirmBulkUpload}
+      />
+
+      <FiltersModal
+        isOpen={isFiltersModalOpen}
+        onClose={() => setIsFiltersModalOpen(false)}
+        onApplyFilters={handleApplyFilters}
+      />
+    </div>
   );
 }
 
@@ -1177,8 +1837,12 @@ export default function Sucursal1Page() {
 
 // Estilos para UploadCsvModal
 const modalOverlayStyle: React.CSSProperties = {
-  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -1187,29 +1851,39 @@ const modalOverlayStyle: React.CSSProperties = {
 
 const modalContentStyle: React.CSSProperties = {
   backgroundColor: 'white',
-  padding: '30px',
-  borderRadius: '10px',
-  boxShadow: '0 5px 15px rgba(0, 0, 0, 0.3)',
+  borderRadius: '12px',
   width: '90%',
-  maxWidth: '800px',
-  maxHeight: '90%',
-  overflowY: 'auto' as const,
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: '20px',
+  maxWidth: '500px',
+  maxHeight: '90vh',
+  overflow: 'auto',
+  position: 'relative',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
 };
 
 const modalHeaderStyle: React.CSSProperties = {
-  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-  borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '15px',
+  padding: '1rem 1.5rem',
+  borderBottom: '1px solid #e5e7eb',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
 };
 
 const modalTitleStyle: React.CSSProperties = {
-  fontSize: '2rem',
-  fontFamily: 'Montserrat, sans-serif',
+  margin: 0,
+  fontSize: '1.25rem',
   fontWeight: 'bold',
-  color: '#333',
-  margin: 0
+  color: '#111827',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const closeButtonStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontSize: '1.5rem',
+  cursor: 'pointer',
+  padding: '0.5rem',
+  color: '#6b7280',
+  transition: 'color 0.2s ease',
 };
 
 const arrastraStyle: React.CSSProperties = {
@@ -1219,11 +1893,6 @@ const arrastraStyle: React.CSSProperties = {
   marginBottom: '10px',
   fontFamily: 'Roboto, sans-serif',
   fontWeight: 400,
-};
-
-const closeButtonStyle: React.CSSProperties = {
-  backgroundColor: 'transparent', border: 'none', fontSize: '1.8em',
-  cursor: 'pointer', color: '#aaa',
 };
 
 const fileInputContainerStyle: React.CSSProperties = {
@@ -1303,95 +1972,182 @@ const fileNameDisplayStyle: React.CSSProperties = {
 };
 
 // Estilos para Sucursal1Page (y compartidos)
-const leftControlsGroupStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "flex-end",
-  gap: "1rem",
-  flexWrap: "wrap",
-};
-
 const containerStyle: React.CSSProperties = {
   marginTop: "70px",
-  padding: "2rem",
+  marginRight: "0",
+  marginBottom: "1.5rem",
+  marginLeft: "0",
   boxSizing: "border-box",
   minHeight: "calc(100vh - 70px)",
-  backgroundColor: "#f3f4f6",
+  backgroundColor: "#f0f2f5",
   borderRadius: "20px",
+  transition: "all 0.3s ease",
+  width: "100%",
+  overflowX: "hidden",
+  padding: "1.5rem",
+  display: "flex",
+  flexDirection: "column"
 };
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: "white", borderRadius: "12px", padding: "2rem",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+  backgroundColor: "white",
+  borderRadius: "12px",
+  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)",
+  transition: "all 0.3s ease",
+  width: "100%",
+  maxWidth: "100%",
+  display: "flex",
+  flexDirection: "column",
+  padding: "1.5rem",
+  border: "1px solid rgba(0, 0, 0, 0.05)",
+  boxSizing: "border-box",
+  margin: "0 auto"
 };
 
 const titleStyle: React.CSSProperties = {
-  color: "rgb(34, 34, 34)", fontSize: "2rem", fontWeight: "bold",
-  marginBottom: "2rem", fontFamily: "Montserrat, sans-serif",
+  color: "rgb(34, 34, 34)",
+  fontSize: "2rem",
+  fontWeight: "bold",
+  marginBottom: "1.5rem",
+  fontFamily: "Montserrat, sans-serif"
 };
 
 const toolbarStyle: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
   marginBottom: "1rem",
-  flexWrap: "wrap",
   gap: "1rem",
-  alignItems: "flex-end",
+  transition: "all 0.3s ease"
+};
+
+const leftControlsGroupStyle: React.CSSProperties = {
+  display: "flex",
+  gap: "1rem",
+  transition: "all 0.3s ease"
 };
 
 const searchContainerStyle: React.CSSProperties = {
   position: 'relative',
-  width: '700px',
-  maxWidth: '100%',
-  minWidth: '350px',
-  flex: '0 1 auto',
   height: '40px',
   borderRadius: '8px',
   boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  flexGrow: 1,
-  padding: "0.3rem 2.5rem 0.3rem 1rem",
-  borderTop: "1px solid #ccc",
-  borderRight: "1px solid #ccc",
-  borderBottom: "1px solid #ccc",
-  borderLeft: "1px solid #ccc",
-  outline: "none",
-  height: '40px',
-  backgroundColor: 'white',
-  borderRadius: '8px',
-  boxSizing: 'border-box',
-  fontSize: '0.875rem',
-  fontFamily: 'Roboto, sans-serif',
-  fontWeight:400,
-};
-
-const lupaButtonStyle: React.CSSProperties = {
-  position: 'absolute',
-  top: 0,
-  right: 0,
-  height: '40px',
-  width: '2.2rem',
-  background: 'transparent',
-  border: 'none',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 0,
+  transition: "all 0.3s ease"
 };
 
 const rightControlsWrapperStyle: React.CSSProperties = {
   display: "flex",
-  alignItems: "flex-end",
   gap: "1rem",
+  transition: "all 0.3s ease"
 };
 
-const columnButtonsStyle: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.5rem",
+const tableContainerStyle: React.CSSProperties = {
+  width: "100%",
+  overflowX: "auto",
+  borderRadius: "10px",
+  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+  transition: "all 0.3s ease",
+  marginTop: "1rem",
+  border: "1px solid rgba(0, 0, 0, 0.05)",
+  backgroundColor: "#ffffff",
+  boxSizing: "border-box"
+};
+
+const tableStyle: React.CSSProperties = {
+  width: "100%",
+  borderCollapse: "collapse",
+  border: "none",
+  backgroundColor: "#fff",
+  minWidth: "1000px",
+  transition: "all 0.3s ease"
+};
+
+const thStyle: React.CSSProperties = {
+  padding: "0.55rem 0.9rem",
+  backgroundColor: "#5C5C5C",
+  color: "white",
+  fontWeight: 600,
+  textAlign: "center",
+  fontSize: "1rem",
+  fontFamily: "Montserrat, sans-serif",
+  minHeight: "38px",
+  height: "38px",
+  lineHeight: "1.15",
+  verticalAlign: "middle",
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: "0.55rem 0.9rem",
+  borderBottom: "1px solid #e5e7eb",
+  fontSize: "0.9375rem",
+  fontFamily:"roboto, sans-serif",
+  fontWeight:400,
+  minHeight: "38px",
+  height: "38px",
+  lineHeight: "1.15",
+  verticalAlign: "middle",
+  textAlign: "center",
+};
+
+const paginationContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: '10px',
+  padding: '1rem',
+  backgroundColor: "#f8fafc",
+  borderRadius: '12px',
+  marginTop: '1rem',
+  border: "1px solid rgba(0, 0, 0, 0.05)",
+  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+};
+
+const paginationControlsStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '10px',
+  width: '100%',
+};
+
+const paginationButtonBaseStyle: React.CSSProperties = {
+  padding: '8px 12px',
+  borderTop: '1px solid #ddd',
+  borderRight: '1px solid #ddd',
+  borderBottom: '1px solid #ddd',
+  borderLeft: '1px solid #ddd',
+  borderRadius: '5px',
+  cursor: 'pointer',
+  transition: 'background-color 0.2s ease, border-color 0.2s ease',
+  minWidth: '35px',
+  textAlign: 'center',
+  color: '#333',
+};
+
+const paginationDotsStyle: React.CSSProperties = {
+  padding: '8px 0',
+  color: '#555',
+  justifyContent: 'center',
+};
+
+const paginationButtonActiveStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: 'white',
+  borderTop: '1px solid #ff7300',
+  borderRight: '1px solid #ff7300',
+  borderBottom: '1px solid #ff7300',
+  borderLeft: '1px solid #ff7300',
+};
+
+const paginationNextButtonStyle: React.CSSProperties = {
+  marginRight: '16px',
+  justifyContent:'center',
+};
+
+const paginationButtonsWrapperStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '5px',
+  flexWrap: 'wrap',
+  justifyContent: 'center'
 };
 
 const editButtonStyle: React.CSSProperties = {
@@ -1450,99 +2206,41 @@ const modifyProductButtonStyle: React.CSSProperties = {
   display: 'block',
 };
 
-const tableStyle: React.CSSProperties = {
-  width: "100%",
-  borderCollapse: "collapse",
-  minWidth: "900px",
-  border: "none",
-  backgroundColor: "#fff",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
-  borderRadius: "12px",
-  overflow: "hidden",
+const modalBodyStyle: React.CSSProperties = {
+  padding: "1.5rem",
+  display: "flex",
+  flexDirection: "column",
+  gap: "1rem",
 };
 
-const thStyle: React.CSSProperties = {
-  padding: "0.55rem 0.9rem",
-  backgroundColor: "#5C5C5C",
-  color: "white",
-  fontWeight: 600,
-  textAlign: "center",
-  fontSize: "1rem",
+const selectGroupStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "0.5rem",
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: "0.9rem",
+  fontWeight: "500",
+  color: "#333",
   fontFamily: "Montserrat, sans-serif",
-  minHeight: "38px",
-  height: "38px",
-  lineHeight: "1.15",
-  verticalAlign: "middle",
 };
 
-const tdStyle: React.CSSProperties = {
-  padding: "0.55rem 0.9rem",
-  borderBottom: "1px solid #e5e7eb",
-  fontSize: "0.9375rem",
-  fontFamily:"roboto, sans-serif",
-  fontWeight:400,
-  minHeight: "38px",
-  height: "38px",
-  lineHeight: "1.15",
-  verticalAlign: "middle",
-  textAlign: "center",
+const selectStyle: React.CSSProperties = {
+  padding: "0.5rem",
+  borderRadius: "4px",
+  border: "1px solid #ddd",
+  fontSize: "0.9rem",
+  color: "#333",
+  backgroundColor: "#fff",
+  cursor: "pointer",
+  outline: "none",
+  fontFamily: "Roboto, sans-serif",
+  transition: "border-color 0.2s ease",
 };
 
-const paginationContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'row',
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: '10px',
-  flexWrap: 'wrap',
-  borderRadius: '12px',
-  paddingTop: '16px',
-  paddingBottom: '16px',
-  paddingLeft: '0',
-  paddingRight: '0',
-  backgroundColor: "#f7f7f7",
-  position: "relative",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.2)",
-  width: "100%",
-};
-
-const paginationButtonBaseStyle: React.CSSProperties = {
-  padding: '8px 12px',
-  borderTop: '1px solid #ddd',
-  borderRight: '1px solid #ddd',
-  borderBottom: '1px solid #ddd',
-  borderLeft: '1px solid #ddd',
-  borderRadius: '5px',
-  cursor: 'pointer',
-  transition: 'background-color 0.2s ease, border-color 0.2s ease',
-  minWidth: '35px',
-  textAlign: 'center',
-  color: '#333',
-};
-
-const paginationDotsStyle: React.CSSProperties = {
-  padding: '8px 0',
-  color: '#555',
-  justifyContent: 'center',
-};
-
-const paginationButtonActiveStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  color: 'white',
-  borderTop: '1px solid #ff7300',
-  borderRight: '1px solid #ff7300',
-  borderBottom: '1px solid #ff7300',
-  borderLeft: '1px solid #ff7300',
-};
-
-const paginationNextButtonStyle: React.CSSProperties = {
-  marginRight: '16px',
-  justifyContent:'center',
-};
-
-const paginationButtonsWrapperStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: '5px',
-  flexWrap: 'wrap',
-  justifyContent: 'center',
+const buttonContainerStyle: React.CSSProperties = {
+  marginTop: "1rem",
+  display: "flex",
+  justifyContent: "flex-end",
 };

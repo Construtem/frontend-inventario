@@ -32,22 +32,14 @@ const keyframes = `
 
 const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
   const pathname = usePathname();
-  const [sucursalSeleccionada, setSucursalSeleccionada] = useState<string>('Sucursal 1');
-  const [inventarioAbierto, setInventarioAbierto] = useState<boolean>(false);
   const [bodegaAbierta, setBodegaAbierta] = useState<boolean>(false);
   const [proveedoresAbierto, setProveedorAbierto] = useState<boolean>(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   // Función para cerrar todos los menús
   const closeAllMenus = () => {
-    setInventarioAbierto(false);
     setBodegaAbierta(false);
     setProveedorAbierto(false);
-  };
-
-  const toggleInventario = () => {
-    closeAllMenus();
-    setInventarioAbierto(!inventarioAbierto);
   };
 
   const toggleBodegas = () => {
@@ -77,9 +69,8 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
     
     // Luego abrimos solo el menú correspondiente a la ruta actual
     const path = pathname.toLowerCase();
-    if (path.includes('/inventario/')) {
-      setInventarioAbierto(true);
-    } else if (path.includes('/bodega/')) {
+
+    if (path.includes('/bodega/')) {
       setBodegaAbierta(true);
     } else if (path.includes('/proveedores/')) {
       setProveedorAbierto(true);
@@ -96,7 +87,6 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
     color: (hoveredItem === id || (!hasSubmenu && basePath && isMenuActive(basePath))) 
       ? '#000000' 
       : 'inherit',
-    borderRight: (!hasSubmenu && basePath && isMenuActive(basePath)) ? '4px solid #000000' : 'none',
   });
 
   const getSubMenuItemStyle = (path: string): CSSProperties => ({
@@ -109,7 +99,7 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
     color: (hoveredItem === path || isRouteActive(path))
       ? '#000000'
       : '#bdbdbd',
-    borderRight: isRouteActive(path) ? '4px solid #000000' : 'none',
+    
   });
 
   React.useEffect(() => {
@@ -139,52 +129,16 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
         <span>Inicio</span>
       </Link>
 
-      <div
-        style={getMenuItemStyle('inventario', '/admin/inventario', true)}
-        onClick={toggleInventario}
+      <Link
+        href="/admin/inventario"
+        style={getMenuItemStyle('inventario', '/admin/inventario')}
         onMouseEnter={() => handleMouseEnter('inventario')}
         onMouseLeave={handleMouseLeave}
       >
         <FaBoxes />
-        <span style={{ flex: 1 }}>Inventario</span>
-        {inventarioAbierto ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
-      </div>
+        <span>Inventario</span>
+      </Link>
 
-      <div style={{
-        ...styles.subMenu,
-        ...(inventarioAbierto ? styles.subMenuOpen : {}),
-        padding: 0,
-        margin: 0,
-      }}>
-        {['Sucursal 1', 'Sucursal 2', 'Sucursal 3'].map((sucursal, i) => {
-          const slug = `sucursal-${i + 1}`;
-          const path = `/admin/inventario/${slug}`;
-          return (
-            <Link
-              key={sucursal}
-              href={path}
-              style={{
-                ...getSubMenuItemStyle(path),
-                backgroundColor: hoveredItem === slug 
-                  ? '#FF7A00' 
-                  : isRouteActive(path)
-                    ? '#FF7A00' 
-                    : 'transparent',
-                color: (hoveredItem === slug || isRouteActive(path))
-                  ? '#000000'
-                  : '#bdbdbd',
-                margin: 0,
-                width: '100%',
-              }}
-              onClick={() => setSucursalSeleccionada(sucursal)}
-              onMouseEnter={() => handleMouseEnter(slug)}
-              onMouseLeave={handleMouseLeave}
-            >
-              {sucursal}
-            </Link>
-          );
-        })}
-      </div>
 
       <div
         style={getMenuItemStyle('bodega', '/admin/bodega', true)}

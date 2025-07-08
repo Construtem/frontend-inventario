@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense } from "react";
 import { FaSearch } from "react-icons/fa";
 
 // =====================
@@ -18,7 +18,18 @@ interface Bodega {
 // 2. COMPONENTE PRINCIPAL
 // =====================
 export default function ListaBodegasPage() {
-  const [searchTerm, setSearchTerm] = useState("");
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <ListaBodegasContent />
+    </Suspense>
+  );
+}
+
+// =====================
+// 3. COMPONENTE DE CONTENIDO
+// =====================
+const ListaBodegasContent = () => {
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   // =====================
   // 3. DATOS DE EJEMPLO

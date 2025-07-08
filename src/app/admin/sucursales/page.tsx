@@ -1,275 +1,681 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { FaSearch } from "react-icons/fa";
+import React, { useState, useEffect, useMemo} from "react";
+import Image from "next/image";
 
-interface TipoSucursal {
-  id: number;
-  nombre: string;
-}
+// Importaciones de imágenes
+import filtrosImg from "@/styles/images/filtros.png";
+import agregarImg from "@/styles/images/agregar.png";
+import buscarImg from "@/styles/images/buscar.png";
 
-interface Sucursal {
-  id: number;
-  nombre: string;
-  direccion: string;
-  telefono: string;
-  comuna: string;
-  ciudad: string;
-  tipo: TipoSucursal;
+
+// Hook para manejar el tamaño de la ventana
+function useWindowSize() {
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+  });
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      handleResize();
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
+
+  return {
+    ...windowSize,
+    isExtraLarge: windowSize.width > 1440,
+    isLarge: windowSize.width <= 1440 && windowSize.width > 1200,
+    isMedium: windowSize.width <= 1200 && windowSize.width > 992,
+    isSmall: windowSize.width <= 992 && windowSize.width > 768,
+    isMobile: windowSize.width <= 768
+  };
 }
 
 export default function SucursalesPage() {
+  const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const [searchTerm, setSearchTerm] = useState("");
-  const [sucursales, setSucursales] = useState<Sucursal[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    async function fetchSucursales() {
-      try {
-        const response = await fetch("http://localhost:8080/api/sucursales");
-        if (!response.ok) {
-          throw new Error("Error al cargar las sucursales");
-        }
-        const data = await response.json();
-        setSucursales(data);
-      } catch (error) {
-        console.error("Error fetching sucursales:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchSucursales();
-  }, []);
+  const [loading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+
+  // Datos de ejemplo para sucursales
+  const sucursalesData = useMemo(() => [
+    { 
+      id: 1, 
+      nombre: 'Sucursal Centro', 
+      direccion: 'Av. Principal 123, Centro', 
+      telefono: '123-456-7890', 
+      gerente: 'Ana López Martínez',
+      estado: 'Activa',
+      fechaApertura: '2020-01-15',
+      empleados: 25
+    },
+    { 
+      id: 2, 
+      nombre: 'Sucursal Norte', 
+      direccion: 'Calle Norte 456, Zona Norte', 
+      telefono: '098-765-4321', 
+      gerente: 'Carlos Méndez García',
+      estado: 'Activa',
+      fechaApertura: '2021-03-20',
+      empleados: 18
+    },
+    { 
+      id: 3, 
+      nombre: 'Sucursal Sur', 
+      direccion: 'Blvd. Sur 789, Zona Sur', 
+      telefono: '555-123-4567', 
+      gerente: 'María Rodríguez Silva',
+      estado: 'Activa',
+      fechaApertura: '2021-08-10',
+      empleados: 22
+    },
+    { 
+      id: 4, 
+      nombre: 'Sucursal Este', 
+      direccion: 'Av. Este 321, Zona Este', 
+      telefono: '111-222-3333', 
+      gerente: 'Pedro Sánchez López',
+      estado: 'En Mantenimiento',
+      fechaApertura: '2022-02-28',
+      empleados: 15
+    },
+    { 
+      id: 5, 
+      nombre: 'Sucursal Oeste', 
+      direccion: 'Calle Oeste 654, Zona Oeste', 
+      telefono: '777-888-9999', 
+      gerente: 'Laura Jiménez Torres',
+      estado: 'Activa',
+      fechaApertura: '2022-11-05',
+      empleados: 20
+    },
+  ], []);
 
   // Filtrar datos según búsqueda
-  const filteredData = sucursales.filter((sucursal) => {
-    const lowerSearch  = searchTerm.toLowerCase();
-    return (
-      sucursal.nombre.toLowerCase().includes(lowerSearch) ||
-      sucursal.direccion.toLowerCase().includes(lowerSearch) ||
-      sucursal.telefono.includes(searchTerm) ||
-      sucursal.comuna.toLowerCase().includes(lowerSearch) ||
-      sucursal.ciudad.toLowerCase().includes(lowerSearch) ||
-      sucursal.tipo.nombre.toLowerCase().includes(lowerSearch)
-    );
-  });
+  const filteredData = useMemo(() => {
+    return sucursalesData.filter(sucursal => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        sucursal.nombre.toLowerCase().includes(searchLower) ||
+        sucursal.direccion.toLowerCase().includes(searchLower) ||
+        sucursal.gerente.toLowerCase().includes(searchLower) ||
+        sucursal.telefono.includes(searchLower)
+      );
+    });
+  }, [sucursalesData, searchTerm]);
 
-  const handleModificar = () => {
-    alert('Abriendo formulario para modificar sucursales...');
+  // Calcular datos paginados
+  const currentTableData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, currentPage, itemsPerPage]);
+
+  // Calcular total de páginas
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+  // Funciones de paginación
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  const handlePageClick = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Renderizar botones de paginación
+  const renderPaginationButtons = () => {
+    const buttons = [];
+    const maxButtonsToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
+
+    if (endPage - startPage + 1 < maxButtonsToShow) {
+      startPage = Math.max(1, endPage - maxButtonsToShow + 1);
+    }
+
+    if (startPage > 1) {
+      buttons.push(
+        <button key="1" onClick={() => handlePageClick(1)} style={paginationButtonBaseStyle}>
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        buttons.push(<span key="dots-start" style={paginationDotsStyle}>...</span>);
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => handlePageClick(i)}
+          style={{
+            ...paginationButtonBaseStyle,
+            ...(currentPage === i ? paginationButtonActiveStyle : {}),
+          }}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        buttons.push(<span key="dots-end" style={paginationDotsStyle}>...</span>);
+      }
+      buttons.push(
+        <button key={totalPages} onClick={() => handlePageClick(totalPages)} style={paginationButtonBaseStyle}>
+          {totalPages}
+        </button>
+      );
+    }
+
+    return buttons;
+  };
+
+  // Calcular ancho de búsqueda basado en el tamaño de la ventana
+  const getSearchWidth = () => {
+    if (isExtraLarge) return "700px";
+    if (isLarge) return "600px";
+    if (isMedium) return "500px";
+    if (isSmall) return "400px";
+    return "100%";
+  };
+
+  const getToolbarLayout = () => {
+    if (isMobile) {
+      return {
+        flexDirection: "column" as const,
+        alignItems: "stretch" as const
+      };
+    }
+    if (isSmall) {
+      return {
+        flexDirection: "row" as const,
+        flexWrap: "wrap" as const,
+        alignItems: "flex-start" as const
+      };
+    }
+    return {
+      flexDirection: "row" as const,
+      alignItems: "center" as const
+    };
+  };
+
+  const getControlsLayout = () => {
+    if (isMobile) {
+      return {
+        flexDirection: "column" as const,
+        width: "100%"
+      };
+    }
+    if (isSmall) {
+      return {
+        flexDirection: "row" as const,
+        flexWrap: "wrap" as const,
+        width: "100%"
+      };
+    }
+    return {
+      flexDirection: "row" as const,
+      width: "auto"
+    };
+  };
+
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-        {/* Header con título y botón */}
-        <div style={headerStyle}>
-          <h1 style={titleStyle}>Sucursales</h1>
-          <button style={modificarButtonStyle} onClick={handleModificar}>
-            Modificar sucursales
-          </button>
-        </div>
-
-        {/* Fila de búsqueda y filtros */}
-        <div style={filterRowStyle}>
-          {/* Input de búsqueda con ícono */}
-          <div style={searchContainerStyle}>
-            <input
-              type="text"
-              placeholder="Escriba su búsqueda..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={searchInputStyle}
-            />
+        <h1 style={{
+          ...titleStyle,
+          fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
+          marginBottom: "1.5rem"
+        }}>Gestión de Sucursales</h1>
+        
+        <div style={{
+          ...toolbarStyle,
+          ...getToolbarLayout(),
+          flexWrap: "wrap",
+          gap: "1rem",
+          marginBottom: "1rem",
+          width: "100%",
+          boxSizing: "border-box"
+        }}>
+          <div style={{
+            ...leftControlsGroupStyle,
+            ...getControlsLayout(),
+            gap: isMobile ? "1rem" : "0.75rem",
+            boxSizing: "border-box"
+          }}>
+            <div style={{
+              ...searchContainerStyle,
+              width: getSearchWidth(),
+              minWidth: isMobile ? "unset" : "300px",
+              marginBottom: isMobile ? "1rem" : "0",
+              boxSizing: "border-box"
+            }}>
+              <input
+                type="text"
+                placeholder="Buscar por Nombre, Dirección..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={inputStyle}
+              />
+              <button style={lupaButtonStyle}>
+                <Image
+                  src={buscarImg.src}
+                  alt="Buscar"
+                  width={isMobile ? 30 : 40}
+                  height={isMobile ? 30 : 40}
+                  style={searchIconStyle}
+                />
+              </button>
+            </div>
+            
+            <button style={{
+              ...filterButtonStyle,
+              width: isMobile ? "100%" : "auto",
+              fontSize: isMobile ? "0.875rem" : "1rem",
+              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
+            }}>
+              <Image
+                src={filtrosImg.src}
+                alt="Filtros"
+                width={20}
+                height={20}
+                style={filterIconStyle}
+              />
+              Filtros
+            </button>
           </div>
 
-          {/* Botón de búsqueda con ícono */}
-          <button style={searchButtonStyle}>
-            <FaSearch />
-          </button>
-
-          {/* Botón de filtros */}
-          <button style={filtrosButtonStyle}>
-            Filtros
-          </button>
+          <div style={{
+            ...rightControlsWrapperStyle,
+            width: isMobile ? "100%" : "auto",
+            marginTop: isMobile ? "1rem" : isSmall ? "1rem" : "0"
+          }}>
+            <button style={{
+              ...editButtonStyle,
+              width: isMobile ? "100%" : "auto",
+              fontSize: isMobile ? "0.875rem" : "1rem",
+              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
+            }}>
+              <Image
+                src={agregarImg.src}
+                alt="Agregar sucursal"
+                width={20}
+                height={20}
+                style={filterIconStyle}
+              />
+              AGREGAR SUCURSAL
+            </button>
+          </div>
         </div>
 
-        {/* Tabla */}
-        <div style={tableWrapperStyle}>
-          <table style={tableStyle}>
-            <thead>
+        <div style={{
+          ...tableContainerStyle,
+          maxWidth: "100%",
+          marginTop: "1rem"
+        }}>
+          <table style={{
+            ...tableStyle,
+            fontSize: isMobile ? "0.875rem" : "1rem",
+            maxWidth: "100%"
+          }}>
+            <thead style={{ 
+              position: "sticky", 
+              top: 0, 
+              zIndex: 2, 
+              background: "#5C5C5C",
+              fontSize: isMobile ? "0.75rem" : "0.875rem"
+            }}>
               <tr>
-                <th style={thStyle}>ID</th>
+                <th style={thStyle}>ID Sucursal</th>
                 <th style={thStyle}>Nombre</th>
                 <th style={thStyle}>Dirección</th>
                 <th style={thStyle}>Teléfono</th>
-                <th style={thStyle}>Comuna</th>
-                <th style={thStyle}>Ciudad</th>
-                <th style={thStyle}>Tipo</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} style={tdStyle}>Cargando...</td>
+                  <td colSpan={4} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px" }}>
+                      <div style={{ 
+                        width: "20px", 
+                        height: "20px", 
+                        border: "2px solid #f3f3f3", 
+                        borderTop: "2px solid #ff7300", 
+                        borderRadius: "50%", 
+                        animation: "spin 1s linear infinite" 
+                      }}></div>
+                      Cargando sucursales...
+                    </div>
+                  </td>
                 </tr>
-              ) : filteredData.length === 0 ? (
+              ) : currentTableData.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={tdStyle}>
+                  <td colSpan={4} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
                     No hay sucursales disponibles
                   </td>
                 </tr>
               ) : (
-                filteredData.map((sucursal) => (
+                currentTableData.map((sucursal) => (
                   <tr key={sucursal.id}>
                     <td style={tdStyle}>#{sucursal.id}</td>
                     <td style={tdStyle}>{sucursal.nombre}</td>
                     <td style={tdStyle}>{sucursal.direccion}</td>
                     <td style={tdStyle}>{sucursal.telefono}</td>
-                    <td style={tdStyle}>{sucursal.comuna}</td>
-                    <td style={tdStyle}>{sucursal.ciudad}</td>
-                    <td style={tdStyle}>{sucursal.tipo.nombre || "Sin tipo"}</td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+
+        {filteredData.length > 0 && (
+          <div style={{
+            ...paginationContainerStyle,
+            flexDirection: isMobile ? "column" : "row",
+            padding: "1rem",
+            marginTop: "1rem",
+            width: "100%",
+            boxSizing: "border-box"
+          }}>
+            <div style={{
+              ...paginationControlsStyle,
+              flexWrap: "wrap",
+              gap: isMobile ? "0.5rem" : "0.75rem"
+            }}>
+              <button onClick={handlePrevPage} disabled={currentPage === 1} style={paginationButtonBaseStyle}>
+                Anterior
+              </button>
+              <div style={paginationButtonsWrapperStyle}>
+                {renderPaginationButtons()}
+              </div>
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
+              >
+                Siguiente
+              </button>
+            </div>
+            <div style={{ 
+              fontSize: isMobile ? "0.75rem" : "0.9rem", 
+              color: "#666",
+              marginTop: isMobile ? "0.5rem" : 0
+            }}>
+              Mostrando {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredData.length)} de {filteredData.length}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// --- Estilos en variables ---
+// Estilos
 const containerStyle: React.CSSProperties = {
-  padding: "2rem",
+  marginTop: "70px",
+  marginRight: "0",
+  marginBottom: "1.5rem",
+  marginLeft: "0",
+  boxSizing: "border-box",
   minHeight: "calc(100vh - 70px)",
-  backgroundColor: "#f3f4f6",
+  backgroundColor: "#f0f2f5",
   borderRadius: "20px",
-  marginTop: "40px",
+  transition: "all 0.3s ease",
+  width: "100%",
+  overflowX: "hidden",
+  padding: "1.5rem",
+  display: "flex",
+  flexDirection: "column"
 };
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: "#ffffff",
+  backgroundColor: "white",
   borderRadius: "12px",
-  padding: "2rem",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-};
-
-const headerStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: '2rem',
+  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)",
+  transition: "all 0.3s ease",
+  width: "100%",
+  maxWidth: "100%",
+  display: "flex",
+  flexDirection: "column",
+  padding: "1.5rem",
+  border: "1px solid rgba(0, 0, 0, 0.05)",
+  boxSizing: "border-box",
+  margin: "0 auto"
 };
 
 const titleStyle: React.CSSProperties = {
-  color: "#222222",
+  color: "rgb(34, 34, 34)",
   fontSize: "2rem",
   fontWeight: "bold",
-  fontFamily: "Montserrat, sans-serif",
-  marginBottom: "0",
+  marginBottom: "1.5rem",
+  fontFamily: "Montserrat, sans-serif"
 };
 
-const modificarButtonStyle: React.CSSProperties = {
-  backgroundColor: "#ff7300",
-  color: "#fff",
-  padding: "0.75rem 1.5rem",
-  borderRadius: "10px",
-  border: "none",
-  fontWeight: "bold",
-  cursor: "pointer",
-  fontSize: "1rem",
-  fontFamily: "Montserrat, sans-serif",
-};
-
-const filterRowStyle: React.CSSProperties = {
+const toolbarStyle: React.CSSProperties = {
   display: "flex",
-  gap: "0.75rem",
-  flexWrap: "wrap",
-  alignItems: "center",
-  marginBottom: "2rem",
+  justifyContent: "space-between",
+  marginBottom: "1rem",
+  gap: "1rem",
+  transition: "all 0.3s ease"
+};
+
+const leftControlsGroupStyle: React.CSSProperties = {
+  display: "flex",
+  gap: "1rem",
+  transition: "all 0.3s ease"
 };
 
 const searchContainerStyle: React.CSSProperties = {
-  flex: "0 0 45%",
-  position: "relative",
-  maxWidth: "45%",
+  position: 'relative',
+  height: '40px',
+  borderRadius: '8px',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  transition: "all 0.3s ease"
 };
 
-const searchInputStyle: React.CSSProperties = {
+const rightControlsWrapperStyle: React.CSSProperties = {
+  display: "flex",
+  gap: "1rem",
+  transition: "all 0.3s ease"
+};
+
+const tableContainerStyle: React.CSSProperties = {
   width: "100%",
-  padding: "0.6rem 1rem",
-  borderRadius: "10px",
-  border: "1px solid #ccc",
-  fontSize: "1rem",
-  fontFamily: "Roboto, sans-serif",
-  height: "42px",
-  boxSizing: "border-box",
-};
-
-const searchButtonStyle: React.CSSProperties = {
-  backgroundColor: "#ff7300",
-  color: "#fff",
-  padding: "0.6rem 1rem",
-  borderRadius: "10px",
-  border: "none",
-  fontWeight: "bold",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontFamily: "Montserrat, sans-serif",
-  flexShrink: 0,
-  minWidth: "50px",
-  height: "42px",
-};
-
-const filtrosButtonStyle: React.CSSProperties = {
-  backgroundColor: "#e5e7eb",
-  color: "#374151",
-  padding: "0.6rem 1.2rem",
-  borderRadius: "10px",
-  border: "none",
-  fontWeight: "bold",
-  cursor: "pointer",
-  fontSize: "1rem",
-  fontFamily: "Montserrat, sans-serif",
-  flexShrink: 0,
-  height: "42px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
-const tableWrapperStyle: React.CSSProperties = {
   overflowX: "auto",
-  borderRadius: "12px",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
-  backgroundColor: "#fff",
+  borderRadius: "10px",
+  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+  transition: "all 0.3s ease",
+  marginTop: "1rem",
+  border: "1px solid rgba(0, 0, 0, 0.05)",
+  backgroundColor: "#ffffff",
+  boxSizing: "border-box"
 };
 
 const tableStyle: React.CSSProperties = {
   width: "100%",
   borderCollapse: "collapse",
-  minWidth: "800px",
+  border: "none",
+  backgroundColor: "#fff",
+  minWidth: "1000px",
+  transition: "all 0.3s ease"
 };
 
 const thStyle: React.CSSProperties = {
-  padding: "0.75rem 1rem",
+  padding: "0.55rem 0.9rem",
   backgroundColor: "#5C5C5C",
   color: "white",
   fontWeight: 600,
-  textAlign: "left",
+  textAlign: "center",
   fontSize: "1rem",
   fontFamily: "Montserrat, sans-serif",
-  height: "auto",
+  minHeight: "38px",
+  height: "38px",
+  lineHeight: "1.15",
+  verticalAlign: "middle",
 };
 
 const tdStyle: React.CSSProperties = {
-  padding: "0.75rem 1rem",
+  padding: "0.55rem 0.9rem",
   borderBottom: "1px solid #e5e7eb",
   fontSize: "0.9375rem",
-  fontFamily: "Roboto, sans-serif",
+  fontFamily: "roboto, sans-serif",
   fontWeight: 400,
-  textAlign: "left",
-  height: "auto",
+  minHeight: "38px",
+  height: "38px",
+  lineHeight: "1.15",
+  verticalAlign: "middle",
+  textAlign: "center",
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  flexGrow: 1,
+  padding: "0.3rem 2.5rem 0.3rem 1rem",
+  borderTop: "1px solid #ccc",
+  borderRight: "1px solid #ccc",
+  borderBottom: "1px solid #ccc",
+  borderLeft: "1px solid #ccc",
+  outline: "none",
+  height: '40px',
+  backgroundColor: 'white',
+  borderRadius: '8px',
+  boxSizing: 'border-box',
+  fontSize: '0.875rem',
+  fontFamily: 'Roboto, sans-serif',
+  fontWeight: 400,
+};
+
+const lupaButtonStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  right: 0,
+  height: '40px',
+  width: '2.2rem',
+  background: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+};
+
+const editButtonStyle: React.CSSProperties = {
+  backgroundColor: "#ff7300",
+  color: "white",
+  padding: "0.5rem 1.2rem",
+  borderRadius: "8px",
+  border: "none",
+  cursor: "pointer",
+  height: "40px",
+  display: "flex",
+  alignItems: "center",
+  gap: "0.5rem",
+  fontFamily: "Montserrat, sans-serif",
+  fontSize: "1rem",
+  fontWeight: 'semibold',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+};
+
+const filterButtonStyle: React.CSSProperties = {
+  ...editButtonStyle,
+  backgroundColor: '#5c5c5c',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+};
+
+const filterIconStyle: React.CSSProperties = {
+  width: '1.2rem',
+  height: '1.2rem',
+  color: 'white',
+};
+
+const searchIconStyle: React.CSSProperties = {
+  width: '30px',
+  height: '30px',
+};
+
+
+const paginationContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: '10px',
+  padding: '1rem',
+  backgroundColor: "#f8fafc",
+  borderRadius: '12px',
+  marginTop: '1rem',
+  border: "1px solid rgba(0, 0, 0, 0.05)",
+  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+};
+
+const paginationControlsStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '10px',
+  width: '100%',
+};
+
+const paginationButtonBaseStyle: React.CSSProperties = {
+  padding: '8px 12px',
+  borderTop: '1px solid #ddd',
+  borderRight: '1px solid #ddd',
+  borderBottom: '1px solid #ddd',
+  borderLeft: '1px solid #ddd',
+  borderRadius: '5px',
+  cursor: 'pointer',
+  transition: 'background-color 0.2s ease, border-color 0.2s ease',
+  minWidth: '35px',
+  textAlign: 'center',
+  color: '#333',
+};
+
+const paginationDotsStyle: React.CSSProperties = {
+  padding: '8px 0',
+  color: '#555',
+  justifyContent: 'center',
+};
+
+const paginationButtonActiveStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: 'white',
+  borderTop: '1px solid #ff7300',
+  borderRight: '1px solid #ff7300',
+  borderBottom: '1px solid #ff7300',
+  borderLeft: '1px solid #ff7300',
+};
+
+const paginationNextButtonStyle: React.CSSProperties = {
+  marginRight: '16px',
+  justifyContent: 'center',
+};
+
+const paginationButtonsWrapperStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '5px',
+  flexWrap: 'wrap',
+  justifyContent: 'center'
 };

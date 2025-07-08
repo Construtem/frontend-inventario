@@ -59,21 +59,79 @@ export default function DespachoPage() {
   const [estado, setEstado] = useState("");
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
+  const [isOffline, setIsOffline] = useState(false);
 
   // =====================
-  // 3. CARGA DE DATOS
+  // 3. DATOS DE EJEMPLO (MOCK DATA)
+  // =====================
+  const getMockDespachos = (): Despacho[] => [
+    {
+      id: 1,
+      cliente: "Empresa ABC",
+      origen: "Sucursal 1",
+      destino: "Av. Principal 123, Santiago",
+      fechaDespacho: "2024-01-15",
+      valorDespacho: 45000,
+      estado: "pendiente",
+      camion: "AB-1234",
+      cantidadItems: 15,
+      totalKg: 250.5
+    },
+    {
+      id: 2,
+      cliente: "Corporación XYZ",
+      origen: "Sucursal 2",
+      destino: "Calle Norte 456, Valparaíso",
+      fechaDespacho: "2024-01-16",
+      valorDespacho: 67000,
+      estado: "enviado",
+      camion: "CD-5678",
+      cantidadItems: 23,
+      totalKg: 189.3
+    },
+    {
+      id: 3,
+      cliente: "Distribuidora DEF",
+      origen: "Sucursal 3",
+      destino: "Ruta Sur 789, Concepción",
+      fechaDespacho: "2024-01-17",
+      valorDespacho: 38000,
+      estado: "aprobado",
+      camion: "EF-9012",
+      cantidadItems: 12,
+      totalKg: 156.8
+    }
+  ];
+
+  // =====================
+  // 4. CARGA DE DATOS CON MANEJO DE ERRORES
   // =====================
   useEffect(() => {
     const fetchDespachos = async () => {
       try {
         setLoading(true);
         setError("");
+        setIsOffline(false);
         
-        const res = await fetch("http://localhost:8080/api/despachos");
-        if (!res.ok) throw new Error("Error al cargar despachos");
+        // Intentar conectar al backend con timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
+        
+        const res = await fetch("http://localhost:8080/api/despachos", {
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) {
+          throw new Error(`Error del servidor: ${res.status} ${res.statusText}`);
+        }
 
         const raw = await res.json();
-        console.log("Datos recibidos del backend:", raw); // Para debug
+        console.log("Datos recibidos del backend:", raw);
 
         const clean: Despacho[] = raw.map((d: DespachoBackend) => ({
           id: d.id,
@@ -89,10 +147,27 @@ export default function DespachoPage() {
         }));
 
         setDespachos(clean);
+        
       } catch (error: unknown) {
-        console.error("Error fetching despachos:", error);
-        const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+        console.warn("Backend no disponible, usando datos de ejemplo:", error);
+        
+        // Determinar tipo de error
+        let errorMessage = "Error desconocido al cargar datos";
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            errorMessage = "Tiempo de espera agotado al conectar con el servidor";
+          } else if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+            errorMessage = "No se pudo conectar al servidor backend";
+          } else {
+            errorMessage = error.message;
+          }
+        }
+        
         setError(errorMessage);
+        setIsOffline(true);
+        // Cargar datos de ejemplo cuando el backend no esté disponible
+        setDespachos(getMockDespachos());
+        
       } finally {
         setLoading(false);
       }
@@ -102,19 +177,44 @@ export default function DespachoPage() {
   }, []);
 
   // =====================
-  // 4. ELIMINAR DESPACHO
+  // 5. FUNCIÓN PARA REINTENTAR CONEXIÓN
   // =====================
-  const handleDelete = (id: number) => {
+  const handleRetry = () => {
+    setError("");
+    setIsOffline(false);
+    window.location.reload(); // Recargar la página para reintentar
+  };
+
+  // =====================
+  // 6. ELIMINAR DESPACHO CON MANEJO DE ERRORES
+  // =====================
+  const handleDelete = async (id: number) => {
     if (!confirm("¿Deseas eliminar este despacho?")) return;
 
-    fetch(`http://localhost:8080/api/despachos/${id}`, {
-      method: "DELETE",
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Error al eliminar despacho");
-        setDespachos((prev) => prev.filter((d) => d.id !== id));
-      })
-      .catch((err) => alert(err.message));
+    if (isOffline) {
+      alert("No se puede eliminar en modo offline. Reconecta al servidor.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/despachos/${id}`, {
+        method: "DELETE",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Error al eliminar despacho: ${res.status} ${res.statusText}`);
+      }
+      
+      setDespachos((prev) => prev.filter((d) => d.id !== id));
+      
+    } catch (error) {
+      console.error("Error al eliminar despacho:", error);
+      const message = error instanceof Error ? error.message : "Error desconocido al eliminar";
+      alert(`Error: ${message}`);
+    }
   };
 
   // Filtrar despachos basado en los filtros activos
@@ -183,17 +283,44 @@ export default function DespachoPage() {
           </button>
         </div>
 
-        {/* Mostrar errores si existen */}
+        {/* Mostrar errores y estado offline */}
         {error && (
           <div style={{
-            backgroundColor: "#fee2e2",
-            border: "1px solid #fecaca",
-            color: "#dc2626",
+            backgroundColor: isOffline ? "#fef3c7" : "#fee2e2",
+            border: `1px solid ${isOffline ? "#f59e0b" : "#fecaca"}`,
+            color: isOffline ? "#92400e" : "#dc2626",
             padding: "1rem",
             borderRadius: "8px",
-            marginBottom: "1rem"
+            marginBottom: "1rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
           }}>
-            {error}
+            <div>
+              <strong>{isOffline ? "⚠️ Modo Offline" : "❌ Error de conexión"}</strong>
+              <br />
+              {error}
+              {isOffline && (
+                <>
+                  <br />
+                  <small>Mostrando datos de ejemplo. Los cambios no se guardarán.</small>
+                </>
+              )}
+            </div>
+            <button 
+              onClick={handleRetry}
+              style={{
+                backgroundColor: isOffline ? "#f59e0b" : "#dc2626",
+                color: "white",
+                border: "none",
+                padding: "0.5rem 1rem",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "0.9rem"
+              }}
+            >
+              🔄 Reintentar
+            </button>
           </div>
         )}
 

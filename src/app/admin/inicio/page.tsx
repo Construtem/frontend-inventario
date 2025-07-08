@@ -3,12 +3,45 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
+// Hook para manejar el tamaño de la ventana
+function useWindowSize() {
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+  });
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      handleResize();
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
+
+  return {
+    ...windowSize,
+    isExtraLarge: windowSize.width > 1440,
+    isLarge: windowSize.width <= 1440 && windowSize.width > 1200,
+    isMedium: windowSize.width <= 1200 && windowSize.width > 992,
+    isSmall: windowSize.width <= 992 && windowSize.width > 768,
+    isMobile: windowSize.width <= 768
+  };
+}
+
 interface CardProps {
   id: number;
   mainText: string;
   subText: string;
   imagePath: string;
   onClick?: () => void;
+  isMobile?: boolean;
 }
 
 interface UserData {
@@ -21,6 +54,7 @@ interface UserData {
 export default function InicioPage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [openCard, setOpenCard] = useState<number | null>(null);
+  const { isSmall, isMobile } = useWindowSize();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -61,9 +95,21 @@ export default function InicioPage() {
 
   return (
     <div style={containerStyle}>
-      <div style={cardStyle}>
-        <h1 style={titleStyle}>Inicio</h1>
-        <h3 style={textStyle}>
+      <div style={{
+        ...cardStyle,
+        padding: isMobile ? "1rem" : "2rem",
+        marginLeft: isMobile ? '0.5rem' : '1.5rem',
+        marginRight: isMobile ? '0.5rem' : '1.5rem',
+      }}>
+        <h1 style={{
+          ...titleStyle,
+          fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
+          marginBottom: isMobile ? "1rem" : "2rem",
+        }}>Inicio</h1>
+        <h3 style={{
+          ...textStyle,
+          fontSize: isMobile ? "0.9rem" : "1rem",
+        }}>
           Bienvenido a su panel de gestión,{" "}
           <span style={{ fontWeight: "bold" }}>
             {user ? user.name : "Invitado"}
@@ -71,18 +117,35 @@ export default function InicioPage() {
           !
         </h3>
         <div style={subtleLineStyle}></div>
-        <h1 style={titleStyle}>Resumen general</h1>
-        <div style={cardGridStyle}>
+        <h1 style={{
+          ...titleStyle,
+          fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
+          marginBottom: isMobile ? "1rem" : "2rem",
+        }}>Resumen general</h1>
+        <div style={{
+          ...cardGridStyle,
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          flexWrap: 'wrap',
+          gap: isMobile ? '1rem' : '2rem',
+          padding: isMobile ? '0.25rem' : '0.5rem',
+          justifyContent: 'flex-start'
+        }}>
           {cardData.map((card) => (
-            <Card key={card.id} {...card} onClick={() => handleCardClick(card.id)} />
+            <Card 
+              key={card.id} 
+              {...card} 
+              onClick={() => handleCardClick(card.id)}
+              isMobile={isMobile}
+            />
           ))}
         </div>
 
-        {/* Modal para mostrar el contenido de la card seleccionada */}
         {openCard && (
           <CardModal
             card={cardData.find(c => c.id === openCard)!}
             onClose={handleCloseModal}
+            isMobile={isMobile}
           />
         )}
       </div>
@@ -90,15 +153,15 @@ export default function InicioPage() {
   );
 }
 
-const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick }) => {
+const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick, isMobile }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const cardContainerStyle: React.CSSProperties = {
     backgroundColor: '#FF7300',
     borderRadius: '20px',
-    padding: '15px',
-    width: '400px',
-    height: '120px',
+    padding: isMobile ? '12px' : '15px',
+    width: isMobile ? '100%' : 'calc(25% - 1.5rem)',
+    height: isMobile ? '100px' : '120px',
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -112,8 +175,9 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick }) =>
     boxSizing: 'border-box',
     maxWidth: '100%',
     position: 'relative',
+    minWidth: isMobile ? '100%' : '280px',
     ...(isHovered ? {
-      transform: 'scale(1.05)',
+      transform: isMobile ? 'scale(1.02)' : 'scale(1.05)',
       boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)',
       opacity: 1.2,
     } : {})
@@ -125,11 +189,11 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick }) =>
     justifyContent: 'center',
     flexGrow: 1,
     minWidth: 0,
-    marginRight: '10px',
+    marginRight: isMobile ? '8px' : '10px',
   };
 
-  const textStyle: React.CSSProperties = {
-    fontSize: '1.125rem',
+  const mainTextStyle: React.CSSProperties = {
+    fontSize: isMobile ? '1.1rem' : '1.125rem',
     marginBottom: '5px',
     fontWeight: 'medium',
     color: '#222222',
@@ -139,7 +203,8 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick }) =>
   };
 
   const subTextStyle: React.CSSProperties = {
-    ...textStyle,
+    ...mainTextStyle,
+    fontSize: isMobile ? '0.9rem' : '1rem',
     opacity: 0.8,
     marginBottom: 0,
   };
@@ -148,8 +213,10 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick }) =>
     opacity: isHovered ? 1 : 0.5,
     transform: isHovered ? 'scale(1.1)' : 'scale(1)',
     transition: 'transform 0.3s ease-out, opacity 0.3s ease-out',
-    marginLeft: '15px',
+    marginLeft: isMobile ? '10px' : '15px',
     flexShrink: 0,
+    width: isMobile ? '65px' : '75px',
+    height: isMobile ? '65px' : '75px',
   };
 
   return (
@@ -160,28 +227,29 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick }) =>
       onClick={onClick}
     >
       <div style={textContainerStyle}>
-        <p style={textStyle}>{mainText}</p>
+        <p style={mainTextStyle}>{mainText}</p>
         <p style={subTextStyle}>{subText}</p>
       </div>
 
       <Image
         src={imagePath}
         alt={subText}
-        width={75}
-        height={75}
+        width={isMobile ? 65 : 75}
+        height={isMobile ? 65 : 75}
         style={imageStyle}
       />
     </div>
   );
 };
 
-// Componente Modal para mostrar el contenido expandido de la card
+// Actualizar la interfaz del CardModal para incluir isMobile
 interface CardModalProps {
   card: CardProps;
   onClose: () => void;
+  isMobile?: boolean;
 }
 
-const CardModal: React.FC<CardModalProps> = ({ card, onClose }) => {
+const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   
   // Función para generar datos de ejemplo según el tipo de card
@@ -301,8 +369,8 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose }) => {
   const modalContentStyle: React.CSSProperties = {
     backgroundColor: 'white',
     borderRadius: '20px',
-    padding: '2rem',
-    minWidth: '800px',
+    padding: isMobile ? '1rem' : '2rem',
+    minWidth: isMobile ? '95vw' : '800px',
     maxWidth: '95vw',
     maxHeight: '90vh',
     overflow: 'auto',
@@ -325,17 +393,20 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose }) => {
   const modalHeaderStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    marginBottom: '2rem',
+    marginBottom: isMobile ? '1rem' : '2rem',
     borderBottom: '1px solid #e0e0e0',
-    paddingBottom: '1rem',
+    paddingBottom: isMobile ? '0.5rem' : '1rem',
+    flexDirection: isMobile ? 'column' : 'row',
+    textAlign: isMobile ? 'center' : 'left',
   };
 
   const modalTitleStyle: React.CSSProperties = {
-    fontSize: '1.5rem',
+    fontSize: isMobile ? '1.2rem' : '1.5rem',
     fontWeight: 'bold',
     color: '#222222',
     fontFamily: 'Montserrat, sans-serif',
-    marginLeft: '1rem',
+    marginLeft: isMobile ? 0 : '1rem',
+    marginTop: isMobile ? '0.5rem' : 0,
   };
 
   const tableContainerStyle: React.CSSProperties = {
