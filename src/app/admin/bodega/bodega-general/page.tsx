@@ -26,7 +26,6 @@ export default function StockBodegaCentralPage() {
     </div>
   );
 }
-
 // =====================
 // 3. COMPONENTE DE CONTENIDO
 // =====================

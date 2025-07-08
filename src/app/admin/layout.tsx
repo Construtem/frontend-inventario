@@ -3,21 +3,21 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "@/components/admin/sideBar";
 import Header from "@/components/admin/header";
-import { useSearchParams } from "next/navigation";
+
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userReady, setUserReady] = useState(false); // ✅
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     const hasUser = localStorage.getItem("user");
 
     if (!hasUser) {
-      const name = searchParams.get("name");
-      const email = searchParams.get("email");
-      const photoURL = searchParams.get("photoURL");
-      const rol = searchParams.get("rol");
+      const urlParams = new URLSearchParams(window.location.search);
+      const name = urlParams.get("name");
+      const email = urlParams.get("email");
+      const photoURL = urlParams.get("photoURL");
+      const rol = urlParams.get("rol");
 
       if (name && email && rol) {
         const userData = { name, email, photoURL, rol };
@@ -27,9 +27,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     } else {
       console.log("👀 Usuario ya en localStorage:", hasUser);
     }
-
     setUserReady(true); // ✅ cuando termina de revisar
-  }, [searchParams]);
+  }, []);
 
   const handleToggleSidebar = () => setSidebarOpen((open) => !open);
 
