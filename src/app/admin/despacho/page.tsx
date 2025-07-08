@@ -33,7 +33,7 @@ export default function DespachoPage() {
   // 3. CARGA DE DATOS
   // =====================
   useEffect(() => {
-    fetch("http://localhost:8080/api/despachos")
+    fetch("https://api-inventario.tssw.cl/api/despachos")
       .then((res) => res.json())
       .then((data) => {
         setDespachos(data);
@@ -51,7 +51,7 @@ export default function DespachoPage() {
   const handleDelete = (id: number) => {
     if (!confirm("¿Deseas eliminar este despacho?")) return;
 
-    fetch(`http://localhost:8080/api/despachos/${id}`, {
+    fetch(`https://api-inventario.tssw.cl/api/despachos/${id}`, {
       method: "DELETE",
     })
       .then((res) => {

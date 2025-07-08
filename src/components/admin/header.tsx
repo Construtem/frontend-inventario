@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import logo from "@/styles/images/logo_barra_superior.png";
 import exit from "@/styles/images/logout2.png";
-import { useRouter } from "next/navigation";
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -13,30 +12,32 @@ interface HeaderProps {
 interface UserData {
   name: string;
   email: string;
-  photoURL: string;
+  photoURL?: string; // Es buena práctica marcar como opcional si puede no venir
   rol: string;
 }
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
-  const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
-        const parsedUser = JSON.parse(storedUser) as UserData;
+        const parsedUser: UserData = JSON.parse(storedUser);
         setUser(parsedUser);
-        console.log("✅ Usuario cargado en Header:", parsedUser);
       } catch (err) {
-        console.error("Error al parsear user:", err);
+        console.error("Error al parsear datos de usuario, limpiando localStorage:", err);
+        // Si los datos están corruptos, es mejor limpiarlos.
+        localStorage.removeItem("user");
       }
     }
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.removeItem("user");
-    router.push("http://localhost:3000/auth/login");
+    console.log("Usuario ha cerrado sesión");
+    // Redirige al usuario a la página de login principal
+    window.location.href = "https://login.tssw.cl"; // Asegúrate de que esta URL sea la correcta para tu aplicación
   };
 
   return (
@@ -85,13 +86,14 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           style={styles.logout as React.CSSProperties}
           width={32}
           height={32}
-          onClick={handleLogout}
+          onClick={handleLogout} // Llama a la nueva función de logout
         />
       </div>
     </header>
   );
 };
 
+// Tus estilos no necesitan cambiar
 const styles: { [key: string]: React.CSSProperties } = {
   header: {
     width: "100%",
@@ -150,7 +152,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: "center",
     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.5)",
     color: "#222222",
-    fontWeight: "medium",
+    fontWeight: "500",
     fontFamily: "Roboto, sans-serif",
     fontSize: "0.9375rem",
     whiteSpace: "nowrap",

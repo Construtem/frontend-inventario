@@ -18,7 +18,7 @@ import buscarImg from "@/styles/images/buscar.png";
 // =====================
 // 1.1 CONFIGURACIÓN DEL BACKEND
 // =====================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-inventario.tssw.cl/api';
 
 // Headers comunes para las peticiones
 const getHeaders = () => ({
