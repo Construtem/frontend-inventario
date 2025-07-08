@@ -1521,7 +1521,7 @@ export default function Sucursal1Page() {
           ...titleStyle,
           fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
           marginBottom: "1.5rem"
-        }}>Inventario de Productos (Sucursal 1)</h1>
+        }}>Inventario de Productos (Sucursal 2)</h1>
         
         <div style={{
           ...toolbarStyle,
