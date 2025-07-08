@@ -303,7 +303,7 @@ export default function SucursalesPage() {
     </div>
   );
 }
-*/
+
 // Estilos
 const containerStyle: React.CSSProperties = {
   marginTop: "70px",
@@ -554,3 +554,4 @@ const paginationButtonsWrapperStyle: React.CSSProperties = {
   justifyContent: 'center'
 };
 
+*/
