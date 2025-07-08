@@ -1,9 +1,9 @@
+/*
 "use client";
 
 import React, { useState, useEffect } from "react";
 // import { FaSearch } from "react-icons/fa";
 import Image from "next/image";
-
 
 interface TipoSucursal {
   id: number;
@@ -553,3 +553,5 @@ const paginationButtonsWrapperStyle: React.CSSProperties = {
   flexWrap: 'wrap',
   justifyContent: 'center'
 };
+
+*/
