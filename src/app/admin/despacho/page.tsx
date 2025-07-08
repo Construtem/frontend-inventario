@@ -44,7 +44,7 @@ export default function DespachoPage() {
 
         const clean: Despacho[] = raw.map((d: any) => ({
           id: d.id,
-          cliente: d.cotizacion?.cliente?.nombre || "Cliente no definido",
+          cliente: d.cotizacion?.cliente?.rut || "Cliente no definido",
           origen: d.origen_sucursal?.nombre || "Sucursal desconocida",
           destino: d.destino_dir_cliente?.direccion || "Direccion desconocida",
           fechaDespacho: d.fecha_despacho,
