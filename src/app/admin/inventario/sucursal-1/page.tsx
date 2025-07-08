@@ -1486,7 +1486,7 @@ export default function Sucursal1Page() {
           ...titleStyle,
           fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
           marginBottom: "1.5rem"
-        }}>Inventario de Productos (Sucursal 1)</h1>
+        }}>Inventario de Productos (Tienda Centro)</h1>
         
         <div style={{
           ...toolbarStyle,
@@ -1747,20 +1747,13 @@ export default function Sucursal1Page() {
         </div>
 
         {loadedProducts.length > 0 && (
-          <div style={{
-            ...paginationContainerStyle,
-            flexDirection: isMobile ? "column" : "row",
-            padding: "1rem",
-            marginTop: "1rem",
-            width: "100%",
-            boxSizing: "border-box"
-          }}>
-            <div style={{
-              ...paginationControlsStyle,
-              flexWrap: "wrap",
-              gap: isMobile ? "0.5rem" : "0.75rem"
-            }}>
-              <button onClick={handlePrevPage} disabled={currentPage === 1} style={paginationButtonBaseStyle}>
+          <div style={paginationContainerStyle}>
+            <div style={paginationControlsStyle}>
+              <button 
+                onClick={handlePrevPage} 
+                disabled={currentPage === 1} 
+                style={paginationButtonBaseStyle}
+              >
                 Anterior
               </button>
               <div style={paginationButtonsWrapperStyle}>
@@ -1773,12 +1766,6 @@ export default function Sucursal1Page() {
               >
                 Siguiente
               </button>
-            </div>
-            <div style={{ 
-              fontSize: isMobile ? "0.75rem" : "0.9rem", 
-              color: "#666",
-              marginTop: isMobile ? "0.5rem" : 0
-            }}>
             </div>
           </div>
         )}
@@ -2059,63 +2046,70 @@ const tdStyle: React.CSSProperties = {
 const paginationContainerStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'center',
-  alignItems: 'center',
-  gap: '10px',
+  marginTop: '2rem',
   padding: '1rem',
-  backgroundColor: "#f8fafc",
-  borderRadius: '12px',
-  marginTop: '1rem',
-  border: "1px solid rgba(0, 0, 0, 0.05)",
-  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+  backgroundColor: '#f3f4f6',
+  borderRadius: '10px',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
 };
 
 const paginationControlsStyle: React.CSSProperties = {
   display: 'flex',
-  flexDirection: 'column',
   alignItems: 'center',
-  gap: '10px',
-  width: '100%',
-};
-
-const paginationButtonBaseStyle: React.CSSProperties = {
-  padding: '8px 12px',
-  borderTop: '1px solid #ddd',
-  borderRight: '1px solid #ddd',
-  borderBottom: '1px solid #ddd',
-  borderLeft: '1px solid #ddd',
-  borderRadius: '5px',
-  cursor: 'pointer',
-  transition: 'background-color 0.2s ease, border-color 0.2s ease',
-  minWidth: '35px',
-  textAlign: 'center',
-  color: '#333',
-};
-
-const paginationDotsStyle: React.CSSProperties = {
-  padding: '8px 0',
-  color: '#555',
-  justifyContent: 'center',
-};
-
-const paginationButtonActiveStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  color: 'white',
-  borderTop: '1px solid #ff7300',
-  borderRight: '1px solid #ff7300',
-  borderBottom: '1px solid #ff7300',
-  borderLeft: '1px solid #ff7300',
-};
-
-const paginationNextButtonStyle: React.CSSProperties = {
-  marginRight: '16px',
-  justifyContent:'center',
+  gap: '1rem',
+  backgroundColor: '#fff',
+  borderRadius: '8px',
+  padding: '0.5rem 1rem',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
 };
 
 const paginationButtonsWrapperStyle: React.CSSProperties = {
   display: 'flex',
-  gap: '5px',
-  flexWrap: 'wrap',
-  justifyContent: 'center'
+  alignItems: 'center',
+  gap: '0.5rem',
+};
+
+const paginationButtonBaseStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: '#fff',
+  padding: '0.5rem 1rem',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontFamily: 'Montserrat, sans-serif',
+  fontSize: '0.9375rem',
+  fontWeight: 'semibold',
+  minWidth: '50px',
+  justifyContent: 'center',
+  display: 'flex',
+  alignItems: 'center',
+};
+
+const paginationButtonActiveStyle: React.CSSProperties = {
+  backgroundColor: '#5c5c5c',
+  color: '#fff',
+};
+
+const paginationDotsStyle: React.CSSProperties = {
+  color: '#5c5c5c',
+  fontSize: '1rem',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const paginationNextButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: '#fff',
+  padding: '0.5rem 1rem',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontFamily: 'Montserrat, sans-serif',
+  fontSize: '0.9375rem',
+  fontWeight: 'semibold',
+  minWidth: '50px',
+  justifyContent: 'center',
+  display: 'flex',
+  alignItems: 'center',
 };
 
 const editButtonStyle: React.CSSProperties = {
