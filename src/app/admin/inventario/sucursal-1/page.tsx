@@ -134,10 +134,10 @@ const deleteProduct = async (sku: string): Promise<void> => {
 // 2. INTERFACES
 // =====================
 interface ProductData {
-  idProducto: number;
   sku: string;
   nombre: string;
   descripcion: string;
+  marca: string;
   pesoKg: number;
   largoCm: number;
   anchoCm: number;
@@ -146,7 +146,7 @@ interface ProductData {
   precioVentaCu: number;
   stock: number;
   categoria: string;
-  activo: boolean;
+  estado: boolean;
 }
 
 interface UploadCsvModalProps {
@@ -320,6 +320,8 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             "SKU",
             "Nombre",
             "Descripción",
+            "Marca",
+            "Categoría",
             "Peso (KG)",
             "Largo (CM)",
             "Ancho (CM)",
@@ -365,12 +367,11 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
           ((results.data as unknown) as Record<string, string>[]).forEach((row, index: number) => {
             const rowErrors: string[] = [];
 
-            const idProductoParsed = parseInt(row["ID Producto"], 10);
-            const idProducto = isNaN(idProductoParsed) || idProductoParsed < 0 ? NaN : idProductoParsed;
-
             const sku = row["SKU"]?.toString().trim() || '';
             const nombre = row["Nombre"]?.toString().trim() || '';
             const descripcion = row["Descripción"]?.toString().trim() || '';
+            const marca = row["Marca"]?.toString().trim() || '';
+            const categoria = row["Categoría"]?.toString().trim() || '';
             const pesoKg = parseFloat(row["Peso (KG)"]);
             const largoCm = parseFloat(row["Largo (CM)"]);
             const anchoCm = parseFloat(row["Ancho (CM)"]);
@@ -378,14 +379,15 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             const costoBaseCu = parseFloat(row["Costo base (C/U)"]);
             const precioVentaCu = parseFloat(row["Precio venta (C/U)"]);
 
-            const estadoParsed = parseestado(row["Activo"]);
+            const estadoParsed = parseestado(row["Estado"]);
             const estado = estadoParsed === null ? null : estadoParsed;
 
             const stock = parseInt(row["Stock"], 10);
 
-            if (isNaN(idProducto)) rowErrors.push('ID Producto debe ser un número positivo');
             if (!sku) rowErrors.push('SKU no puede estar vacío');
             if (!nombre) rowErrors.push('Nombre no puede estar vacío');
+            if (!marca) rowErrors.push('Marca no puede estar vacía');
+            if (!categoria) rowErrors.push('Categoría no puede estar vacía');
 
             if (isNaN(pesoKg) || pesoKg < 0) rowErrors.push('Peso (KG) debe ser un número positivo');
             if (isNaN(largoCm) || largoCm < 0) rowErrors.push('Largo (CM) debe ser un número positivo');
@@ -404,10 +406,11 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
               hasRowErrors = true;
             } else {
               validatedData.push({
-                idProducto: idProducto as number,
                 sku,
                 nombre,
                 descripcion,
+                marca,
+                categoria,
                 pesoKg,
                 largoCm,
                 anchoCm,
@@ -415,8 +418,7 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
                 costoBaseCu,
                 precioVentaCu,
                 stock,
-                categoria: '', // No disponible en CSV, se puede dejar vacío o manejar en backend
-                activo: estado as boolean,
+                estado: estado as boolean,
               });
             }
           });
@@ -500,40 +502,21 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
       const loadedProducts: ProductData[] = (window.__LOADED_PRODUCTS__ || []);
 
       const existingSkus = new Set<string>(loadedProducts.map(p => p.sku));
-      const existingIds = new Set<number>(loadedProducts.map(p => p.idProducto));
 
       const skuCount: Record<string, number> = {};
-      const idCount: Record<number, number> = {};
       parsedData.forEach(prod => {
         skuCount[prod.sku] = (skuCount[prod.sku] || 0) + 1;
-        idCount[prod.idProducto] = (idCount[prod.idProducto] || 0) + 1;
       });
       const duplicatedSkus = Object.keys(skuCount).filter(sku => skuCount[sku] > 1);
-      const duplicatedIds = Object.keys(idCount).filter(id => idCount[Number(id)] > 1);
 
       // Duplicados respecto a los productos ya cargados
       const duplicatedSkusGlobal = parsedData
         .map(p => p.sku)
         .filter((sku, idx, arr) => existingSkus.has(sku) && arr.indexOf(sku) === idx);
-      const duplicatedIdsGlobal = parsedData
-        .map(p => p.idProducto)
-        .filter((id, idx, arr) => existingIds.has(id) && arr.indexOf(id) === idx);
 
       
-      if (
-        duplicatedIds.length > 0 || duplicatedIdsGlobal.length > 0 ||
-        duplicatedSkus.length > 0 || duplicatedSkusGlobal.length > 0
-      ) {
-        let idMsg: string | null = null;
+      if (duplicatedSkus.length > 0 || duplicatedSkusGlobal.length > 0) {
         let skuMsg: string | null = null;
-        if (duplicatedIds.length > 0 || duplicatedIdsGlobal.length > 0) {
-          let msg = "No se puede cargar el archivo porque existen productos con ";
-          const parts: string[] = [];
-          if (duplicatedIds.length > 0) parts.push(`<b>ID Producto</b> repetido en el archivo: ${duplicatedIds.join(", ")}`);
-          if (duplicatedIdsGlobal.length > 0) parts.push(`<b>ID Producto</b> ya existente: ${duplicatedIdsGlobal.join(", ")}`);
-          msg += parts.join(" | ");
-          idMsg = msg;
-        }
         if (duplicatedSkus.length > 0 || duplicatedSkusGlobal.length > 0) {
           let msg = "No se puede cargar el archivo porque existen productos con ";
           const parts: string[] = [];
@@ -542,15 +525,14 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
           msg += parts.join(" | ");
           skuMsg = msg;
         }
-
-        if (idMsg && skuMsg) {
+        if (skuMsg) {
           Swal.fire({
             toast: true,
             position: 'top-end',
             icon: 'error',
             html: `
               <div style="${swalTextoCssString}">
-                ${idMsg}
+                ${skuMsg}
               </div>
             `, 
             showConfirmButton: false,
@@ -580,8 +562,6 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
               }, 100);
             }
           });
-        } else if (idMsg) {
-          setPendingDuplicateError(idMsg);
         } else if (skuMsg) {
           setTimeout(() => {
             Swal.fire({
@@ -771,44 +751,29 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
                 <tbody>
                   {parsedData.map((product, index) => (
                     <tr key={index}>
-                      <td style={tdModalStyle}>{product.idProducto}</td>
                       <td style={tdModalStyle}>{product.sku}</td>
                       <td style={tdModalStyle}>{product.nombre}</td>
                       <td style={tdModalStyle}>{product.descripcion}</td>
+                      <td style={tdModalStyle}>{product.marca}</td>
+                      <td style={tdModalStyle}>{product.categoria}</td>
                       <td style={tdModalStyle}>{product.pesoKg}</td>
                       <td style={tdModalStyle}>{product.largoCm}</td>
                       <td style={tdModalStyle}>{product.anchoCm}</td>
                       <td style={tdModalStyle}>{product.altoCm}</td>
-                      <td style={tdModalStyle}>{product.costoBaseCu}</td>
-                      <td style={tdModalStyle}>{product.precioVentaCu}</td>
-                      <td style={tdModalStyle}>{product.activo ? 'Activo' : 'Inactivo'}</td>
+                      <td style={tdModalStyle}>${product.costoBaseCu}</td>
+                      <td style={tdModalStyle}>${product.precioVentaCu}</td>
                       <td style={tdModalStyle}>{product.stock}</td>
                       <td style={tdModalStyle}>
-                        <div style={{ display: "flex", justifyContent: "center" }}>
-                          <button
-                            style={modifyProductButtonStyle}
-                            onClick={() => {
-                              Swal.fire({
-                                html: `
-                                  <div style="${swalTituloCssString}">
-                                    ¡<b>Funcionalidad en Desarrollo</b>!
-                                  </div>
-                                  <div style="${swalTextoConMargenCssString}">
-                                    La opción de modificar productos estará disponible próximamente.
-                                  </div>
-                                `,
-                                imageUrl: logo1Img.src,
-                                imageWidth: 400,
-                                imageHeight: 200,
-                                imageAlt: "Funcionalidad en Desarrollo",
-                                confirmButtonText: 'ACEPTAR',
-                                confirmButtonColor: '#ff7300',
-                              });
-                            }}
-                          >
-                            MODIFICAR
-                          </button>
-                        </div>
+                        <span style={{
+                          backgroundColor: product.estado ? '#10b981' : '#ef4444',
+                          color: 'white',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '12px',
+                          fontSize: '0.75rem',
+                          fontWeight: '500'
+                        }}>
+                          {product.estado ? 'Activo' : 'Inactivo'}
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -1177,7 +1142,7 @@ export default function Sucursal1Page() {
     const newFilteredProducts = loadedProducts.filter(product => {
       const matchesCategoria = !filters.categoria || product.categoria === filters.categoria;
       const matchesEstado = !filters.estado || 
-        (filters.estado === "activo" ? product.activo : !product.activo);
+        (filters.estado === "activo" ? product.estado : !product.estado);
       return matchesCategoria && matchesEstado;
     });
 
@@ -1222,7 +1187,7 @@ export default function Sucursal1Page() {
     return loadedProducts.filter(product => {
       const matchesCategoria = !activeFilters.categoria || product.categoria === activeFilters.categoria;
       const matchesEstado = !activeFilters.estado || 
-        (activeFilters.estado === "activo" ? product.activo : !product.activo);
+        (activeFilters.estado === "activo" ? product.estado : !product.estado);
       return matchesCategoria && matchesEstado;
     });
   }, [loadedProducts, activeFilters]);
@@ -1649,7 +1614,8 @@ export default function Sucursal1Page() {
               <col style={{ width: isMobile ? "8%" : "6%" }} />
               <col style={{ width: isMobile ? "10%" : "8%" }} />
               <col style={{ width: isMobile ? "12%" : "10%" }} />
-              <col style={{ width: isMobile ? "15%" : "13%" }} />
+              <col style={{ width: isMobile ? "10%" : "8%" }} />
+              <col style={{ width: isMobile ? "10%" : "8%" }} />
               <col style={{ width: isMobile ? "8%" : "7%" }} />
               <col style={{ width: isMobile ? "8%" : "7%" }} />
               <col style={{ width: isMobile ? "8%" : "7%" }} />
@@ -1672,6 +1638,7 @@ export default function Sucursal1Page() {
                   "SKU",
                   "Nombre",
                   "Descripción",
+                  "Marca",
                   "Categoría",
                   "Peso (KG)",
                   "Largo (CM)",
@@ -1714,11 +1681,12 @@ export default function Sucursal1Page() {
                 </tr>
               ) : currentTableData.length > 0 ? (
                 currentTableData.map((product) => (
-                  <tr key={`${product.idProducto}-${product.sku}`}>
-                    <td style={tdStyle}>{product.idProducto}</td>
+                  <tr key={product.sku}>
                     <td style={tdStyle}>{product.sku}</td>
                     <td style={tdStyle}>{product.nombre}</td>
                     <td style={tdStyle}>{product.descripcion}</td>
+                    <td style={tdStyle}>{product.marca}</td>
+                    <td style={tdStyle}>{product.categoria}</td>
                     <td style={tdStyle}>{product.pesoKg}</td>
                     <td style={tdStyle}>{product.largoCm}</td>
                     <td style={tdStyle}>{product.anchoCm}</td>
@@ -1727,14 +1695,14 @@ export default function Sucursal1Page() {
                     <td style={tdStyle}>${product.precioVentaCu}</td>
                     <td style={tdStyle}>
                       <span style={{
-                        backgroundColor: product.activo ? '#10b981' : '#ef4444',
+                        backgroundColor: product.estado ? '#10b981' : '#ef4444',
                         color: 'white',
                         padding: '0.25rem 0.5rem',
                         borderRadius: '12px',
                         fontSize: '0.75rem',
                         fontWeight: '500'
                       }}>
-                        {product.activo ? 'Activo' : 'Inactivo'}
+                        {product.estado ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
                     <td style={tdStyle}>{product.stock}</td>
