@@ -52,7 +52,7 @@ const fetchProducts = async (): Promise<ProductData[]> => {
 };
 
 // Obtener un producto por SKU
-const fetchProductBySKU = async (sku: string): Promise<ProductData> => {
+/*const fetchProductBySKU = async (sku: string): Promise<ProductData> => {
   try {
     const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
       method: 'GET',
@@ -111,7 +111,7 @@ const updateProduct = async (sku: string, product: Partial<ProductData>): Promis
     console.error('Error al actualizar producto:', error);
     throw error;
   }
-};
+};*/
 
 // Eliminar un producto por SKU
 const deleteProduct = async (sku: string): Promise<void> => {
@@ -144,14 +144,21 @@ interface ProductData {
   altoCm: number;
   costoBaseCu: number;
   precioVentaCu: number;
-  activo: boolean;
   stock: number;
+  categoria: string;
+  activo: boolean;
 }
 
 interface UploadCsvModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUploadConfirm: (data: ProductData[]) => void;
+}
+
+interface FiltersModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onApplyFilters: (filters: { categoria: string; estado: string }) => void;
 }
 
 // =====================
@@ -200,8 +207,8 @@ const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 // 4. FUNCIONES AUXILIARES
 // =====================
 
-// Función para parsear el campo "Activo"
-function parseActivo(value: string): boolean | null {
+// Función para parsear el campo "estado"
+function parseestado(value: string): boolean | null {
   const lowerCaseValue = value?.toLowerCase().trim();
   if (lowerCaseValue === 'activo') return true;
   if (lowerCaseValue === 'inactivo') return false;
@@ -319,7 +326,7 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             "Alto (CM)",
             "Costo base (C/U)",
             "Precio venta (C/U)",
-            "Activo",
+            "Estado",
             "Stock"
           ];
 
@@ -371,8 +378,8 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             const costoBaseCu = parseFloat(row["Costo base (C/U)"]);
             const precioVentaCu = parseFloat(row["Precio venta (C/U)"]);
 
-            const activoParsed = parseActivo(row["Activo"]);
-            const activo = activoParsed === null ? null : activoParsed;
+            const estadoParsed = parseestado(row["Activo"]);
+            const estado = estadoParsed === null ? null : estadoParsed;
 
             const stock = parseInt(row["Stock"], 10);
 
@@ -388,7 +395,7 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             if (isNaN(costoBaseCu) || costoBaseCu < 0) rowErrors.push('Costo base (C/U) debe ser un número positivo');
             if (isNaN(precioVentaCu) || precioVentaCu < 0) rowErrors.push('Precio venta (C/U) debe ser un número positivo');
 
-            if (activo === null) rowErrors.push('Activo debe ser "Activo" o "Inactivo"');
+            if (estado === null) rowErrors.push('Estado debe ser "Activo" o "Inactivo"');
 
             if (isNaN(stock) || stock < 0) rowErrors.push('Stock debe ser un número entero positivo');
 
@@ -407,8 +414,9 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
                 altoCm,
                 costoBaseCu,
                 precioVentaCu,
-                activo: activo as boolean,
-                stock
+                stock,
+                categoria: '', // No disponible en CSV, se puede dejar vacío o manejar en backend
+                activo: estado as boolean,
               });
             }
           });
@@ -878,6 +886,138 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
   );
 };
 
+const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFilters }) => {
+  const [categoria, setCategoria] = useState("");
+  const [estado, setEstado] = useState("");
+  const [visible, setVisible] = useState(isOpen);
+
+  useEffect(() => {
+    if (isOpen) {
+      setVisible(true);
+    } else {
+      const timeout = setTimeout(() => setVisible(false), 250);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen]);
+
+  const handleApplyFilters = () => {
+    onApplyFilters({ categoria, estado });
+    onClose();
+
+    // Mostrar mensaje de éxito con los filtros aplicados
+    Swal.fire({
+      html: `
+        <div style="${swalTituloCssString}">
+          ¡Filtros Aplicados!
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          ${categoria ? `Categoría: <b>${categoria}</b><br/>` : ''}
+          ${estado ? `Estado: <b>${estado}</b>` : ''}
+          ${!categoria && !estado ? 'Se han eliminado todos los filtros' : ''}
+        </div>
+      `,
+      icon: 'success',
+      confirmButtonText: 'ACEPTAR',
+      confirmButtonColor: '#ff7300',
+    });
+  };
+
+  const handleClearFilters = () => {
+    setCategoria("");
+    setEstado("");
+    onApplyFilters({ categoria: "", estado: "" });
+    onClose();
+
+    // Mostrar mensaje de éxito al limpiar filtros
+    Swal.fire({
+      html: `
+        <div style="${swalTituloCssString}">
+          Filtros Eliminados
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          Se han eliminado todos los filtros aplicados.
+        </div>
+      `,
+      icon: 'info',
+      confirmButtonText: 'ACEPTAR',
+      confirmButtonColor: '#ff7300',
+    });
+  };
+
+  if (!visible) return null;
+
+  return (
+    <div style={modalOverlayStyle}>
+      <div style={modalContentStyle}>
+        <div style={modalHeaderStyle}>
+          <h2 style={modalTitleStyle}>Filtrar Productos</h2>
+          <button style={closeButtonStyle} onClick={onClose}>&times;</button>
+        </div>
+
+        <div style={modalBodyStyle}>
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Categoría:</label>
+            <select 
+              value={categoria} 
+              onChange={(e) => setCategoria(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Todas las categorías</option>
+              <option value="electronica">Electrónica</option>
+              <option value="ropa">Ropa</option>
+              <option value="hogar">Hogar</option>
+              <option value="alimentos">Alimentos</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Estado:</label>
+            <select 
+              value={estado} 
+              onChange={(e) => setEstado(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Todos los estados</option>
+              <option value="activo">Activo</option>
+              <option value="inactivo">Inactivo</option>
+            </select>
+          </div>
+
+          <div style={{
+            ...buttonContainerStyle,
+            display: 'flex',
+            gap: '1rem',
+            justifyContent: 'space-between'
+          }}>
+            <button 
+              onClick={handleClearFilters}
+              style={{
+                ...editButtonStyle,
+                backgroundColor: '#5c5c5c',
+                width: "48%",
+                justifyContent: "center"
+              }}
+            >
+              LIMPIAR FILTROS
+            </button>
+            <button 
+              onClick={handleApplyFilters}
+              style={{
+                ...editButtonStyle,
+                width: "48%",
+                justifyContent: "center"
+              }}
+            >
+              APLICAR FILTROS
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Modificar el hook useWindowSize para incluir más breakpoints
 function useWindowSize() {
   const [windowSize, setWindowSize] = useState({
@@ -963,9 +1103,14 @@ export default function Sucursal1Page() {
   };
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [loadedProducts, setLoadedProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilters, setActiveFilters] = useState<{ categoria: string; estado: string }>({
+    categoria: "",
+    estado: ""
+  });
 
   // --- ESTADOS DE PAGINACIÓN ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -1018,17 +1163,81 @@ export default function Sucursal1Page() {
     loadProducts();
   }, []);
 
-  // Calcular los datos a mostrar en la página current
+  // Función para el botón FILTROS
+  const handleFiltersProduct = () => {
+    setIsFiltersModalOpen(true);
+  };
+
+  // Función para aplicar filtros
+  const handleApplyFilters = (filters: { categoria: string; estado: string }) => {
+    setActiveFilters(filters);
+    setCurrentPage(1); // Reset a la primera página cuando se aplican filtros
+
+    // Calcular resultados con los nuevos filtros
+    const newFilteredProducts = loadedProducts.filter(product => {
+      const matchesCategoria = !filters.categoria || product.categoria === filters.categoria;
+      const matchesEstado = !filters.estado || 
+        (filters.estado === "activo" ? product.activo : !product.activo);
+      return matchesCategoria && matchesEstado;
+    });
+
+    // Mostrar mensaje según los resultados
+    if (newFilteredProducts.length === 0 && (filters.categoria || filters.estado)) {
+      Swal.fire({
+        html: `
+          <div style="${swalTituloCssString}">
+            No se encontraron resultados
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No hay productos que coincidan con los filtros seleccionados:<br/><br/>
+            ${filters.categoria ? `Categoría: <b>${filters.categoria}</b><br/>` : ''}
+            ${filters.estado ? `Estado: <b>${filters.estado}</b>` : ''}
+          </div>
+        `,
+        icon: 'warning',
+        confirmButtonText: 'ACEPTAR',
+        confirmButtonColor: '#ff7300',
+      });
+    } else if (filters.categoria || filters.estado) {
+      Swal.fire({
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡Filtros Aplicados!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Se encontraron <b>${newFilteredProducts.length}</b> productos con los siguientes filtros:<br/><br/>
+            ${filters.categoria ? `Categoría: <b>${filters.categoria}</b><br/>` : ''}
+            ${filters.estado ? `Estado: <b>${filters.estado}</b>` : ''}
+          </div>
+        `,
+        icon: 'success',
+        confirmButtonText: 'ACEPTAR',
+        confirmButtonColor: '#ff7300',
+      });
+    }
+  };
+
+  // Filtrar productos según los filtros activos
+  const filteredProducts = useMemo(() => {
+    return loadedProducts.filter(product => {
+      const matchesCategoria = !activeFilters.categoria || product.categoria === activeFilters.categoria;
+      const matchesEstado = !activeFilters.estado || 
+        (activeFilters.estado === "activo" ? product.activo : !product.activo);
+      return matchesCategoria && matchesEstado;
+    });
+  }, [loadedProducts, activeFilters]);
+
+  // Calcular los datos a mostrar en la página actual usando los productos filtrados
   const currentTableData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return loadedProducts.slice(startIndex, endIndex);
-  }, [loadedProducts, currentPage, itemsPerPage]);
+    return filteredProducts.slice(startIndex, endIndex);
+  }, [filteredProducts, currentPage]);
 
-  // Calcular el número total de páginas
+  // Calcular el número total de páginas con los productos filtrados
   const totalPages = useMemo(() => {
-    return Math.ceil(loadedProducts.length / itemsPerPage);
-  }, [loadedProducts, itemsPerPage]);
+    return Math.ceil(filteredProducts.length / itemsPerPage);
+  }, [filteredProducts]);
 
   const handleConfirmBulkUpload = async (data: ProductData[]) => {
     try {
@@ -1135,27 +1344,6 @@ export default function Sucursal1Page() {
       }
     }
   };
-
-    // Función para el botón FILTROS
-  const handleFiltersProduct = () => {
-    Swal.fire({
-      html: `
-        <div style="${swalTituloCssString}">
-          ¡<b>Funcionalidad en Desarrollo</b>!
-        </div>
-        <div style="${swalTextoConMargenCssString}">
-          La opción de filtrado de productos estará disponible próximamente.
-        </div>
-      `,
-      imageUrl: logo1Img.src,
-      imageWidth: 400,
-      imageHeight: 200,
-      imageAlt: "Funcionalidad en Desarrollo",
-      confirmButtonText: 'ACEPTAR',
-      confirmButtonColor: '#ff7300',
-    });
-  };
-
 
   // Funciones para manejar el cambio de página
   const handleNextPage = () => {
@@ -1296,6 +1484,32 @@ export default function Sucursal1Page() {
     padding: 0,
   };
 
+  // Función para verificar si hay filtros activos
+  const hasActiveFilters = useMemo(() => {
+    return activeFilters.categoria !== "" || activeFilters.estado !== "";
+  }, [activeFilters]);
+
+  // Función para limpiar filtros desde la barra de herramientas
+  const handleClearFiltersFromToolbar = () => {
+    setActiveFilters({ categoria: "", estado: "" });
+    setCurrentPage(1);
+
+    // Mostrar mensaje de éxito al limpiar filtros
+    Swal.fire({
+      html: `
+        <div style="${swalTituloCssString}">
+          Filtros Eliminados
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          Se han eliminado todos los filtros aplicados.
+        </div>
+      `,
+      icon: 'info',
+      confirmButtonText: 'ACEPTAR',
+      confirmButtonColor: '#ff7300',
+    });
+  };
+
   return (
     <div style={{
       ...containerStyle
@@ -1307,7 +1521,7 @@ export default function Sucursal1Page() {
           ...titleStyle,
           fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
           marginBottom: "1.5rem"
-        }}>Inventario de Productos (Bodega 1)</h1>
+        }}>Inventario de Productos (Sucursal 1)</h1>
         
         <div style={{
           ...toolbarStyle,
@@ -1350,21 +1564,52 @@ export default function Sucursal1Page() {
               </button>
             </div>
             
-            <button style={{
-              ...filterButtonStyle,
-              width: isMobile ? "100%" : "auto",
-              fontSize: isMobile ? "0.875rem" : "1rem",
-              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-            }} onClick={handleFiltersProduct}>
-              <Image
-                src={filtrosImg.src}
-                alt="Filtros"
-                width={20}
-                height={20}
-                style={filterIconStyle}
-              />
-              Filtros
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button style={{
+                ...filterButtonStyle,
+                width: isMobile ? "100%" : "auto",
+                fontSize: isMobile ? "0.875rem" : "1rem",
+                padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                backgroundColor: hasActiveFilters ? '#ff7300' : '#5c5c5c',
+                position: 'relative'
+              }} onClick={handleFiltersProduct}>
+                <Image
+                  src={filtrosImg.src}
+                  alt="Filtros"
+                  width={20}
+                  height={20}
+                  style={filterIconStyle}
+                />
+                Filtros
+                {hasActiveFilters && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '-5px',
+                    right: '-5px',
+                    width: '10px',
+                    height: '10px',
+                    backgroundColor: '#10b981',
+                    borderRadius: '50%',
+                    border: '2px solid white'
+                  }} />
+                )}
+              </button>
+
+              {hasActiveFilters && (
+                <button 
+                  onClick={handleClearFiltersFromToolbar}
+                  style={{
+                    ...filterButtonStyle,
+                    backgroundColor: '#ef4444',
+                    width: isMobile ? "100%" : "auto",
+                    fontSize: isMobile ? "0.875rem" : "1rem",
+                    padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                  }}
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
           </div>
 
           <div style={{
@@ -1427,13 +1672,14 @@ export default function Sucursal1Page() {
                   "SKU",
                   "Nombre",
                   "Descripción",
+                  "Categoría",
                   "Peso (KG)",
                   "Largo (CM)",
                   "Ancho (CM)",
                   "Alto (CM)",
                   "Costo base (C/U)",
                   "Precio venta (C/U)",
-                  "Activo",
+                  "Estado",
                   "Stock",
                   "Acción",
                 ].map((col) => (
@@ -1565,7 +1811,6 @@ export default function Sucursal1Page() {
               color: "#666",
               marginTop: isMobile ? "0.5rem" : 0
             }}>
-              Mostrando {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, loadedProducts.length)} de {loadedProducts.length}
             </div>
           </div>
         )}
@@ -1575,6 +1820,12 @@ export default function Sucursal1Page() {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onUploadConfirm={handleConfirmBulkUpload}
+      />
+
+      <FiltersModal
+        isOpen={isFiltersModalOpen}
+        onClose={() => setIsFiltersModalOpen(false)}
+        onApplyFilters={handleApplyFilters}
       />
     </div>
   );
@@ -1586,8 +1837,12 @@ export default function Sucursal1Page() {
 
 // Estilos para UploadCsvModal
 const modalOverlayStyle: React.CSSProperties = {
-  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -1596,29 +1851,39 @@ const modalOverlayStyle: React.CSSProperties = {
 
 const modalContentStyle: React.CSSProperties = {
   backgroundColor: 'white',
-  padding: '30px',
-  borderRadius: '10px',
-  boxShadow: '0 5px 15px rgba(0, 0, 0, 0.3)',
+  borderRadius: '12px',
   width: '90%',
-  maxWidth: '800px',
-  maxHeight: '90%',
-  overflowY: 'auto' as const,
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: '20px',
+  maxWidth: '500px',
+  maxHeight: '90vh',
+  overflow: 'auto',
+  position: 'relative',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
 };
 
 const modalHeaderStyle: React.CSSProperties = {
-  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-  borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '15px',
+  padding: '1rem 1.5rem',
+  borderBottom: '1px solid #e5e7eb',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
 };
 
 const modalTitleStyle: React.CSSProperties = {
-  fontSize: '2rem',
-  fontFamily: 'Montserrat, sans-serif',
+  margin: 0,
+  fontSize: '1.25rem',
   fontWeight: 'bold',
-  color: '#333',
-  margin: 0
+  color: '#111827',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const closeButtonStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontSize: '1.5rem',
+  cursor: 'pointer',
+  padding: '0.5rem',
+  color: '#6b7280',
+  transition: 'color 0.2s ease',
 };
 
 const arrastraStyle: React.CSSProperties = {
@@ -1628,11 +1893,6 @@ const arrastraStyle: React.CSSProperties = {
   marginBottom: '10px',
   fontFamily: 'Roboto, sans-serif',
   fontWeight: 400,
-};
-
-const closeButtonStyle: React.CSSProperties = {
-  backgroundColor: 'transparent', border: 'none', fontSize: '1.8em',
-  cursor: 'pointer', color: '#aaa',
 };
 
 const fileInputContainerStyle: React.CSSProperties = {
@@ -1944,4 +2204,43 @@ const modifyProductButtonStyle: React.CSSProperties = {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   display: 'block',
+};
+
+const modalBodyStyle: React.CSSProperties = {
+  padding: "1.5rem",
+  display: "flex",
+  flexDirection: "column",
+  gap: "1rem",
+};
+
+const selectGroupStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "0.5rem",
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: "0.9rem",
+  fontWeight: "500",
+  color: "#333",
+  fontFamily: "Montserrat, sans-serif",
+};
+
+const selectStyle: React.CSSProperties = {
+  padding: "0.5rem",
+  borderRadius: "4px",
+  border: "1px solid #ddd",
+  fontSize: "0.9rem",
+  color: "#333",
+  backgroundColor: "#fff",
+  cursor: "pointer",
+  outline: "none",
+  fontFamily: "Roboto, sans-serif",
+  transition: "border-color 0.2s ease",
+};
+
+const buttonContainerStyle: React.CSSProperties = {
+  marginTop: "1rem",
+  display: "flex",
+  justifyContent: "flex-end",
 };

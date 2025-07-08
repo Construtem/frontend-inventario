@@ -32,22 +32,14 @@ const keyframes = `
 
 const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
   const pathname = usePathname();
-  const [sucursalSeleccionada, setSucursalSeleccionada] = useState<string>('Sucursal 1');
-  const [inventarioAbierto, setInventarioAbierto] = useState<boolean>(false);
   const [bodegaAbierta, setBodegaAbierta] = useState<boolean>(false);
   const [proveedoresAbierto, setProveedorAbierto] = useState<boolean>(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   // Función para cerrar todos los menús
   const closeAllMenus = () => {
-    setInventarioAbierto(false);
     setBodegaAbierta(false);
     setProveedorAbierto(false);
-  };
-
-  const toggleInventario = () => {
-    closeAllMenus();
-    setInventarioAbierto(!inventarioAbierto);
   };
 
   const toggleBodegas = () => {
@@ -77,9 +69,8 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
     
     // Luego abrimos solo el menú correspondiente a la ruta actual
     const path = pathname.toLowerCase();
-    if (path.includes('/inventario/')) {
-      setInventarioAbierto(true);
-    } else if (path.includes('/bodega/')) {
+
+    if (path.includes('/bodega/')) {
       setBodegaAbierta(true);
     } else if (path.includes('/proveedores/')) {
       setProveedorAbierto(true);

@@ -52,7 +52,7 @@ const fetchProducts = async (): Promise<ProductData[]> => {
 };
 
 // Obtener un producto por SKU
-const fetchProductBySKU = async (sku: string): Promise<ProductData> => {
+/*const fetchProductBySKU = async (sku: string): Promise<ProductData> => {
   try {
     const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
       method: 'GET',
@@ -111,7 +111,7 @@ const updateProduct = async (sku: string, product: Partial<ProductData>): Promis
     console.error('Error al actualizar producto:', error);
     throw error;
   }
-};
+};*/
 
 // Eliminar un producto por SKU
 const deleteProduct = async (sku: string): Promise<void> => {
