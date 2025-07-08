@@ -2,14 +2,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation"; // O from "next/router"
 import Sidebar from "@/components/admin/sideBar";
 import Header from "@/components/admin/header";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isAuth, setIsAuth] = useState(false); // Estado para saber si está autenticado
-  const router = useRouter();
 
   useEffect(() => {
     // Solo revisa si existe el item 'user' en localStorage
