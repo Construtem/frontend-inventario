@@ -8,14 +8,6 @@ import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import buscarImg from "@/styles/images/buscar.png";
 
-interface Proveedor {
-  id: number;
-  idProveedor: string;
-  nombre: string;
-  correoElectronico: string;
-  telefono: string;
-  direccion: string;
-}
 
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {

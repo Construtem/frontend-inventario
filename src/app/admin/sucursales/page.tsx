@@ -8,16 +8,6 @@ import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import buscarImg from "@/styles/images/buscar.png";
 
-interface Sucursal {
-  id: number;
-  nombre: string;
-  direccion: string;
-  telefono: string;
-  gerente: string;
-  estado: string;
-  fechaApertura: string;
-  empleados: number;
-}
 
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
