@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import logo from "@/styles/images/logo_barra_superior.png";
 import exit from "@/styles/images/logout2.png";
+import { useRouter } from "next/navigation";
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -18,6 +19,7 @@ interface UserData {
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const [user, setUser] = useState<UserData | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -54,6 +56,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           src={logo}
           alt="ConstrUTEM Logo"
           style={styles.logoImg as React.CSSProperties}
+          onClick={() => router.push("/admin/inicio")}
         />
       </div>
 
