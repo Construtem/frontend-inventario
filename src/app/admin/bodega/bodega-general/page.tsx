@@ -31,6 +31,8 @@ export default function StockBodegaCentralPage() {
 // =====================
 const StockBodegaCentralContent = () => {
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 15; // 15 resultados por página
 
   // =====================
   // 3. DATOS DE EJEMPLO
@@ -107,6 +109,77 @@ const StockBodegaCentralContent = () => {
     return matchesSearch;
   });
 
+  // Funciones de paginación
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  const handlePageClick = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Renderizar botones de paginación
+  const renderPaginationButtons = () => {
+    const buttons = [];
+    const maxButtonsToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
+
+    if (endPage - startPage + 1 < maxButtonsToShow) {
+      startPage = Math.max(1, endPage - maxButtonsToShow + 1);
+    }
+
+    if (startPage > 1) {
+      buttons.push(
+        <button key="1" onClick={() => handlePageClick(1)} style={paginationButtonBaseStyle}>
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        buttons.push(<span key="dots-start" style={paginationDotsStyle}>...</span>);
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => handlePageClick(i)}
+          style={{
+            ...paginationButtonBaseStyle,
+            ...(currentPage === i ? paginationButtonActiveStyle : {}),
+          }}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        buttons.push(<span key="dots-end" style={paginationDotsStyle}>...</span>);
+      }
+      buttons.push(
+        <button key={totalPages} onClick={() => handlePageClick(totalPages)} style={paginationButtonBaseStyle}>
+          {totalPages}
+        </button>
+      );
+    }
+
+    return buttons;
+  };
+
+  // Calcular datos paginados y total de páginas
+  const currentTableData = filteredData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
   // =====================
   // 5. UI
   // =====================
@@ -145,14 +218,14 @@ const StockBodegaCentralContent = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredData.length === 0 ? (
+            {currentTableData.length === 0 ? (
               <tr>
                 <td colSpan={4} style={tdStyle}>
                   No hay registros de stock disponibles
                 </td>
               </tr>
             ) : (
-              filteredData.map((item) => (
+              currentTableData.map((item) => (
                 <tr key={item.id}>
                   <td style={tdStyle}>{item.idStock}</td>
                   <td style={tdStyle}>{item.idBodega}</td>
@@ -164,6 +237,31 @@ const StockBodegaCentralContent = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Paginación */}
+      {filteredData.length > 0 && (
+        <div style={paginationContainerStyle}>
+          <div style={paginationControlsStyle}>
+            <button 
+              onClick={handlePrevPage} 
+              disabled={currentPage === 1} 
+              style={paginationButtonBaseStyle}
+            >
+              Anterior
+            </button>
+            <div style={paginationButtonsWrapperStyle}>
+              {renderPaginationButtons()}
+            </div>
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -288,4 +386,73 @@ const tdStyle: React.CSSProperties = {
   fontWeight: 400,
   textAlign: "center",
   height: "38px",
+};
+
+const paginationContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'center',
+  marginTop: '2rem',
+  padding: '1rem',
+  backgroundColor: '#f3f4f6',
+  borderRadius: '10px',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+};
+
+const paginationControlsStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '1rem',
+  backgroundColor: '#fff',
+  borderRadius: '8px',
+  padding: '0.5rem 1rem',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+};
+
+const paginationButtonsWrapperStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+};
+
+const paginationButtonBaseStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: '#fff',
+  padding: '0.5rem 1rem',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontFamily: 'Montserrat, sans-serif',
+  fontSize: '0.9375rem',
+  fontWeight: 'semibold',
+  minWidth: '50px',
+  justifyContent: 'center',
+  display: 'flex',
+  alignItems: 'center',
+};
+
+const paginationButtonActiveStyle: React.CSSProperties = {
+  backgroundColor: '#5c5c5c',
+  color: '#fff',
+};
+
+const paginationDotsStyle: React.CSSProperties = {
+  color: '#5c5c5c',
+  fontSize: '1rem',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const paginationNextButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: '#fff',
+  padding: '0.5rem 1rem',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontFamily: 'Montserrat, sans-serif',
+  fontSize: '0.9375rem',
+  fontWeight: 'semibold',
+  minWidth: '50px',
+  justifyContent: 'center',
+  display: 'flex',
+  alignItems: 'center',
 };

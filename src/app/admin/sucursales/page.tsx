@@ -52,50 +52,37 @@ export default function SucursalesPage() {
   const sucursalesData = useMemo(() => [
     { 
       id: 1, 
-      nombre: 'Sucursal Centro', 
+      nombre: 'Tienda Centro', 
       direccion: 'Av. Principal 123, Centro', 
       telefono: '123-456-7890', 
-      gerente: 'Ana López Martínez',
       estado: 'Activa',
       fechaApertura: '2020-01-15',
       empleados: 25
     },
     { 
       id: 2, 
-      nombre: 'Sucursal Norte', 
+      nombre: 'Tienda Norte', 
       direccion: 'Calle Norte 456, Zona Norte', 
       telefono: '098-765-4321', 
-      gerente: 'Carlos Méndez García',
       estado: 'Activa',
       fechaApertura: '2021-03-20',
       empleados: 18
     },
     { 
       id: 3, 
-      nombre: 'Sucursal Sur', 
+      nombre: 'Tienda Sur', 
       direccion: 'Blvd. Sur 789, Zona Sur', 
       telefono: '555-123-4567', 
-      gerente: 'María Rodríguez Silva',
+
       estado: 'Activa',
       fechaApertura: '2021-08-10',
       empleados: 22
     },
     { 
       id: 4, 
-      nombre: 'Sucursal Este', 
-      direccion: 'Av. Este 321, Zona Este', 
-      telefono: '111-222-3333', 
-      gerente: 'Pedro Sánchez López',
-      estado: 'En Mantenimiento',
-      fechaApertura: '2022-02-28',
-      empleados: 15
-    },
-    { 
-      id: 5, 
-      nombre: 'Sucursal Oeste', 
+      nombre: 'Bodega Central', 
       direccion: 'Calle Oeste 654, Zona Oeste', 
       telefono: '777-888-9999', 
-      gerente: 'Laura Jiménez Torres',
       estado: 'Activa',
       fechaApertura: '2022-11-05',
       empleados: 20
@@ -109,7 +96,6 @@ export default function SucursalesPage() {
       return (
         sucursal.nombre.toLowerCase().includes(searchLower) ||
         sucursal.direccion.toLowerCase().includes(searchLower) ||
-        sucursal.gerente.toLowerCase().includes(searchLower) ||
         sucursal.telefono.includes(searchLower)
       );
     });
@@ -416,13 +402,6 @@ export default function SucursalesPage() {
                 Siguiente
               </button>
             </div>
-            <div style={{ 
-              fontSize: isMobile ? "0.75rem" : "0.9rem", 
-              color: "#666",
-              marginTop: isMobile ? "0.5rem" : 0
-            }}>
-              Mostrando {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredData.length)} de {filteredData.length}
-            </div>
           </div>
         )}
       </div>
@@ -621,56 +600,64 @@ const searchIconStyle: React.CSSProperties = {
 const paginationContainerStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'center',
-  alignItems: 'center',
-  gap: '10px',
+  marginTop: '2rem',
   padding: '1rem',
-  backgroundColor: "#f8fafc",
-  borderRadius: '12px',
-  marginTop: '1rem',
-  border: "1px solid rgba(0, 0, 0, 0.05)",
-  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+  backgroundColor: '#f3f4f6',
+  borderRadius: '10px',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
 };
 
 const paginationControlsStyle: React.CSSProperties = {
   display: 'flex',
-  flexDirection: 'column',
   alignItems: 'center',
-  gap: '10px',
-  width: '100%',
+  gap: '1rem',
+  backgroundColor: '#fff',
+  borderRadius: '8px',
+  padding: '0.5rem 1rem',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
 };
 
 const paginationButtonBaseStyle: React.CSSProperties = {
-  padding: '8px 12px',
-  borderTop: '1px solid #ddd',
-  borderRight: '1px solid #ddd',
-  borderBottom: '1px solid #ddd',
-  borderLeft: '1px solid #ddd',
-  borderRadius: '5px',
+  backgroundColor: '#ff7300',
+  color: '#fff',
+  padding: '0.5rem 1rem',
+  borderRadius: '8px',
+  border: 'none',
   cursor: 'pointer',
-  transition: 'background-color 0.2s ease, border-color 0.2s ease',
-  minWidth: '35px',
-  textAlign: 'center',
-  color: '#333',
+  fontFamily: 'Montserrat, sans-serif',
+  fontSize: '0.9375rem',
+  fontWeight: 'semibold',
+  minWidth: '50px',
+  justifyContent: 'center',
+  display: 'flex',
+  alignItems: 'center',
 };
 
 const paginationDotsStyle: React.CSSProperties = {
-  padding: '8px 0',
-  color: '#555',
-  justifyContent: 'center',
+  color: '#5c5c5c',
+  fontSize: '1rem',
+  fontFamily: 'Montserrat, sans-serif',
 };
 
 const paginationButtonActiveStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  color: 'white',
-  borderTop: '1px solid #ff7300',
-  borderRight: '1px solid #ff7300',
-  borderBottom: '1px solid #ff7300',
-  borderLeft: '1px solid #ff7300',
+  backgroundColor: '#5c5c5c ',
+  color: '#fff',
 };
 
 const paginationNextButtonStyle: React.CSSProperties = {
-  marginRight: '16px',
+  backgroundColor: '#ff7300',
+  color: '#fff',
+  padding: '0.5rem 1rem',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontFamily: 'Montserrat, sans-serif',
+  fontSize: '0.9375rem',
+  fontWeight: 'semibold',
+  minWidth: '50px',
   justifyContent: 'center',
+  display: 'flex',
+  alignItems: 'center',
 };
 
 const paginationButtonsWrapperStyle: React.CSSProperties = {

@@ -81,7 +81,7 @@ export default function InventarioPage() {
       mainText: "Tienda Centro",
       subText: "Av. Principal 123",
       imagePath: "/images/inicio/sucursales.png",
-      extraInfo: "Gerente: Ana López | Tel: 123-456-7890",
+      extraInfo: "Tel: 123-456-7890",
       onClick: () => {
         router.push("/admin/inventario/sucursal-1");
       },
@@ -91,7 +91,7 @@ export default function InventarioPage() {
       mainText: "Tienda Norte",
       subText: "Calle Norte 456",
       imagePath: "/images/inicio/sucursales.png",
-      extraInfo: "Gerente: Carlos Méndez | Tel: 098-765-4321",
+      extraInfo: "Tel: 098-765-4321",
       onClick: () => {
         router.push("/admin/inventario/sucursal-2");
       },
@@ -101,7 +101,7 @@ export default function InventarioPage() {
       mainText: "Tienda Sur",
       subText: "Av. Sur 789",
       imagePath: "/images/inicio/sucursales.png",
-      extraInfo: "Gerente: Laura Jiménez | Tel: 555-123-4567",
+      extraInfo: "555-123-4567",
       onClick: () => {
         router.push("/admin/inventario/sucursal-3");
       },
@@ -112,9 +112,9 @@ export default function InventarioPage() {
     {
       id: 4,
       mainText: "Bodega Central",
-      subText: "Zona Norte",
+      subText: "Calle Oeste 654",
       imagePath: "/images/inicio/bodegas.png",
-      extraInfo: "Capacidad: 1000 m² | Responsable: Pedro Ramírez",
+      extraInfo: "Capacidad: 1000 m²",
       onClick: () => {
         window.location.href = "/admin/inventario/bodega-1";
       },

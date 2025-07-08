@@ -60,6 +60,8 @@ export default function DespachoPage() {
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
   const [isOffline, setIsOffline] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   // =====================
   // 3. DATOS DE EJEMPLO (MOCK DATA)
@@ -230,6 +232,77 @@ export default function DespachoPage() {
     return matchesSearch && matchesSucursal && matchesEstado;
   });
 
+  // Funciones de paginación
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  const handlePageClick = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Renderizar botones de paginación
+  const renderPaginationButtons = () => {
+    const buttons = [];
+    const maxButtonsToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
+
+    if (endPage - startPage + 1 < maxButtonsToShow) {
+      startPage = Math.max(1, endPage - maxButtonsToShow + 1);
+    }
+
+    if (startPage > 1) {
+      buttons.push(
+        <button key="1" onClick={() => handlePageClick(1)} style={paginationButtonBaseStyle}>
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        buttons.push(<span key="dots-start" style={paginationDotsStyle}>...</span>);
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => handlePageClick(i)}
+          style={{
+            ...paginationButtonBaseStyle,
+            ...(currentPage === i ? paginationButtonActiveStyle : {}),
+          }}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        buttons.push(<span key="dots-end" style={paginationDotsStyle}>...</span>);
+      }
+      buttons.push(
+        <button key={totalPages} onClick={() => handlePageClick(totalPages)} style={paginationButtonBaseStyle}>
+          {totalPages}
+        </button>
+      );
+    }
+
+    return buttons;
+  };
+
+  // Calcular datos paginados y total de páginas
+  const currentTableData = filteredDespachos.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const totalPages = Math.ceil(filteredDespachos.length / itemsPerPage);
+
   // =====================
   // 5. UI
   // =====================
@@ -363,7 +436,7 @@ export default function DespachoPage() {
                   </td>
                 </tr>
               ) : (
-                filteredDespachos.map((d) => (
+                currentTableData.map((d) => (
                   <tr key={d.id}>
                     <td style={tdStyle}>#{d.id}</td>
                     <td style={tdStyle}>{d.cliente}</td>
@@ -414,6 +487,31 @@ export default function DespachoPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Paginación */}
+        {filteredDespachos.length > 0 && (
+          <div style={paginationContainerStyle}>
+            <div style={paginationControlsStyle}>
+              <button 
+                onClick={handlePrevPage} 
+                disabled={currentPage === 1} 
+                style={paginationButtonBaseStyle}
+              >
+                Anterior
+              </button>
+              <div style={paginationButtonsWrapperStyle}>
+                {renderPaginationButtons()}
+              </div>
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -492,12 +590,12 @@ const tableStyle: React.CSSProperties = {
 };
 
 const thStyle: React.CSSProperties = {
-  backgroundColor: "#f9fafb",
+  backgroundColor: "#5c5c5c",
   padding: "1rem",
   textAlign: "left",
   fontWeight: "600",
   fontSize: "0.875rem",
-  color: "#374151",
+  color: "#fff",
   borderBottom: "1px solid #e5e7eb",
   fontFamily: "Roboto, sans-serif",
 };
@@ -505,7 +603,7 @@ const thStyle: React.CSSProperties = {
 const tdStyle: React.CSSProperties = {
   padding: "1rem",
   fontSize: "0.875rem",
-  color: "#6b7280",
+  color: "#2d2d2d",
   borderBottom: "1px solid #f3f4f6",
   fontFamily: "Roboto, sans-serif",
 };
@@ -515,4 +613,74 @@ const deleteIconStyle: React.CSSProperties = {
   fontSize: "1.2rem",
   color: "#ef4444",
   transition: "color 0.3s ease",
+};
+
+const paginationContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'center',
+  marginTop: '2rem',
+  padding: '1rem',
+  backgroundColor: '#f3f4f6',
+  borderRadius: '10px',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+};
+
+const paginationControlsStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '1rem',
+  backgroundColor: '#fff',
+  borderRadius: '8px',
+  padding: '0.5rem 1rem',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+};
+
+const paginationButtonsWrapperStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '5px',
+  flexWrap: 'wrap',
+  justifyContent: 'center'
+};
+
+const paginationButtonBaseStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: '#fff',
+  padding: '0.5rem 1rem',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontFamily: 'Montserrat, sans-serif',
+  fontSize: '0.9375rem',
+  fontWeight: 'semibold',
+  minWidth: '50px',
+  justifyContent: 'center',
+  display: 'flex',
+  alignItems: 'center',
+};
+
+const paginationButtonActiveStyle: React.CSSProperties = {
+  backgroundColor: '#5c5c5c',
+  color: '#fff',
+};
+
+const paginationDotsStyle: React.CSSProperties = {
+  color: '#5c5c5c',
+  fontSize: '1rem',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const paginationNextButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: '#fff',
+  padding: '0.5rem 1rem',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontFamily: 'Montserrat, sans-serif',
+  fontSize: '0.9375rem',
+  fontWeight: 'semibold',
+  minWidth: '50px',
+  justifyContent: 'center',
+  display: 'flex',
+  alignItems: 'center',
 };
