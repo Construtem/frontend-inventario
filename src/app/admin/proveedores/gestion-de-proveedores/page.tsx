@@ -57,7 +57,7 @@ export default function GestionProveedoresPage() {
   const itemsPerPage = 15;
 
   // Datos de ejemplo para gestión de proveedores
-  const proveedoresData: Proveedor[] = [
+  const proveedoresData = useMemo(() => [
     {
       id: 1,
       idProveedor: "PROV001",
@@ -98,7 +98,7 @@ export default function GestionProveedoresPage() {
       telefono: "+1-555-0654",
       direccion: "Sector Oficinas 654, Complejo Corporativo"
     }
-  ];
+  ], []);
 
   // Filtrar datos según búsqueda
   const filteredData = useMemo(() => {

@@ -59,7 +59,7 @@ export default function SucursalesPage() {
   const itemsPerPage = 15;
 
   // Datos de ejemplo para sucursales
-  const sucursalesData: Sucursal[] = [
+  const sucursalesData = useMemo(() => [
     { 
       id: 1, 
       nombre: 'Sucursal Centro', 
@@ -110,7 +110,7 @@ export default function SucursalesPage() {
       fechaApertura: '2022-11-05',
       empleados: 20
     },
-  ];
+  ], []);
 
   // Filtrar datos según búsqueda
   const filteredData = useMemo(() => {

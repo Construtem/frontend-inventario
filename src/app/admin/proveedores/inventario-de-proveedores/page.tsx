@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo} from "react";
 import Image from "next/image";
 
 // Importaciones de imágenes
@@ -62,7 +62,7 @@ export default function InventarioProveedoresPage() {
   const itemsPerPage = 15;
 
   // Datos de ejemplo
-  const inventarioData: InventarioProveedor[] = [
+  const inventarioData = useMemo(() => [
     {
       id: 1,
       sku: "SKU001",
@@ -128,7 +128,7 @@ export default function InventarioProveedoresPage() {
       stock: 5,
       fechaIngreso: "2025-05-20"
     }
-  ];
+  ], []);
 
   // Filtrar datos según búsqueda
   const filteredData = useMemo(() => {
