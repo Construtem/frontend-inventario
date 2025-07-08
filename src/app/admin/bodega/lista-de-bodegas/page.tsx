@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { Suspense } from "react";
 import { FaSearch } from "react-icons/fa";
 
 // =====================
@@ -25,8 +25,11 @@ export default function ListaBodegasPage() {
   );
 }
 
-function ListaBodegasContent() {
-  const [searchTerm, setSearchTerm] = useState("");
+// =====================
+// 3. COMPONENTE DE CONTENIDO
+// =====================
+const ListaBodegasContent = () => {
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   // =====================
   // 3. DATOS DE EJEMPLO
