@@ -54,7 +54,7 @@ interface UserData {
 export default function InicioPage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [openCard, setOpenCard] = useState<number | null>(null);
-  const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
+  const { isSmall, isMobile } = useWindowSize();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");

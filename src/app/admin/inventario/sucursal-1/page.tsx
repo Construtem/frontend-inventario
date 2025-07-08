@@ -1051,7 +1051,7 @@ function useWindowSize() {
 }
 
 export default function Sucursal1Page() {
-  const { width, isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
+  const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
 
   // Calcular estilos dinámicos basados en el ancho
   const getSearchWidth = () => {
@@ -1415,8 +1415,8 @@ export default function Sucursal1Page() {
   };
 
   // --- ANIMACIÓN PARA PAGINACIÓN FLOTANTE ---
-  const [showFloatingPagination, setShowFloatingPagination] = useState(false);
-  const [isAtBottom, setIsAtBottom] = useState(false);
+  const [, setShowFloatingPagination] = useState(false);
+  const [, setIsAtBottom] = useState(false);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
