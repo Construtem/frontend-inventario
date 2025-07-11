@@ -28,19 +28,21 @@ const LoadingSpinner = () => (
 export default function AuthCallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams(); // ✅ useSearchParams ahora está dentro de un Client Component
+  const frontLoginUrl = process.env.NEXT_PUBLIC_FRONT_LOGIN || 'https://login.tssw.cl';
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
   useEffect(() => {
     const firebaseToken = searchParams.get('token');
 
     if (!firebaseToken) {
       console.error("Callback llamado sin token. Redirigiendo al login.");
-      window.location.href = 'https://login.tssw.cl';
+      window.location.href = `${frontLoginUrl}`;
       return;
     }
 
     const verifyAndLogin = async (token: string) => {
       try {
-        const response = await fetch('https://api-inventario.tssw.cl/auth/verify', {
+        const response = await fetch(`${apiInventarioUrl}/auth/verify`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
