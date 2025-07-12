@@ -6,6 +6,9 @@ import { FaSearch } from "react-icons/fa";
 interface Proveedor {
   id: number;
   marca: string;
+  email: string;
+  telefono: string;
+  direccion: string;
 }
 
 export default function GestionProveedoresPage() {
@@ -31,6 +34,9 @@ export default function GestionProveedoresPage() {
   const filteredData = proveedoresData.filter((item) => {
     const matchesSearch = 
       item.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.telefono.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.direccion.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.id.toString().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
@@ -98,6 +104,9 @@ export default function GestionProveedoresPage() {
                   <tr key={item.id}>
                     <td style={tdStyle}>{item.id}</td>
                     <td style={tdStyle}>{item.marca}</td>
+                    <td style={tdStyle}>{item.email}</td>
+                    <td style={tdStyle}>{item.telefono}</td>
+                    <td style={tdStyle}>{item.direccion}</td>
                   </tr>
                 ))
               )}

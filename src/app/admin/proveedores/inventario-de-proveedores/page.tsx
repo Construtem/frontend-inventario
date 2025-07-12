@@ -39,7 +39,7 @@ export default function InventarioProveedoresPage() {
           altoCm: item.producto.alto,
           precioCU: item.producto.precio,
           stock: item.stock,
-          fechaIngreso: "", //omitido ya que no esta en el backend
+          fechaIngreso: item.fecha_ingreso ? new Date(item.fecha_ingreso).toLocaleDateString("es-CL") : "Sin registro",
       }));
 
       setInventarioData(mappedData);
@@ -55,7 +55,8 @@ export default function InventarioProveedoresPage() {
     const matchesSearch = 
       item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.nombreProducto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.proveedor.toLowerCase().includes(searchTerm.toLowerCase());
+      item.proveedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.fechaIngreso?.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesSearch;
   });
