@@ -16,8 +16,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (user) {
       setIsAuth(true); // Si existe, el usuario está autenticado. Puede ver el contenido.
     } else {
-      // Si NO existe, redirige al login principal porque no ha pasado por el flujo correcto
-      window.location.href = 'https://login.tssw.cl'; // Redirige a la página de login
+      // Si NO existe, redirige a la página principal
+      window.location.href = 'http://localhost:3000/'; // Redirige a la página principal
     }
   }, []); // Se ejecuta solo una vez al cargar el layout
 
