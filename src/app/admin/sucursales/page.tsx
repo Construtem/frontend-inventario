@@ -8,6 +8,16 @@ import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import buscarImg from "@/styles/images/buscar.png";
 
+// =====================
+// 1. INTERFACES DE DATOS
+// =====================
+interface Sucursal {
+  id: number;
+  nombre: string;
+  direccion: string;
+  telefono: string;
+}
+
 
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
@@ -44,50 +54,140 @@ function useWindowSize() {
 export default function SucursalesPage() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sucursalesData, setSucursalesData] = useState<Sucursal[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
-  // Datos de ejemplo para sucursales
-  const sucursalesData = useMemo(() => [
-    { 
-      id: 1, 
-      nombre: 'Tienda Centro', 
-      direccion: 'Av. Principal 123, Centro', 
-      telefono: '123-456-7890', 
-      estado: 'Activa',
-      fechaApertura: '2020-01-15',
-      empleados: 25
-    },
-    { 
-      id: 2, 
-      nombre: 'Tienda Norte', 
-      direccion: 'Calle Norte 456, Zona Norte', 
-      telefono: '098-765-4321', 
-      estado: 'Activa',
-      fechaApertura: '2021-03-20',
-      empleados: 18
-    },
-    { 
-      id: 3, 
-      nombre: 'Tienda Sur', 
-      direccion: 'Blvd. Sur 789, Zona Sur', 
-      telefono: '555-123-4567', 
+  // =====================
+  // 2. LLAMADA A LA API
+  // =====================
+  useEffect(() => {
+    const fetchSucursales = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔄 Intentando conectar con la API de sucursales...');
+        
+        // Timeout manual con AbortController
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
+        
+        const response = await fetch('http://localhost:8080/api/sucursales', {
+          method: 'GET',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('📡 Respuesta de la API:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Datos recibidos:', data);
+        
+        // Validar que los datos tengan la estructura esperada
+        if (Array.isArray(data)) {
+          setSucursalesData(data);
+        } else {
+          console.warn('⚠️ Los datos no son un array:', data);
+          setSucursalesData([]);
+        }
+        
+      } catch (err) {
+        console.error('❌ Error al cargar datos de sucursales:', err);
+        
+        let errorMessage = "Error desconocido al cargar datos";
+        if (err instanceof Error) {
+          if (err.name === 'AbortError') {
+            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+          } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+          } else {
+            errorMessage = err.message;
+          }
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      estado: 'Activa',
-      fechaApertura: '2021-08-10',
-      empleados: 22
-    },
-    { 
-      id: 4, 
-      nombre: 'Bodega Central', 
-      direccion: 'Calle Oeste 654, Zona Oeste', 
-      telefono: '777-888-9999', 
-      estado: 'Activa',
-      fechaApertura: '2022-11-05',
-      empleados: 20
-    },
-  ], []);
+    fetchSucursales();
+  }, []);
+
+  // Función para reintentar la carga de datos
+  const retryFetch = () => {
+    setError(null);
+    setLoading(true);
+    
+    const fetchSucursales = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔄 Reintentando conexión con la API...');
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch('http://localhost:8080/api/sucursales', {
+          method: 'GET',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('📡 Respuesta de la API:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Datos recibidos:', data);
+        
+        if (Array.isArray(data)) {
+          setSucursalesData(data);
+        } else {
+          console.warn('⚠️ Los datos no son un array:', data);
+          setSucursalesData([]);
+        }
+        
+      } catch (err) {
+        console.error('❌ Error al cargar datos de sucursales:', err);
+        
+        let errorMessage = "Error desconocido al cargar datos";
+        if (err instanceof Error) {
+          if (err.name === 'AbortError') {
+            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+          } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+          } else {
+            errorMessage = err.message;
+          }
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSucursales();
+  };
 
   // Filtrar datos según búsqueda
   const filteredData = useMemo(() => {
@@ -318,63 +418,183 @@ export default function SucursalesPage() {
           maxWidth: "100%",
           marginTop: "1rem"
         }}>
-          <table style={{
-            ...tableStyle,
-            fontSize: isMobile ? "0.875rem" : "1rem",
-            maxWidth: "100%"
-          }}>
-            <thead style={{ 
-              position: "sticky", 
-              top: 0, 
-              zIndex: 2, 
-              background: "#5C5C5C",
-              fontSize: isMobile ? "0.75rem" : "0.875rem"
+          {loading ? (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '3rem',
+              backgroundColor: 'white',
+              borderRadius: '10px',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
             }}>
-              <tr>
-                <th style={thStyle}>ID Sucursal</th>
-                <th style={thStyle}>Nombre</th>
-                <th style={thStyle}>Dirección</th>
-                <th style={thStyle}>Teléfono</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
+              <div style={{
+                width: '40px',
+                height: '40px',
+                border: '4px solid #f3f4f6',
+                borderTop: '4px solid #ff7300',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                marginBottom: '1rem'
+              }} />
+              <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando sucursales...</div>
+              <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
+                Conectando con http://localhost:8080
+              </div>
+            </div>
+          ) : error ? (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '3rem',
+              backgroundColor: 'white',
+              borderRadius: '10px',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              maxWidth: '600px',
+              margin: '0 auto'
+            }}>
+              <div style={{ 
+                fontSize: '1.1rem', 
+                color: '#ef4444',
+                textAlign: 'center',
+                marginBottom: '1.5rem'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>❌ Error al cargar las sucursales</div>
+                <div style={{ 
+                  fontSize: '0.9rem', 
+                  marginTop: '0.5rem',
+                  whiteSpace: 'pre-line',
+                  lineHeight: '1.5',
+                  color: '#666'
+                }}>
+                  {error}
+                </div>
+              </div>
+              
+              <div style={{
+                display: 'flex',
+                gap: '1rem',
+                flexDirection: isMobile ? 'column' : 'row',
+                width: isMobile ? '100%' : 'auto'
+              }}>
+                <button
+                  onClick={retryFetch}
+                  style={{
+                    backgroundColor: '#10b981',
+                    color: 'white',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontWeight: 'semibold',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                    transition: 'all 0.3s ease',
+                    minWidth: '120px'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
+                >
+                  🔄 Reintentar
+                </button>
+                
+                <button
+                  onClick={() => {
+                    console.log('🔍 Diagnóstico de red:');
+                    console.log('• URL del backend:', 'http://localhost:8080/api/sucursales');
+                    console.log('• User Agent:', navigator.userAgent);
+                    console.log('• Conexión:', navigator.onLine ? 'En línea' : 'Sin conexión');
+                    alert('Información de diagnóstico enviada a la consola del navegador (F12)');
+                  }}
+                  style={{
+                    backgroundColor: '#6b7280',
+                    color: 'white',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontWeight: 'semibold',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                    transition: 'all 0.3s ease',
+                    minWidth: '120px'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
+                >
+                  🔍 Diagnóstico
+                </button>
+              </div>
+              
+              <div style={{
+                marginTop: '1.5rem',
+                padding: '1rem',
+                backgroundColor: '#f3f4f6',
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                color: '#666',
+                textAlign: 'left',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>💡 Posibles soluciones:</div>
+                <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
+                  <li>Verificar que el backend esté ejecutándose en el puerto 8080</li>
+                  <li>Comprobar que la URL de la API sea correcta</li>
+                  <li>Revisar la configuración de CORS en el backend</li>
+                  <li>Verificar la conexión a internet</li>
+                  <li>Intentar acceder directamente a: <a href="http://localhost:8080/api/sucursales" target="_blank" style={{ color: '#3b82f6' }}>http://localhost:8080/api/sucursales</a></li>
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <table style={{
+              ...tableStyle,
+              fontSize: isMobile ? "0.875rem" : "1rem",
+              maxWidth: "100%"
+            }}>
+              <thead style={{ 
+                position: "sticky", 
+                top: 0, 
+                zIndex: 2, 
+                background: "#5C5C5C",
+                fontSize: isMobile ? "0.75rem" : "0.875rem"
+              }}>
                 <tr>
-                  <td colSpan={4} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px" }}>
-                      <div style={{ 
-                        width: "20px", 
-                        height: "20px", 
-                        border: "2px solid #f3f3f3", 
-                        borderTop: "2px solid #ff7300", 
-                        borderRadius: "50%", 
-                        animation: "spin 1s linear infinite" 
-                      }}></div>
-                      Cargando sucursales...
-                    </div>
-                  </td>
+                  <th style={thStyle}>ID Sucursal</th>
+                  <th style={thStyle}>Nombre</th>
+                  <th style={thStyle}>Dirección</th>
+                  <th style={thStyle}>Teléfono</th>
                 </tr>
-              ) : currentTableData.length === 0 ? (
-                <tr>
-                  <td colSpan={4} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
-                    No hay sucursales disponibles
-                  </td>
-                </tr>
-              ) : (
-                currentTableData.map((sucursal) => (
-                  <tr key={sucursal.id}>
-                    <td style={tdStyle}>#{sucursal.id}</td>
-                    <td style={tdStyle}>{sucursal.nombre}</td>
-                    <td style={tdStyle}>{sucursal.direccion}</td>
-                    <td style={tdStyle}>{sucursal.telefono}</td>
+              </thead>
+              <tbody>
+                {currentTableData.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
+                      No hay sucursales disponibles
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  currentTableData.map((sucursal) => (
+                    <tr key={sucursal.id}>
+                      <td style={tdStyle}>#{sucursal.id}</td>
+                      <td style={tdStyle}>{sucursal.nombre}</td>
+                      <td style={tdStyle}>{sucursal.direccion}</td>
+                      <td style={tdStyle}>{sucursal.telefono}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
 
-        {filteredData.length > 0 && (
+        {!loading && !error && filteredData.length > 0 && (
           <div style={{
             ...paginationContainerStyle,
             flexDirection: isMobile ? "column" : "row",
@@ -666,3 +886,15 @@ const paginationButtonsWrapperStyle: React.CSSProperties = {
   flexWrap: 'wrap',
   justifyContent: 'center'
 };
+
+// Agregar estilos CSS globales para la animación de carga
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+}

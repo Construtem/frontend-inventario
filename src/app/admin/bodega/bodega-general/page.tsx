@@ -42,12 +42,47 @@ function useWindowSize() {
 // =====================
 // 1. INTERFAZ DE DATOS
 // =====================
-interface StockBodega {
+interface Proveedor {
   id: number;
-  idStock: string;
-  idBodega: string;
-  idProducto: string;
+  marca: string;
+}
+
+interface Producto {
+  sku: string;
+  nombre: string;
+  descripcion: string;
+  proveedor_id: number;
+  peso: number;
+  largo: number;
+  ancho: number;
+  alto: number;
+  precio: number;
+  proveedor: Proveedor;
+}
+
+interface TipoSucursal {
+  id: number;
+  nombre: string;
+}
+
+interface Sucursal {
+  id: number;
+  nombre: string;
+  telefono: string;
+  direccion: string;
+  comuna: string;
+  ciudad: string;
+  tipo_id: number;
+  tipo: TipoSucursal;
+}
+
+interface StockBodega {
+  sku: string;
+  sucursal_id: number;
   cantidad: number;
+  descuento: number;
+  producto: Producto;
+  sucursal: Sucursal;
 }
 
 // =====================
@@ -74,7 +109,140 @@ const StockBodegaCentralContent = () => {
     categoria: "",
     estado: ""
   });
+  const [stockBodegaData, setStockBodegaData] = React.useState<StockBodega[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
   const itemsPerPage = 15; // 15 resultados por página
+
+  // =====================
+  // 3. LLAMADA A LA API
+  // =====================
+  React.useEffect(() => {
+    const fetchStockData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔄 Intentando conectar con la API...');
+        
+        // Timeout manual con AbortController como en despacho
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
+        
+        const response = await fetch('http://localhost:8080/api/stock-sucursal', { // Sin la barra final
+          method: 'GET',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('📡 Respuesta de la API:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Datos recibidos:', data);
+        
+        // Validar que los datos tengan la estructura esperada
+        if (Array.isArray(data)) {
+          setStockBodegaData(data);
+        } else {
+          console.warn('⚠️ Los datos no son un array:', data);
+          setStockBodegaData([]);
+        }
+        
+      } catch (err) {
+        console.error('❌ Error al cargar datos de stock:', err);
+        
+        // Manejo específico de diferentes tipos de errores como en despacho
+        let errorMessage = "Error desconocido al cargar datos";
+        if (err instanceof Error) {
+          if (err.name === 'AbortError') {
+            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+          } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+          } else {
+            errorMessage = err.message;
+          }
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStockData();
+  }, []);
+
+  // Función para reintentar la carga de datos
+  const retryFetch = () => {
+    setError(null);
+    setLoading(true);
+    // Re-ejecutar la función fetch en lugar de recargar la página
+    const fetchStockData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔄 Reintentando conexión con la API...');
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch('http://localhost:8080/api/stock-sucursal', {
+          method: 'GET',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('📡 Respuesta de la API:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Datos recibidos:', data);
+        
+        if (Array.isArray(data)) {
+          setStockBodegaData(data);
+        } else {
+          console.warn('⚠️ Los datos no son un array:', data);
+          setStockBodegaData([]);
+        }
+        
+      } catch (err) {
+        console.error('❌ Error al cargar datos de stock:', err);
+        
+        let errorMessage = "Error desconocido al cargar datos";
+        if (err instanceof Error) {
+          if (err.name === 'AbortError') {
+            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+          } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+          } else {
+            errorMessage = err.message;
+          }
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStockData();
+  };
 
   // Calcular estilos dinámicos basados en el ancho
   const getSearchWidth = () => {
@@ -126,76 +294,19 @@ const StockBodegaCentralContent = () => {
   };
 
   // =====================
-  // 3. DATOS DE EJEMPLO
-  // =====================
-  const stockBodegaData: StockBodega[] = [
-    {
-      id: 1,
-      idStock: "STK001",
-      idBodega: "BOD001",
-      idProducto: "PROD001",
-      cantidad: 150
-    },
-    {
-      id: 2,
-      idStock: "STK002",
-      idBodega: "BOD001",
-      idProducto: "PROD002",
-      cantidad: 85
-    },
-    {
-      id: 3,
-      idStock: "STK003",
-      idBodega: "BOD002",
-      idProducto: "PROD003",
-      cantidad: 230
-    },
-    {
-      id: 4,
-      idStock: "STK004",
-      idBodega: "BOD001",
-      idProducto: "PROD004",
-      cantidad: 42
-    },
-    {
-      id: 5,
-      idStock: "STK005",
-      idBodega: "BOD003",
-      idProducto: "PROD005",
-      cantidad: 76
-    },
-    {
-      id: 6,
-      idStock: "STK006",
-      idBodega: "BOD002",
-      idProducto: "PROD006",
-      cantidad: 199
-    },
-    {
-      id: 7,
-      idStock: "STK007",
-      idBodega: "BOD001",
-      idProducto: "PROD007",
-      cantidad: 312
-    },
-    {
-      id: 8,
-      idStock: "STK008",
-      idBodega: "BOD003",
-      idProducto: "PROD008",
-      cantidad: 58
-    }
-  ];
-
-  // =====================
   // 4. FILTRAR DATOS
   // =====================
   const filteredData = stockBodegaData.filter(item => {
     const matchesSearch = 
-      item.idStock.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.idBodega.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.idProducto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.cantidad.toString().includes(searchTerm);
+      item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.producto.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.sucursal.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.sucursal.comuna.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.sucursal_id.toString().includes(searchTerm) ||
+      item.cantidad.toString().includes(searchTerm) ||
+      item.descuento.toString().includes(searchTerm) ||
+      item.producto.precio.toString().includes(searchTerm);
 
     return matchesSearch;
   });
@@ -301,7 +412,7 @@ const StockBodegaCentralContent = () => {
           ...titleStyle,
           fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
           marginBottom: "1.5rem"
-        }}>Stock bodega central</h1>
+        }}>Stock de Inventario por Sucursales</h1>
 
       <div style={{
         ...toolbarStyle,
@@ -400,54 +511,288 @@ const StockBodegaCentralContent = () => {
         maxWidth: "100%",
         marginTop: "1rem"
       }}>
-        <table style={{
-          ...tableStyle,
-          fontSize: isMobile ? "0.875rem" : "1rem",
-          maxWidth: "100%"
-        }}>
-          <colgroup>
-            <col style={{ width: isMobile ? "20%" : "18%" }} />
-            <col style={{ width: isMobile ? "25%" : "22%" }} />
-            <col style={{ width: isMobile ? "30%" : "35%" }} />
-            <col style={{ width: isMobile ? "25%" : "25%" }} />
-          </colgroup>
-          <thead style={{ 
-            position: "sticky", 
-            top: 0, 
-            zIndex: 2, 
-            background: "#5C5C5C",
-            fontSize: isMobile ? "0.75rem" : "0.875rem"
+        {loading ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '3rem',
+            backgroundColor: 'white',
+            borderRadius: '10px',
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
           }}>
-            <tr>
-              <th style={thStyle}>ID Stock</th>
-              <th style={thStyle}>ID Bodega</th>
-              <th style={thStyle}>ID Producto</th>
-              <th style={thStyle}>Cantidad</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentTableData.length === 0 ? (
+            <div style={{
+              width: '40px',
+              height: '40px',
+              border: '4px solid #f3f4f6',
+              borderTop: '4px solid #ff7300',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              marginBottom: '1rem'
+            }} />
+            <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando datos del stock...</div>
+            <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
+              Conectando con http://localhost:8080
+            </div>
+          </div>
+        ) : error ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '3rem',
+            backgroundColor: 'white',
+            borderRadius: '10px',
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            maxWidth: '600px',
+            margin: '0 auto'
+          }}>
+            <div style={{ 
+              fontSize: '1.1rem', 
+              color: '#ef4444',
+              textAlign: 'center',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>❌ Error al cargar los datos</div>
+              <div style={{ 
+                fontSize: '0.9rem', 
+                marginTop: '0.5rem',
+                whiteSpace: 'pre-line',
+                lineHeight: '1.5',
+                color: '#666'
+              }}>
+                {error}
+              </div>
+            </div>
+            
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              flexDirection: isMobile ? 'column' : 'row',
+              width: isMobile ? '100%' : 'auto'
+            }}>
+              <button
+                onClick={retryFetch}
+                style={{
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  fontFamily: 'Montserrat, sans-serif',
+                  fontWeight: 'semibold',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                  transition: 'all 0.3s ease',
+                  minWidth: '120px'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
+              >
+                🔄 Reintentar
+              </button>
+              
+              <button
+                onClick={() => {
+                  console.log('🔍 Diagnóstico de red:');
+                  console.log('• URL del backend:', 'http://localhost:8080/api/stock-sucursal');
+                  console.log('• User Agent:', navigator.userAgent);
+                  console.log('• Conexión:', navigator.onLine ? 'En línea' : 'Sin conexión');
+                  alert('Información de diagnóstico enviada a la consola del navegador (F12)');
+                }}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  fontFamily: 'Montserrat, sans-serif',
+                  fontWeight: 'semibold',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                  transition: 'all 0.3s ease',
+                  minWidth: '120px'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
+              >
+                🔍 Diagnóstico
+              </button>
+            </div>
+            
+            <div style={{
+              marginTop: '1.5rem',
+              padding: '1rem',
+              backgroundColor: '#f3f4f6',
+              borderRadius: '8px',
+              fontSize: '0.875rem',
+              color: '#666',
+              textAlign: 'left',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>💡 Posibles soluciones:</div>
+              <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
+                <li>Verificar que el backend esté ejecutándose en el puerto 8080</li>
+                <li>Comprobar que la URL de la API sea correcta</li>
+                <li>Revisar la configuración de CORS en el backend</li>
+                <li>Verificar la conexión a internet</li>
+                <li>Intentar acceder directamente a: <a href="http://localhost:8080/api/stock-sucursal" target="_blank" style={{ color: '#3b82f6' }}>http://localhost:8080/api/stock-sucursal</a></li>
+              </ul>
+            </div>
+          </div>
+        ) : (
+          <table style={{
+            ...tableStyle,
+            fontSize: isMobile ? "0.875rem" : "1rem",
+            maxWidth: "100%"
+          }}>
+            <colgroup>
+              <col style={{ width: isMobile ? "15%" : "12%" }} />
+              <col style={{ width: isMobile ? "25%" : "20%" }} />
+              <col style={{ width: isMobile ? "20%" : "18%" }} />
+              <col style={{ width: isMobile ? "15%" : "12%" }} />
+              <col style={{ width: isMobile ? "10%" : "8%" }} />
+              <col style={{ width: isMobile ? "15%" : "12%" }} />
+              <col style={{ width: isMobile ? "0%" : "18%" }} />
+            </colgroup>
+            <thead style={{ 
+              position: "sticky", 
+              top: 0, 
+              zIndex: 2, 
+              background: "#5C5C5C",
+              fontSize: isMobile ? "0.7rem" : "0.875rem"
+            }}>
               <tr>
-                <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', color: '#888', padding: "2rem" }}>
-                  No hay registros de stock disponibles
-                </td>
+                <th style={thStyle}>SKU</th>
+                <th style={thStyle}>Producto</th>
+                <th style={thStyle}>Sucursal</th>
+                <th style={thStyle}>Precio</th>
+                <th style={thStyle}>Stock</th>
+                <th style={thStyle}>Descuento</th>
+                {!isMobile && <th style={thStyle}>Ubicación</th>}
               </tr>
-            ) : (
-              currentTableData.map((item) => (
-                <tr key={item.id}>
-                  <td style={tdStyle}>{item.idStock}</td>
-                  <td style={tdStyle}>{item.idBodega}</td>
-                  <td style={tdStyle}>{item.idProducto}</td>
-                  <td style={tdStyle}>{item.cantidad}</td>
+            </thead>
+            <tbody>
+              {currentTableData.length === 0 ? (
+                <tr>
+                  <td colSpan={isMobile ? 6 : 7} style={{ ...tdStyle, textAlign: 'center', color: '#888', padding: "2rem" }}>
+                    No hay registros de stock disponibles
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                currentTableData.map((item, index) => (
+                  <tr key={`${item.sku}-${item.sucursal_id}-${index}`}>
+                    <td style={tdStyle}>
+                      <span style={{ 
+                        fontWeight: 'bold', 
+                        color: '#374151',
+                        fontSize: isMobile ? '0.8rem' : '0.9rem'
+                      }}>
+                        {item.sku}
+                      </span>
+                    </td>
+                    <td style={{...tdStyle, textAlign: 'left', padding: '0.4rem 0.6rem'}}>
+                      <div>
+                        <div style={{ 
+                          fontWeight: 'semibold', 
+                          color: '#1f2937',
+                          fontSize: isMobile ? '0.8rem' : '0.9rem',
+                          marginBottom: '0.1rem'
+                        }}>
+                          {item.producto.nombre}
+                        </div>
+                        <div style={{ 
+                          color: '#6b7280', 
+                          fontSize: isMobile ? '0.7rem' : '0.8rem',
+                          lineHeight: '1.2'
+                        }}>
+                          {item.producto.descripcion}
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{...tdStyle, textAlign: 'left', padding: '0.4rem 0.6rem'}}>
+                      <div>
+                        <div style={{ 
+                          fontWeight: 'semibold', 
+                          color: '#1f2937',
+                          fontSize: isMobile ? '0.8rem' : '0.9rem',
+                          marginBottom: '0.1rem'
+                        }}>
+                          {item.sucursal.nombre}
+                        </div>
+                        <div style={{ 
+                          color: '#6b7280', 
+                          fontSize: isMobile ? '0.7rem' : '0.8rem'
+                        }}>
+                          ID: {item.sucursal_id}
+                        </div>
+                      </div>
+                    </td>
+                    <td style={tdStyle}>
+                      <span style={{ 
+                        fontWeight: 'bold', 
+                        color: '#059669',
+                        fontSize: isMobile ? '0.8rem' : '0.9rem'
+                      }}>
+                        ${item.producto.precio.toLocaleString('es-CL')}
+                      </span>
+                    </td>
+                    <td style={tdStyle}>
+                      <span style={{ 
+                        backgroundColor: item.cantidad > 20 ? '#dcfce7' : item.cantidad > 10 ? '#fef3c7' : '#fee2e2',
+                        color: item.cantidad > 20 ? '#166534' : item.cantidad > 10 ? '#92400e' : '#dc2626',
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '0.375rem',
+                        fontSize: isMobile ? '0.75rem' : '0.8rem',
+                        fontWeight: 'bold'
+                      }}>
+                        {item.cantidad}
+                      </span>
+                    </td>
+                    <td style={tdStyle}>
+                      {item.descuento > 0 ? (
+                        <span style={{
+                          backgroundColor: '#fee2e2',
+                          color: '#dc2626',
+                          padding: '0.2rem 0.4rem',
+                          borderRadius: '0.375rem',
+                          fontSize: isMobile ? '0.75rem' : '0.8rem',
+                          fontWeight: 'bold'
+                        }}>
+                          -{item.descuento}%
+                        </span>
+                      ) : (
+                        <span style={{ color: '#9ca3af', fontSize: isMobile ? '0.75rem' : '0.8rem' }}>
+                          Sin descuento
+                        </span>
+                      )}
+                    </td>
+                    {!isMobile && (
+                      <td style={{...tdStyle, textAlign: 'left', padding: '0.4rem 0.6rem'}}>
+                        <div style={{ 
+                          color: '#6b7280', 
+                          fontSize: '0.8rem',
+                          lineHeight: '1.2'
+                        }}>
+                          {item.sucursal.comuna}, {item.sucursal.ciudad}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Paginación */}
-      {filteredData.length > 0 && (
+      {!loading && !error && filteredData.length > 0 && (
         <div style={paginationContainerStyle}>
           <div style={paginationControlsStyle}>
             <button 
@@ -630,7 +975,7 @@ const tableStyle: React.CSSProperties = {
   borderCollapse: "collapse",
   border: "none",
   backgroundColor: "#fff",
-  minWidth: "1000px",
+  minWidth: "1200px",
   transition: "all 0.3s ease"
 };
 
@@ -713,3 +1058,15 @@ const paginationDotsStyle: React.CSSProperties = {
   fontSize: '1rem',
   fontFamily: 'Montserrat, sans-serif',
 };
+
+// Agregar estilos CSS globales para la animación de carga
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+}
