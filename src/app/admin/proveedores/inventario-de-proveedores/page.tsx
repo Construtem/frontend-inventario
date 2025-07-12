@@ -720,7 +720,7 @@ const paginationDotsStyle: React.CSSProperties = {
 };
 
 const paginationButtonActiveStyle: React.CSSProperties = {
-  backgroundColor: '#222222',
+  backgroundColor: '#5c5c5c',
   color: '#fff',
 };
 
