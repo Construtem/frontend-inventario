@@ -70,10 +70,6 @@ const StockBodegaCentralContent = () => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [hasActiveFilters, setHasActiveFilters] = React.useState(false);
-  const [activeFilters, setActiveFilters] = React.useState<{ categoria: string; estado: string }>({
-    categoria: "",
-    estado: ""
-  });
   const itemsPerPage = 15; // 15 resultados por página
 
   // Calcular estilos dinámicos basados en el ancho
@@ -208,7 +204,6 @@ const StockBodegaCentralContent = () => {
 
   // Función para limpiar filtros desde la barra de herramientas
   const handleClearFiltersFromToolbar = () => {
-    setActiveFilters({ categoria: "", estado: "" });
     setHasActiveFilters(false);
     setCurrentPage(1);
     alert('Filtros eliminados');
