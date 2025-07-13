@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+
+import React, { Suspense } from "react";
 import Image from "next/image";
 
 // Importar imágenes
@@ -7,7 +8,7 @@ import buscarImg from "@/styles/images/buscar.png";
 import filtrosImg from "@/styles/images/filtros.png";
 
 // =====================
-// 1. INTERFACES DE DATOS
+// 1. INTERFAZ DE DATOS
 // =====================
 interface Bodega {
   id: number;
@@ -17,71 +18,76 @@ interface Bodega {
   telefono: string;
 }
 
-interface SucursalAPI {
-  id: number;
-  nombre: string;
-  direccion: string;
-  comuna: string;
-  ciudad: string;
-  telefono: string;
-}
-
 // =====================
 // 2. COMPONENTE PRINCIPAL
 // =====================
 export default function ListaBodegasPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasActiveFilters, setHasActiveFilters] = useState(false);
-  const [bodegasData, setBodegasData] = useState<Bodega[]>([]);
-  const itemsPerPage = 15;
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <ListaBodegasContent />
+    </Suspense>
+  );
+}
+
+// =====================
+// 3. COMPONENTE DE CONTENIDO
+// =====================
+const ListaBodegasContent = () => {
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [hasActiveFilters, setHasActiveFilters] = React.useState(false);
+  const itemsPerPage = 15; // 15 resultados por página
 
   // Variables para responsividad
-  const isMobile = false;
+  const isMobile = false; // Simplificado para este ejemplo
 
   // =====================
-  // 3. LLAMADA A LA API
+  // 3. DATOS DE EJEMPLO
   // =====================
-  const fetchBodegas = async () => {
-    try {
-      const response = await fetch('http://localhost:8080/api/bodegas', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      });
-            
-      if (!response.ok) {
-        throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
-      }
-            
-      const data: SucursalAPI[] = await response.json();
-            
-      // Mapear los datos de la API a la interfaz Bodega
-      if (Array.isArray(data)) {
-        const mappedBodegas: Bodega[] = data.map(sucursal => ({
-          id: sucursal.id,
-          idBodega: `BOD${sucursal.id.toString().padStart(3, '0')}`,
-          nombre: sucursal.nombre || 'Sin nombre',
-          direccion: `${sucursal.direccion || 'Sin dirección'}, ${sucursal.comuna || 'Sin comuna'}, ${sucursal.ciudad || 'Sin ciudad'}`,
-          telefono: sucursal.telefono || 'Sin teléfono'
-        }));
-        setBodegasData(mappedBodegas);
-      } else {
-        setBodegasData([]);
-      }
-          
-    } catch (err) {
-      console.error('Error al cargar datos de bodegas:', err);
-      setBodegasData([]);
+  const bodegasData: Bodega[] = [
+    {
+      id: 1,
+      idBodega: "BOD001",
+      nombre: "Bodega Central Norte",
+      direccion: "Av. Industrial 123, Zona Norte",
+      telefono: "+1-555-1001"
+    },
+    {
+      id: 2,
+      idBodega: "BOD002",
+      nombre: "Bodega Central Sur",
+      direccion: "Calle Logística 456, Sector Sur",
+      telefono: "+1-555-1002"
+    },
+    {
+      id: 3,
+      idBodega: "BOD003",
+      nombre: "Bodega Central Este",
+      direccion: "Boulevard Comercial 789, Zona Este",
+      telefono: "+1-555-1003"
+    },
+    {
+      id: 4,
+      idBodega: "BOD004",
+      nombre: "Bodega Central Oeste",
+      direccion: "Av. Distribución 321, Sector Oeste",
+      telefono: "+1-555-1004"
+    },
+    {
+      id: 5,
+      idBodega: "BOD005",
+      nombre: "Bodega Central Principal",
+      direccion: "Plaza Industrial 654, Centro",
+      telefono: "+1-555-1005"
+    },
+    {
+      id: 6,
+      idBodega: "BOD006",
+      nombre: "Bodega Auxiliar A",
+      direccion: "Parque Empresarial 987, Zona A",
+      telefono: "+1-555-1006"
     }
-  };
-
-  // Ejecutar fetch al montar el componente
-  useState(() => {
-    fetchBodegas();
-  });
+  ];
 
   // =====================
   // 4. FILTRAR DATOS
@@ -92,6 +98,7 @@ export default function ListaBodegasPage() {
       item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.direccion.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.telefono.toLowerCase().includes(searchTerm.toLowerCase());
+
     return matchesSearch;
   });
 
@@ -246,7 +253,7 @@ export default function ListaBodegasPage() {
               />
               <button style={lupaButtonStyle}>
                 <Image
-                  src={buscarImg}
+                  src={buscarImg.src}
                   alt="Buscar"
                   width={isMobile ? 30 : 40}
                   height={isMobile ? 30 : 40}
@@ -254,7 +261,7 @@ export default function ListaBodegasPage() {
                 />
               </button>
             </div>
-                        
+            
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button style={{
                 ...filterButtonStyle,
@@ -265,7 +272,7 @@ export default function ListaBodegasPage() {
                 position: 'relative'
               }} onClick={handleFiltersProduct}>
                 <Image
-                  src={filtrosImg}
+                  src={filtrosImg.src}
                   alt="Filtros"
                   width={20}
                   height={20}
@@ -336,9 +343,9 @@ export default function ListaBodegasPage() {
               <col style={{ width: isMobile ? "15%" : "13%" }} />
             </colgroup>
             <thead style={{ 
-              position: "sticky",
-              top: 0,
-              zIndex: 2,
+              position: "sticky", 
+              top: 0, 
+              zIndex: 2, 
               background: "#5C5C5C",
               fontSize: isMobile ? "0.75rem" : "0.875rem"
             }}>
@@ -375,17 +382,15 @@ export default function ListaBodegasPage() {
           <div style={paginationContainerStyle}>
             <div style={paginationControlsStyle}>
               <button 
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
+                onClick={handlePrevPage} 
+                disabled={currentPage === 1} 
                 style={paginationButtonBaseStyle}
               >
                 Anterior
               </button>
-              
               <div style={paginationButtonsWrapperStyle}>
                 {renderPaginationButtons()}
               </div>
-              
               <button
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages}
@@ -399,11 +404,12 @@ export default function ListaBodegasPage() {
       </div>
     </div>
   );
-}
+};
 
 // =====================
 // 6. ESTILOS
 // =====================
+
 const containerStyle: React.CSSProperties = {
   marginTop: "70px",
   marginRight: "0",
@@ -443,6 +449,8 @@ const titleStyle: React.CSSProperties = {
   marginBottom: "1.5rem",
   fontFamily: "Montserrat, sans-serif"
 };
+
+
 
 const modificarButtonStyle: React.CSSProperties = {
   backgroundColor: "#ff7300",

@@ -212,9 +212,9 @@ export default function SucursalesPage() {
     return sucursalesData.filter(sucursal => {
       const searchLower = searchTerm.toLowerCase();
       return (
-        sucursal.nombre.toLowerCase().includes(searchLower) ||
-        sucursal.direccion.toLowerCase().includes(searchLower) ||
-        sucursal.telefono.includes(searchLower) ||
+        (sucursal.nombre && sucursal.nombre.toLowerCase().includes(searchLower)) ||
+        (sucursal.direccion && sucursal.direccion.toLowerCase().includes(searchLower)) ||
+        (sucursal.telefono && sucursal.telefono.includes(searchLower)) ||
         (sucursal.comuna && sucursal.comuna.toLowerCase().includes(searchLower)) ||
         (sucursal.ciudad && sucursal.ciudad.toLowerCase().includes(searchLower))
       );
@@ -613,14 +613,14 @@ export default function SucursalesPage() {
                       <td style={tdStyle}>{sucursal.ciudad || 'N/A'}</td>
                       <td style={tdStyle}>
                         <span style={{
-                          backgroundColor: sucursal.nombre.toLowerCase().includes('bodega') ? '#10b981' : '#3b82f6',
+                          backgroundColor: sucursal.nombre?.toLowerCase()?.includes('bodega') ? '#10b981' : '#3b82f6',
                           color: 'white',
                           padding: '0.25rem 0.5rem',
                           borderRadius: '4px',
                           fontSize: '0.75rem',
                           fontWeight: 'semibold'
                         }}>
-                          {sucursal.nombre.toLowerCase().includes('bodega') ? 'Bodega' : 'Sucursal'}
+                          {sucursal.nombre?.toLowerCase()?.includes('bodega') ? 'Bodega' : 'Sucursal'}
                         </span>
                       </td>
                     </tr>
