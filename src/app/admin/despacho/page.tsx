@@ -63,6 +63,9 @@ export default function DespachoPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
+  // URL de la API
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || "https://api-inventario.tssw.cl";
+
   // =====================
   // 3. DATOS DE EJEMPLO (MOCK DATA)
   // =====================
@@ -119,7 +122,7 @@ export default function DespachoPage() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
         
-        const res = await fetch("https://api-inventario.tssw.cl/api/despachos", {
+        const res = await fetch(`${apiInventarioUrl}/api/despachos`, {
           signal: controller.signal,
           headers: {
             'Content-Type': 'application/json',
@@ -199,7 +202,7 @@ export default function DespachoPage() {
     }
 
     try {
-      const res = await fetch(`https://api-inventario.tssw.cl/api/despachos/${id}`, {
+      const res = await fetch(`${apiInventarioUrl}/api/despachos/${id}`, {
         method: "DELETE",
         headers: {
           'Content-Type': 'application/json',
@@ -327,9 +330,12 @@ export default function DespachoPage() {
             onChange={(e) => setSucursal(e.target.value)}
           >
             <option value="">Todas las Sucursales</option>
-            <option value="Sucursal 1">Sucursal 1</option>
-            <option value="Sucursal 2">Sucursal 2</option>
-            <option value="Sucursal 3">Sucursal 3</option>
+            <option value="Bodega Central">Bodega Central</option>
+            <option value="Bodega Norte">Bodega Norte</option>
+            <option value="Bodega Sur">Bodega Sur</option>
+            <option value="Sucursal Centro">Sucursal Centro</option>
+            <option value="Sucursal La Florida">Sucursal La Florida</option>
+            <option value="Sucursal Maipú">Sucursal Maipú</option>
           </select>
 
           <select
@@ -339,9 +345,9 @@ export default function DespachoPage() {
           >
             <option value="">Todos los Estados</option>
             <option value="pendiente">Pendiente</option>
-            <option value="enviado">Enviado</option>
-            <option value="aprobado">Aprobado</option>
-            <option value="cancelado">Cancelado</option>
+            <option value="enviada">Enviada</option>
+            <option value="aprobada">Aprobada</option>
+            <option value="cancelada">Cancelada</option>
           </select>
 
           <button 
@@ -460,7 +466,7 @@ export default function DespachoPage() {
                     <td style={tdStyle}>{d.totalKg} kg</td>
                     <td style={tdStyle}>
                       <a
-                        href={`https://api-inventario.tssw.cl/api/despachos/${d.id}/pdf`}
+                        href={`${apiInventarioUrl}/api/despachos/${d.id}/pdf`}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{

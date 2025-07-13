@@ -28,8 +28,8 @@ const LoadingSpinner = () => (
 export default function AuthCallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams(); // ✅ useSearchParams ahora está dentro de un Client Component
-  const frontLoginUrl = process.env.NEXT_PUBLIC_FRONT_LOGIN || 'https://login.tssw.cl';
-  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
+  const frontLoginUrl = process.env.NEXT_PUBLIC_FRONT_LOGIN || 'http://localhost:3000/';
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
 
   useEffect(() => {
     const firebaseToken = searchParams.get('token');
@@ -67,7 +67,7 @@ export default function AuthCallbackClient() {
 
     verifyAndLogin(firebaseToken);
 
-  }, [searchParams, router]); // Dependencias del efecto
+  }, [searchParams, router, frontLoginUrl, apiInventarioUrl]); // Dependencias del efecto
 
   // Muestra el spinner mientras se procesa el token
   return <LoadingSpinner />;
