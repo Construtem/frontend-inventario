@@ -435,12 +435,10 @@ export default function SucursalesPage() {
 
   // Estados para el modal de edición
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedSucursal, setSelectedSucursal] = useState<Sucursal | null>(null);
   const [editFormData, setEditFormData] = useState<Sucursal | null>(null);
 
   // Agregar función para manejar la edición
   const handleEdit = (sucursal: Sucursal) => {
-    setSelectedSucursal(sucursal);
     setEditFormData(sucursal);
     setShowEditModal(true);
   };
@@ -474,7 +472,8 @@ export default function SucursalesPage() {
         icon: 'success',
         confirmButtonColor: '#ff7300'
       });
-    } catch (error) {
+    } catch (err) {
+      console.error('Error al actualizar sucursal:', err);
       Swal.fire({
         title: 'Error',
         text: 'No se pudo actualizar la sucursal',
@@ -516,7 +515,8 @@ export default function SucursalesPage() {
             icon: 'success',
             confirmButtonColor: '#ff7300'
           });
-        } catch (error) {
+        } catch (err) {
+          console.error('Error al eliminar sucursal:', err);
           Swal.fire({
             title: 'Error',
             text: 'No se pudo eliminar la sucursal',
