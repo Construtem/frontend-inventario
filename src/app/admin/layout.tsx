@@ -8,16 +8,29 @@ import Header from "@/components/admin/header";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isAuth, setIsAuth] = useState(false); // Estado para saber si está autenticado
+  const frontLoginUrl = process.env.NEXT_PUBLIC_FRONT_LOGIN || 'https://login.tssw.cl';
 
   useEffect(() => {
     // Solo revisa si existe el item 'user' en localStorage
-    const user = localStorage.getItem("user");
+    //const user = localStorage.getItem("user");    // Descomentar esta linea para produccion
 
-    if (user) {
+    if (!localStorage.getItem("user")) {    // esto no va para produccion xddd
+      const mockUser = {
+        uid: '123456',
+        nombre: 'Usuario Ficticio',
+        correo: 'prueba@utem.cl',
+        rol: 'Vendedor',
+      }
+
+      localStorage.setItem('user', JSON.stringify(mockUser))
+      console.log('Usuario ficticio guardado en localStorage')
+    }
+
+    if (localStorage.getItem("user")) {     // Para produccion cambiar localStorage.getItem("user") por user
       setIsAuth(true); // Si existe, el usuario está autenticado. Puede ver el contenido.
     } else {
-      // Si NO existe, redirige a la página principal
-      window.location.href = 'http://localhost:3000/'; // Redirige a la página principal
+      // Si NO existe, redirige al login principal porque no ha pasado por el flujo correcto
+      window.location.href = `${frontLoginUrl}`; // Redirige a la página de login
     }
   }, []); // Se ejecuta solo una vez al cargar el layout
 

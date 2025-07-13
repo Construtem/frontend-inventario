@@ -18,7 +18,7 @@ import buscarImg from "@/styles/images/buscar.png";
 // =====================
 // 1.1 CONFIGURACIÓN DEL BACKEND
 // =====================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 // Headers comunes para las peticiones
 const getHeaders = () => ({
@@ -34,7 +34,7 @@ const getHeaders = () => ({
 // Obtener todos los productos
 const fetchProducts = async (): Promise<ProductData[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/productos`, {
+    const response = await fetch(`${API_BASE_URL}/productos`, {
       method: 'GET',
       headers: getHeaders(),
     });
@@ -116,7 +116,7 @@ const updateProduct = async (sku: string, product: Partial<ProductData>): Promis
 // Eliminar un producto por SKU
 const deleteProduct = async (sku: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/productos/${sku}`, {
+    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -1486,7 +1486,7 @@ export default function Sucursal1Page() {
           ...titleStyle,
           fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
           marginBottom: "1.5rem"
-        }}>Inventario de Productos (Tienda Norte)</h1>
+        }}>Inventario de Productos (Bodega Sur)</h1>
         
         <div style={{
           ...toolbarStyle,

@@ -18,7 +18,7 @@ import buscarImg from "@/styles/images/buscar.png";
 // =====================
 // 1.1 CONFIGURACIÓN DEL BACKEND
 // =====================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-inventario.tssw.cl/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
 
 // Headers comunes para las peticiones
 const getHeaders = () => ({
@@ -34,7 +34,7 @@ const getHeaders = () => ({
 // Obtener todos los productos
 const fetchProducts = async (): Promise<ProductData[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/productos`, {
+    const response = await fetch(`${API_BASE_URL}/api/productos`, {
       method: 'GET',
       headers: getHeaders(),
     });
@@ -116,7 +116,7 @@ const updateProduct = async (sku: string, product: Partial<ProductData>): Promis
 // Eliminar un producto por SKU
 const deleteProduct = async (sku: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
+    const response = await fetch(`${API_BASE_URL}/api/productos/${sku}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });

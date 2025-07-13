@@ -8,6 +8,17 @@ import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import buscarImg from "@/styles/images/buscar.png";
 
+// =====================
+// CONFIGURACIÓN DEL BACKEND
+// =====================
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
+
+// Headers comunes para las peticiones
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  // Agrega aquí tokens de autenticación si los usas
+  // 'Authorization': `Bearer ${token}`,
+});
 
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
@@ -41,93 +52,79 @@ function useWindowSize() {
   };
 }
 
+interface InventarioProveedor {
+  id: number;
+  sku: string;
+  nombreProducto: string;
+  proveedor: string;
+  pesoKg: number;
+  largoCm: number;
+  anchoCm: number;
+  altoCm: number;
+  precioCU: number;
+  stock: number;
+  fechaIngreso?: string;  //opcional ya que no esta el dato en el backend
+}
+
 export default function InventarioProveedoresPage() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
+  const [inventarioData, setInventarioData] = useState<InventarioProveedor[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const [error, setError] = useState("");  
 
-  // Datos de ejemplo
-  const inventarioData = useMemo(() => [
-    {
-      id: 1,
-      sku: "SKU001",
-      nombreProducto: "Laptop Dell Inspiron",
-      proveedor: "Tech Solutions",
-      pesoKg: 2.5,
-      largoCm: 35.6,
-      anchoCm: 23.4,
-      altoCm: 2.1,
-      precioCU: 850.00,
-      stock: 15,
-      fechaIngreso: "2025-01-15"
-    },
-    {
-      id: 2,
-      sku: "SKU002",
-      nombreProducto: "Mouse Logitech MX",
-      proveedor: "Periféricos SA",
-      pesoKg: 0.1,
-      largoCm: 12.5,
-      anchoCm: 8.5,
-      altoCm: 4.2,
-      precioCU: 75.00,
-      stock: 50,
-      fechaIngreso: "2025-02-10"
-    },
-    {
-      id: 3,
-      sku: "SKU003",
-      nombreProducto: "Monitor Samsung 27\"",
-      proveedor: "Displays Corp",
-      pesoKg: 5.8,
-      largoCm: 61.3,
-      anchoCm: 20.5,
-      altoCm: 45.7,
-      precioCU: 320.00,
-      stock: 8,
-      fechaIngreso: "2025-03-05"
-    },
-    {
-      id: 4,
-      sku: "SKU004",
-      nombreProducto: "Teclado Mecánico RGB",
-      proveedor: "Gaming Gear",
-      pesoKg: 1.2,
-      largoCm: 44.0,
-      anchoCm: 13.5,
-      altoCm: 3.8,
-      precioCU: 120.00,
-      stock: 25,
-      fechaIngreso: "2025-04-12"
-    },
-    {
-      id: 5,
-      sku: "SKU005",
-      nombreProducto: "Impresora HP LaserJet",
-      proveedor: "Office Solutions",
-      pesoKg: 18.5,
-      largoCm: 42.0,
-      anchoCm: 39.8,
-      altoCm: 31.2,
-      precioCU: 450.00,
-      stock: 5,
-      fechaIngreso: "2025-05-20"
-    }
-  ], []);
+  // Datos de inventario desde base de datos
+  useEffect(() => {
+    const fetchInventario = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        
+        const res = await fetch(`${API_BASE_URL}/api/stock-proveedor`, {
+          method: 'GET',
+          headers: getHeaders(),
+        });
+        if(!res.ok) throw new Error(`Error: ${res.status}`);
+        const data = await res.json();
+
+        const mappedData: InventarioProveedor[] = data.map((item: any) => ({
+          id: item.proveedor_id,
+          sku: item.producto.sku,
+          nombreProducto: item.producto.nombre,
+          proveedor: item.proveedor.marca,
+          pesoKg: item.producto.peso,
+          largoCm: item.producto.largo,
+          anchoCm: item.producto.ancho,
+          altoCm: item.producto.alto,
+          precioCU: item.producto.precio,
+          stock: item.stock,
+          fechaIngreso: item.fecha_ingreso ? new Date(item.fecha_ingreso).toLocaleDateString("es-CL") : "Sin registro",
+        }));
+
+        setInventarioData(mappedData);
+      } catch (error) {
+        console.error("Error fetching inventario de proveedores:", error);
+        setError("Error al cargar el inventario de proveedores");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInventario();
+  }, []);
 
   // Filtrar datos según búsqueda
   const filteredData = useMemo(() => {
-    return inventarioData.filter(item => {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        item.sku.toLowerCase().includes(searchLower) ||
-        item.nombreProducto.toLowerCase().includes(searchLower) ||
-        item.proveedor.toLowerCase().includes(searchLower)
-      );
-    });
-  }, [inventarioData, searchTerm]);
+    const term = searchTerm.toLowerCase();
+     return inventarioData.filter((item) =>
+      item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.nombreProducto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.proveedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.fechaIngreso?.toLowerCase().includes(searchTerm.toLowerCase())
+     );
+  }, [searchTerm, inventarioData]);
 
   // Calcular datos paginados
   const currentTableData = useMemo(() => {
@@ -407,7 +404,7 @@ export default function InventarioProveedoresPage() {
                     <td style={tdStyle}>{item.altoCm}</td>
                     <td style={tdStyle}>${item.precioCU.toFixed(2)}</td>
                     <td style={tdStyle}>{item.stock}</td>
-                    <td style={tdStyle}>{new Date(item.fechaIngreso).toLocaleDateString()}</td>
+                    <td style={tdStyle}>{item.fechaIngreso}</td>
                     <td style={tdStyle}>
                       <div style={{ display: "flex", justifyContent: "center", gap: "5px" }}>
                         <button style={{

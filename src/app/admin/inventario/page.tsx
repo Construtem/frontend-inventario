@@ -9,44 +9,13 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-// Hook para manejar el tamaño de la ventana
-function useWindowSize() {
-  const [windowSize, setWindowSize] = useState({
-    width: typeof window !== 'undefined' ? window.innerWidth : 0,
-    height: typeof window !== 'undefined' ? window.innerHeight : 0,
-  });
-
-  useEffect(() => {
-    function handleResize() {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    }
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', handleResize);
-      handleResize();
-      return () => window.removeEventListener('resize', handleResize);
-    }
-  }, []);
-
-  return {
-    ...windowSize,
-    isExtraLarge: windowSize.width > 1440,
-    isLarge: windowSize.width <= 1440 && windowSize.width > 1200,
-    isMedium: windowSize.width <= 1200 && windowSize.width > 992,
-    isSmall: windowSize.width <= 992 && windowSize.width > 768,
-    isMobile: windowSize.width <= 768
-  };
-}
-
 interface CardProps {
   id: number;
   mainText: string;
   subText: string;
   imagePath: string;
   extraInfo?: string;
+  route?: string;
   onClick?: () => void;
 }
 
@@ -59,8 +28,8 @@ interface UserData {
 
 export default function InventarioPage() {
   const router = useRouter();
-  const [, setUser] = useState<UserData | null>(null);
-  const { isSmall, isMobile } = useWindowSize();
+  const [user, setUser] = useState<UserData | null>(null);
+  const [openCard, setOpenCard] = useState<number | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -74,135 +43,106 @@ export default function InventarioPage() {
     }
   }, []);
 
-  // Datos de ejemplo para 3 tiendas y 3 bodegas
-  const tiendas: CardProps[] = [
+  // Datos de ejemplo para 3 sucursales y 3 bodegas
+  const cardData: CardProps[] = [
     {
       id: 1,
-      mainText: "Tienda Centro",
+      mainText: "Sucursal Centro",
       subText: "Av. Principal 123",
       imagePath: "/images/inicio/sucursales.png",
-      extraInfo: "Tel: 123-456-7890",
-      onClick: () => {
-        router.push("/admin/inventario/sucursal-1");
-      },
+      extraInfo: "Gerente: Ana López | Tel: 123-456-7890",
+      route: "/admin/inventario/sucursal-1"
     },
     {
       id: 2,
-      mainText: "Tienda Norte",
+      mainText: "Sucursal Norte",
       subText: "Calle Norte 456",
       imagePath: "/images/inicio/sucursales.png",
-      extraInfo: "Tel: 098-765-4321",
-      onClick: () => {
-        router.push("/admin/inventario/sucursal-2");
-      },
+      extraInfo: "Gerente: Carlos Méndez | Tel: 098-765-4321",
+      route: "/admin/inventario/sucursal-2"
     },
     {
       id: 3,
-      mainText: "Tienda Sur",
+      mainText: "Sucursal Sur",
       subText: "Av. Sur 789",
       imagePath: "/images/inicio/sucursales.png",
-      extraInfo: "555-123-4567",
-      onClick: () => {
-        router.push("/admin/inventario/sucursal-3");
-      },
+      extraInfo: "Gerente: Laura Jiménez | Tel: 555-123-4567",
+      route: "/admin/inventario/sucursal-3"
     },
-  ];
-
-  const bodegas: CardProps[] = [
     {
       id: 4,
       mainText: "Bodega Central",
-      subText: "Calle Oeste 654",
+      subText: "Zona Norte",
       imagePath: "/images/inicio/bodegas.png",
-      extraInfo: "Capacidad: 1000 m²",
-      onClick: () => {
-        window.location.href = "/admin/inventario/bodega-1";
-      },
+      extraInfo: "Capacidad: 1000 m² | Responsable: Pedro Ramírez",
+      route: "/admin/inventario/bodega-1"
     },
-
+    {
+      id: 5,
+      mainText: "Bodega Este",
+      subText: "Zona Este",
+      imagePath: "/images/inicio/bodegas.png",
+      extraInfo: "Capacidad: 500 m² | Responsable: Miguel Santos",
+      route: "/admin/inventario/bodega-2"
+    },
+    {
+      id: 6,
+      mainText: "Bodega Sur",
+      subText: "Zona Sur",
+      imagePath: "/images/inicio/bodegas.png",
+      extraInfo: "Capacidad: 750 m² | Responsable: Laura Jiménez",
+      route: "/admin/inventario/bodega-3"
+    },
   ];
+
+  const handleCardClick = (cardId: number) => {
+    const card = cardData.find(c => c.id === cardId);
+    if (card?.route) {
+      router.push(card.route);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setOpenCard(null);
+  };
 
   return (
     <div style={containerStyle}>
-      <div style={{
-        ...cardStyle,
-        padding: isMobile ? "1rem" : "2rem",
-        marginLeft: isMobile ? '0.5rem' : '1.5rem',
-        marginRight: isMobile ? '0.5rem' : '1.5rem',
-      }}>
-        <h1 style={{
-          ...titleStyle,
-          fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
-          marginBottom: isMobile ? "1rem" : "2rem",
-        }}>Inventario</h1>
-        <h3 style={{
-          ...textStyle,
-          fontSize: isMobile ? "0.9rem" : "1rem",
-        }}>
-          Seleccione una tienda o bodega para ver su inventario.
+      <div style={cardStyle}>
+        <h1 style={titleStyle}>Sucursales y Bodegas</h1>
+        <h3 style={textStyle}>
+          Bienvenido,{" "}
+          <span style={{ fontWeight: "bold" }}>
+            {user ? user.name : "Invitado"}
+          </span>
+          .
         </h3>
         <div style={subtleLineStyle}></div>
-        <h2 style={{
-          ...titleStyle,
-          fontSize: isMobile ? "1.1rem" : "1.3rem",
-          marginBottom: isMobile ? "0.75rem" : "1rem"
-        }}>Tiendas</h2>
-        <div style={{
-          ...cardGridStyle,
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: isMobile ? '1rem' : '2rem',
-          padding: isMobile ? '0.25rem' : '0.5rem',
-          flexWrap: 'wrap',
-          justifyContent: 'flex-start'
-        }}>
-          {tiendas.map((card) => (
-            <Card 
-              key={card.id} 
-              {...card} 
-              isMobile={isMobile}
-            />
+        <div style={cardGridStyle}>
+          {cardData.map((card) => (
+            <Card key={card.id} {...card} onClick={() => handleCardClick(card.id)} />
           ))}
         </div>
-        <h2 style={{
-          ...titleStyle,
-          fontSize: isMobile ? "1.1rem" : "1.3rem",
-          marginTop: isMobile ? "1.5rem" : "2.5rem",
-          marginBottom: isMobile ? "0.75rem" : "1rem"
-        }}>Bodegas</h2>
-        <div style={{
-          ...cardGridStyle,
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: isMobile ? '1rem' : '2rem',
-          padding: isMobile ? '0.25rem' : '0.5rem',
-          flexWrap: 'wrap',
-          justifyContent: 'flex-start'
-        }}>
-          {bodegas.map((card) => (
-            <Card 
-              key={card.id} 
-              {...card}
-              isMobile={isMobile}
-            />
-          ))}
-        </div>
+        {openCard && (
+          <CardModal
+            card={cardData.find(c => c.id === openCard)!}
+            onClose={handleCloseModal}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-interface ResponsiveCardProps extends CardProps {
-  isMobile?: boolean;
-}
-
-const Card: React.FC<ResponsiveCardProps> = ({ mainText, subText, imagePath, extraInfo, onClick, isMobile }) => {
+const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, extraInfo, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const cardContainerStyle: React.CSSProperties = {
     backgroundColor: '#FF7300',
     borderRadius: '20px',
-    padding: isMobile ? '12px' : '15px',
-    width: isMobile ? '100%' : '350px',
-    height: isMobile ? '120px' : '140px',
+    padding: '15px',
+    width: '350px',
+    height: '140px',
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -217,7 +157,7 @@ const Card: React.FC<ResponsiveCardProps> = ({ mainText, subText, imagePath, ext
     maxWidth: '100%',
     position: 'relative',
     ...(isHovered ? {
-      transform: isMobile ? 'scale(1.02)' : 'scale(1.05)',
+      transform: 'scale(1.05)',
       boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)',
       opacity: 1.2,
     } : {})
@@ -229,11 +169,11 @@ const Card: React.FC<ResponsiveCardProps> = ({ mainText, subText, imagePath, ext
     justifyContent: 'center',
     flexGrow: 1,
     minWidth: 0,
-    marginRight: isMobile ? '8px' : '10px',
+    marginRight: '10px',
   };
 
   const mainTextStyle: React.CSSProperties = {
-    fontSize: isMobile ? '1.1rem' : '1.2rem',
+    fontSize: '1.2rem',
     marginBottom: '4px',
     fontWeight: 'bold',
     color: '#fff',
@@ -243,7 +183,7 @@ const Card: React.FC<ResponsiveCardProps> = ({ mainText, subText, imagePath, ext
   };
 
   const subTextStyle: React.CSSProperties = {
-    fontSize: isMobile ? '0.9rem' : '1rem',
+    fontSize: '1rem',
     color: '#222',
     opacity: 0.9,
     marginBottom: '2px',
@@ -251,7 +191,7 @@ const Card: React.FC<ResponsiveCardProps> = ({ mainText, subText, imagePath, ext
   };
 
   const extraInfoStyle: React.CSSProperties = {
-    fontSize: isMobile ? '0.8rem' : '0.9rem',
+    fontSize: '0.9rem',
     color: '#f5f5f5',
     opacity: 0.8,
     marginTop: '2px',
@@ -262,10 +202,8 @@ const Card: React.FC<ResponsiveCardProps> = ({ mainText, subText, imagePath, ext
     opacity: isHovered ? 1 : 0.7,
     transform: isHovered ? 'scale(1.1)' : 'scale(1)',
     transition: 'transform 0.3s, opacity 0.3s',
-    marginLeft: isMobile ? '10px' : '15px',
+    marginLeft: '15px',
     flexShrink: 0,
-    width: isMobile ? '55px' : '65px',
-    height: isMobile ? '55px' : '65px',
   };
 
   return (
@@ -283,10 +221,91 @@ const Card: React.FC<ResponsiveCardProps> = ({ mainText, subText, imagePath, ext
       <Image
         src={imagePath}
         alt={mainText}
-        width={isMobile ? 55 : 65}
-        height={isMobile ? 55 : 65}
+        width={65}
+        height={65}
         style={imageStyle}
       />
+    </div>
+  );
+};
+
+// Modal adaptado para mostrar detalles de la sucursal o bodega seleccionada
+interface CardModalProps {
+  card: CardProps;
+  onClose: () => void;
+}
+
+const CardModal: React.FC<CardModalProps> = ({ card, onClose }) => {
+  const modalOverlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(128, 128, 128, 0.8)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  };
+
+  const modalContentStyle: React.CSSProperties = {
+    backgroundColor: 'white',
+    borderRadius: '20px',
+    padding: '2rem',
+    minWidth: '350px',
+    maxWidth: '95vw',
+    maxHeight: '90vh',
+    overflow: 'auto',
+    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  };
+
+  const closeButtonStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '15px',
+    right: '20px',
+    background: 'none',
+    border: 'none',
+    fontSize: '24px',
+    cursor: 'pointer',
+    color: '#666',
+    fontWeight: 'bold',
+  };
+
+  const modalTitleStyle: React.CSSProperties = {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: '#222222',
+    fontFamily: 'Montserrat, sans-serif',
+    margin: '1rem 0 0.5rem 0',
+    textAlign: 'center',
+  };
+
+  const infoStyle: React.CSSProperties = {
+    fontSize: '1.1rem',
+    color: '#444',
+    margin: '0.5rem 0',
+    textAlign: 'center',
+  };
+
+  return (
+    <div style={modalOverlayStyle} onClick={onClose}>
+      <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
+        <button style={closeButtonStyle} onClick={onClose}>×</button>
+        <Image
+          src={card.imagePath}
+          alt={card.mainText}
+          width={80}
+          height={80}
+        />
+        <div style={modalTitleStyle}>{card.mainText}</div>
+        <div style={infoStyle}>{card.subText}</div>
+        {card.extraInfo && <div style={infoStyle}>{card.extraInfo}</div>}
+      </div>
     </div>
   );
 };
@@ -317,8 +336,9 @@ const cardStyle: React.CSSProperties = {
 };
 
 const cardGridStyle: React.CSSProperties = {
-  display: 'flex',
+  display: 'grid',
   gap: '2rem',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
   width: '100%',
   padding: '0.5rem',
   boxSizing: 'border-box',
