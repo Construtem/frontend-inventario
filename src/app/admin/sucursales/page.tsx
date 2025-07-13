@@ -801,14 +801,14 @@ export default function SucursalesPage() {
                       <td style={tdStyle}>{sucursal.ciudad || 'N/A'}</td>
                       <td style={tdStyle}>
                         <span style={{
-                          backgroundColor: sucursal.nombre.toLowerCase().includes('bodega') ? '#10b981' : '#3b82f6',
+                          backgroundColor: sucursal.nombre?.toLowerCase()?.includes('bodega') ? '#10b981' : '#3b82f6',
                           color: 'white',
                           padding: '0.25rem 0.5rem',
                           borderRadius: '4px',
                           fontSize: '0.75rem',
                           fontWeight: 'semibold'
                         }}>
-                          {sucursal.nombre.toLowerCase().includes('bodega') ? 'Bodega' : 'Sucursal'}
+                          {sucursal.nombre?.toLowerCase()?.includes('bodega') ? 'Bodega' : 'Sucursal'}
                         </span>
                       </td>
                       <td style={{...tdStyle, minWidth: '200px'}}>

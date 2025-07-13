@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 
 // Importaciones de imágenes
@@ -8,17 +8,6 @@ import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import buscarImg from "@/styles/images/buscar.png";
 
-// =====================
-// CONFIGURACIÓN DEL BACKEND
-// =====================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
-
-// Headers comunes para las peticiones
-const getHeaders = () => ({
-  'Content-Type': 'application/json',
-  // Agrega aquí tokens de autenticación si los usas
-  // 'Authorization': `Bearer ${token}`,
-});
 
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
@@ -52,67 +41,79 @@ function useWindowSize() {
   };
 }
 
-interface Proveedor {
-  id: number;
-  marca: string;
-  email: string;
-  telefono: string;
-  direccion: string;
-}
-
 export default function GestionProveedoresPage() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
-  const [proveedoresData, setProveedoresData] = useState<Proveedor[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const [error, setError] = useState("");
 
-  // Datos de proveedores desde base de datos
-  useEffect(() => {
-    const fetchProveedores = async () => {
-      try {
-        setLoading(true);
-        setError("");
-        
-        const res = await fetch(`${API_BASE_URL}/api/proveedores`, {
-          method: 'GET',
-          headers: getHeaders(),
-        });
-
-        if (!res.ok) throw new Error(`Error al obtener proveedores: ${res.status}`);
-        const data = await res.json();
-        setProveedoresData(data);
-      } catch (err) {
-        console.error("Error fetching proveedores:", err);
-        setError("Error al cargar los proveedores");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProveedores();
-  }, []);
+  // Datos de ejemplo para gestión de proveedores
+  const proveedoresData = useMemo(() => [
+    {
+      id: 1,
+      idProveedor: "PROV001",
+      nombre: "Tech Solutions S.A.",
+      correoElectronico: "contacto@techsolutions.com",
+      telefono: "+1-555-0123",
+      direccion: "Av. Principal 123, Ciudad Tech"
+    },
+    {
+      id: 2,
+      idProveedor: "PROV002",
+      nombre: "Periféricos SA",
+      correoElectronico: "ventas@perifericos.com",
+      telefono: "+1-555-0456",
+      direccion: "Calle Comercio 456, Zona Industrial"
+    },
+    {
+      id: 3,
+      idProveedor: "PROV003",
+      nombre: "Displays Corp",
+      correoElectronico: "info@displayscorp.com",
+      telefono: "+1-555-0789",
+      direccion: "Boulevard Digital 789, Centro Empresarial"
+    },
+    {
+      id: 4,
+      idProveedor: "PROV004",
+      nombre: "Gaming Gear",
+      correoElectronico: "soporte@gaminggear.com",
+      telefono: "+1-555-0321",
+      direccion: "Plaza Gaming 321, Distrito Tecnológico"
+    },
+    {
+      id: 5,
+      idProveedor: "PROV005",
+      nombre: "Office Solutions",
+      correoElectronico: "admin@officesol.com",
+      telefono: "+1-555-0654",
+      direccion: "Sector Oficinas 654, Complejo Corporativo"
+    }
+  ], []);
 
   // Filtrar datos según búsqueda
-  const filteredData = proveedoresData.filter((item) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      item.marca.toLowerCase().includes(searchLower) ||
-      item.email.toLowerCase().includes(searchLower) ||
-      item.telefono.toLowerCase().includes(searchLower) ||
-      item.direccion.toLowerCase().includes(searchLower)
-    );
-  });
+  const filteredData = useMemo(() => {
+    return proveedoresData.filter(item => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        item.idProveedor.toLowerCase().includes(searchLower) ||
+        item.nombre.toLowerCase().includes(searchLower) ||
+        item.correoElectronico.toLowerCase().includes(searchLower) ||
+        item.telefono.toLowerCase().includes(searchLower) ||
+        item.direccion.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [proveedoresData, searchTerm]);
 
   // Calcular datos paginados
   const currentTableData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return filteredData.slice(startIndex, endIndex);
-  }, [filteredData, currentPage]);
+  }, [filteredData, currentPage, itemsPerPage]);
 
+  // Calcular total de páginas
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   // Funciones de paginación
@@ -261,7 +262,7 @@ export default function GestionProveedoresPage() {
             }}>
               <input
                 type="text"
-                placeholder="Buscar por Marca, Email, Teléfono..."
+                placeholder="Buscar por ID, Nombre, Correo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
@@ -317,12 +318,6 @@ export default function GestionProveedoresPage() {
           </div>
         </div>
 
-        {error && (
-          <div style={{ color: 'red', textAlign: 'center', marginBottom: '1rem' }}>
-            {error}
-          </div>
-        )}
-
         <div style={{
           ...tableContainerStyle,
           maxWidth: "100%",
@@ -334,16 +329,16 @@ export default function GestionProveedoresPage() {
             maxWidth: "100%"
           }}>
             <thead style={{ 
-              position: "sticky",
-              top: 0,
-              zIndex: 2,
+              position: "sticky", 
+              top: 0, 
+              zIndex: 2, 
               background: "#5C5C5C",
               fontSize: isMobile ? "0.75rem" : "0.875rem"
             }}>
               <tr>
-                <th style={thStyle}>ID</th>
-                <th style={thStyle}>Marca</th>
-                <th style={thStyle}>Email</th>
+                <th style={thStyle}>ID Proveedor</th>
+                <th style={thStyle}>Nombre</th>
+                <th style={thStyle}>Correo electrónico</th>
                 <th style={thStyle}>Teléfono</th>
                 <th style={thStyle}>Dirección</th>
                 <th style={thStyle}>Acciones</th>
@@ -354,13 +349,13 @@ export default function GestionProveedoresPage() {
                 <tr>
                   <td colSpan={6} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
                     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px" }}>
-                      <div style={{
-                        width: "20px",
-                        height: "20px",
-                        border: "2px solid #f3f3f3",
-                        borderTop: "2px solid #ff7300",
-                        borderRadius: "50%",
-                        animation: "spin 1s linear infinite"
+                      <div style={{ 
+                        width: "20px", 
+                        height: "20px", 
+                        border: "2px solid #f3f3f3", 
+                        borderTop: "2px solid #ff7300", 
+                        borderRadius: "50%", 
+                        animation: "spin 1s linear infinite" 
                       }}></div>
                       Cargando proveedores...
                     </div>
@@ -375,9 +370,9 @@ export default function GestionProveedoresPage() {
               ) : (
                 currentTableData.map((item) => (
                   <tr key={item.id}>
-                    <td style={tdStyle}>{item.id}</td>
-                    <td style={tdStyle}>{item.marca}</td>
-                    <td style={tdStyle}>{item.email}</td>
+                    <td style={tdStyle}>{item.idProveedor}</td>
+                    <td style={tdStyle}>{item.nombre}</td>
+                    <td style={tdStyle}>{item.correoElectronico}</td>
                     <td style={tdStyle}>{item.telefono}</td>
                     <td style={tdStyle}>{item.direccion}</td>
                     <td style={tdStyle}>
@@ -436,6 +431,7 @@ export default function GestionProveedoresPage() {
                 Siguiente
               </button>
             </div>
+            
           </div>
         )}
       </div>
@@ -480,7 +476,6 @@ const titleStyle: React.CSSProperties = {
   color: "rgb(34, 34, 34)",
   fontSize: "2rem",
   fontWeight: "bold",
-  textAlign: "center",
   marginBottom: "1.5rem",
   fontFamily: "Montserrat, sans-serif"
 };
@@ -601,38 +596,29 @@ const editButtonStyle: React.CSSProperties = {
   borderRadius: "8px",
   border: "none",
   cursor: "pointer",
-  fontSize: "1rem",
-  fontWeight: "semibold",
-  fontFamily: "Montserrat, sans-serif",
-  transition: "background-color 0.2s ease",
-  whiteSpace: "nowrap",
+  height: "40px",
   display: "flex",
   alignItems: "center",
   gap: "0.5rem",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+  fontFamily: "Montserrat, sans-serif",
+  fontSize: "1rem",
+  fontWeight: 'semibold',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
 };
 
 const filterButtonStyle: React.CSSProperties = {
-  backgroundColor: "#5c5c5c",
-  color: "white",
-  padding: "0.5rem 1.2rem",
-  borderRadius: "8px",
-  border: "none",
-  cursor: "pointer",
-  fontSize: "1rem",
-  fontWeight: "semibold",
-  fontFamily: "Montserrat, sans-serif",
-  transition: "background-color 0.2s ease",
-  whiteSpace: "nowrap",
-  display: "flex",
-  alignItems: "center",
-  gap: "0.5rem",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+  ...editButtonStyle,
+  backgroundColor: '#5c5c5c',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
 };
 
 const filterIconStyle: React.CSSProperties = {
-  width: '20px',
-  height: '20px',
+  width: '1.2rem',
+  height: '1.2rem',
+  color: 'white',
 };
 
 const searchIconStyle: React.CSSProperties = {
