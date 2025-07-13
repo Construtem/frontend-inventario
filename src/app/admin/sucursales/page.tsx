@@ -93,7 +93,7 @@ function useWindowSize() {
 
 // Add sorting function outside the component
 const sortSucursales = (data: Sucursal[]) => {
-  return [...data].sort((a, b) => b.id - a.id);
+  return [...data].sort((a, b) => a.id - b.id);
 };
 
 export default function SucursalesPage() {
