@@ -49,7 +49,13 @@ jobs:
         run: gcloud auth configure-docker southamerica-east1-docker.pkg.dev
 
       - name: Construir imagen Docker
-        run: docker build -t southamerica-east1-docker.pkg.dev/construtem/microservicios-construtem/front-inventario:latest .
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_FRONT_LOGIN=${{ secrets.NEXT_PUBLIC_FRONT_LOGIN }} \
+            --build-arg NEXT_PUBLIC_API_INVENTARIO=${{ secrets.NEXT_PUBLIC_API_INVENTARIO }} \
+            --build-arg NEXT_PUBLIC_API_VENTAS=${{ secrets.NEXT_PUBLIC_API_VENTAS }} \
+            --build-arg NEXT_PUBLIC_API_FACTURACION=${{ secrets.NEXT_PUBLIC_API_FACTURACION }} \
+            -t southamerica-east1-docker.pkg.dev/construtem/microservicios-construtem/front-inventario:latest .
 
       - name: Subir imagen a Artifact Registry
         run: docker push southamerica-east1-docker.pkg.dev/construtem/microservicios-construtem/front-inventario:latest
