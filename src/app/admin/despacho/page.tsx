@@ -562,6 +562,7 @@ export default function DespachoPage() {
                   "Camión",
                   "Items",
                   "Productos",
+                  "Ruta",
                   "PDF",
                   "Accion",
                 ].map((col) => (
@@ -574,13 +575,13 @@ export default function DespachoPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={12} style={tdStyle}>
+                  <td colSpan={13} style={tdStyle}>
                     Cargando...
                   </td>
                 </tr>
               ) : filteredDespachos.length === 0 ? (
                 <tr>
-                  <td colSpan={12} style={tdStyle}>
+                  <td colSpan={13} style={tdStyle}>
                     {despachos.length === 0 ? "No hay despachos disponibles" : "No se encontraron despachos con los filtros aplicados"}
                   </td>
                 </tr>
@@ -618,6 +619,19 @@ export default function DespachoPage() {
                       >
                         Ver Productos
                       </span>
+                    </td>
+                    <td style={tdStyle}>
+                      <a
+                        href={`/admin/despacho/ruta?despachoId=${d.id}`}
+                        style={{
+                          color: "#2563eb",
+                          fontWeight: "bold",
+                          textDecoration: "underline",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Ver ruta
+                      </a>
                     </td>
                     <td style={tdStyle}>
                       <a
