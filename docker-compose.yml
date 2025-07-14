@@ -12,6 +12,7 @@ services:
         NEXT_PUBLIC_API_INVENTARIO: ${NEXT_PUBLIC_API_INVENTARIO}
         NEXT_PUBLIC_API_VENTAS: ${NEXT_PUBLIC_API_VENTAS}
         NEXT_PUBLIC_API_FACTURACION: ${NEXT_PUBLIC_API_FACTURACION}
+        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
     
     # El puerto 3000 del host se mapea al puerto 3000 del contenedor,
     # permitiendo acceder a tu aplicación desde tu máquina local (ej. http://localhost:3000).
