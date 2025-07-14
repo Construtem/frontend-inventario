@@ -6,6 +6,42 @@ import { FaSearch } from "react-icons/fa";
 // =====================
 // 1. INTERFACES DE DATOS
 // =====================
+interface Producto {
+  id: number;
+  sku: string;
+  nombre: string;
+  descripcion: string;
+  peso: number;
+  alto: number;
+  ancho: number;
+  precio: number;
+  cantidad?: number;
+}
+
+interface ProductoDespachoDetallado {
+  despacho_id: number;
+  sku: string;
+  cantidad: number;
+  id?: number;
+  nombre?: string;
+  descripcion?: string;
+  peso?: number;
+  alto?: number;
+  ancho?: number;
+  precio?: number;
+  productos?: {
+    id: number;
+    sku: string;
+    nombre: string;
+    descripcion: string;
+    peso: number;
+    largo?: number;
+    ancho: number;
+    alto: number;
+    precio: number;
+  };
+}
+
 interface Despacho {
   id: number;
   cliente: string;
@@ -61,7 +97,14 @@ export default function DespachoPage() {
   const [error, setError] = useState("");
   const [isOffline, setIsOffline] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [selectedDespachoId, setSelectedDespachoId] = useState<number | null>(null);
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [loadingProductos, setLoadingProductos] = useState(false);
   const itemsPerPage = 15;
+
+  // URL de la API
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || "https://api-inventario.tssw.cl";
 
   // =====================
   // 3. DATOS DE EJEMPLO (MOCK DATA)
@@ -119,7 +162,7 @@ export default function DespachoPage() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
         
-        const res = await fetch("https://api-inventario.tssw.cl/api/despachos", {
+        const res = await fetch(`${apiInventarioUrl}/api/despachos`, {
           signal: controller.signal,
           headers: {
             'Content-Type': 'application/json',
@@ -176,7 +219,7 @@ export default function DespachoPage() {
     };
 
     fetchDespachos();
-  }, []);
+  }, [apiInventarioUrl]);
 
   // =====================
   // 5. FUNCIÓN PARA REINTENTAR CONEXIÓN
@@ -199,7 +242,7 @@ export default function DespachoPage() {
     }
 
     try {
-      const res = await fetch(`https://api-inventario.tssw.cl/api/despachos/${id}`, {
+      const res = await fetch(`${apiInventarioUrl}/api/despachos/${id}`, {
         method: "DELETE",
         headers: {
           'Content-Type': 'application/json',
@@ -217,6 +260,108 @@ export default function DespachoPage() {
       const message = error instanceof Error ? error.message : "Error desconocido al eliminar";
       alert(`Error: ${message}`);
     }
+  };
+
+  // =====================
+  // 6. FUNCIÓN PARA CARGAR PRODUCTOS DEL DESPACHO
+  // =====================
+  const handleViewProducts = async (despachoId: number) => {
+    setSelectedDespachoId(despachoId);
+    setShowProductModal(true);
+    setLoadingProductos(true);
+    
+    try {
+      console.log(`Consultando productos detallados para despacho ID: ${despachoId}`);
+      
+      const res = await fetch(`http://localhost:8080/api/productos_despacho/despacho/${despachoId}/detallado`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log(`Respuesta del servidor: ${res.status} ${res.statusText}`);
+      
+      if (!res.ok) {
+        throw new Error(`Error del servidor: ${res.status} ${res.statusText}`);
+      }
+
+      const productosData = await res.json();
+      console.log("Datos de productos detallados recibidos:", productosData);
+      
+      // Mapear los datos del nuevo endpoint detallado
+      const productosFormateados = productosData.map((item: ProductoDespachoDetallado) => ({
+        id: item.productos?.id || item.id || item.sku || Math.random(),
+        sku: item.sku || item.productos?.sku || 'N/A',
+        nombre: item.productos?.nombre || item.nombre || 'N/A',
+        descripcion: item.productos?.descripcion || item.descripcion || 'N/A',
+        peso: Number(item.productos?.peso || item.peso || 0),
+        alto: Number(item.productos?.alto || item.alto || 0),
+        ancho: Number(item.productos?.ancho || item.ancho || 0),
+        precio: Number(item.productos?.precio || item.precio || 0),
+        cantidad: Number(item.cantidad || 1)
+      }));
+      
+      console.log("Productos procesados:", productosFormateados);
+      
+      // Debug de cálculos
+      const totalKgs = productosFormateados.reduce((total: number, p: Producto) => {
+        const peso = Number(p.peso) || 0;
+        const cantidad = Number(p.cantidad) || 1;
+        const subtotal = peso * cantidad;
+        console.log(`${p.sku}: ${peso} kg × ${cantidad} = ${subtotal} kg`);
+        return total + subtotal;
+      }, 0);
+      
+      const totalPrecio = productosFormateados.reduce((total: number, p: Producto) => {
+        const precio = Number(p.precio) || 0;
+        const cantidad = Number(p.cantidad) || 1;
+        const subtotal = precio * cantidad;
+        console.log(`${p.sku}: $${precio} × ${cantidad} = $${subtotal}`);
+        return total + subtotal;
+      }, 0);
+      
+      console.log(`Total Kgs calculado: ${totalKgs}`);
+      console.log(`Total Precio calculado: ${totalPrecio}`);
+      
+      setProductos(productosFormateados);
+      
+    } catch (error) {
+      console.error("Error al cargar productos:", error);
+      // Datos de ejemplo en caso de error
+      setProductos([
+        {
+          id: 1,
+          sku: "SKU001",
+          nombre: "Producto Ejemplo 1",
+          descripcion: "Descripción del producto ejemplo",
+          peso: 25.5,
+          alto: 30,
+          ancho: 20,
+          precio: 15000
+        },
+        {
+          id: 2,
+          sku: "SKU002", 
+          nombre: "Producto Ejemplo 2",
+          descripcion: "Otra descripción de producto",
+          peso: 18.3,
+          alto: 25,
+          ancho: 15,
+          precio: 12000
+        }
+      ]);
+    } finally {
+      setLoadingProductos(false);
+    }
+  };
+
+  // =====================
+  // 7. FUNCIÓN PARA CERRAR MODAL
+  // =====================
+  const handleCloseModal = () => {
+    setShowProductModal(false);
+    setSelectedDespachoId(null);
+    setProductos([]);
   };
 
   // Filtrar despachos basado en los filtros activos
@@ -327,9 +472,12 @@ export default function DespachoPage() {
             onChange={(e) => setSucursal(e.target.value)}
           >
             <option value="">Todas las Sucursales</option>
-            <option value="Sucursal 1">Sucursal 1</option>
-            <option value="Sucursal 2">Sucursal 2</option>
-            <option value="Sucursal 3">Sucursal 3</option>
+            <option value="Bodega Central">Bodega Central</option>
+            <option value="Bodega Norte">Bodega Norte</option>
+            <option value="Bodega Sur">Bodega Sur</option>
+            <option value="Sucursal Centro">Sucursal Centro</option>
+            <option value="Sucursal La Florida">Sucursal La Florida</option>
+            <option value="Sucursal Maipú">Sucursal Maipú</option>
           </select>
 
           <select
@@ -339,9 +487,10 @@ export default function DespachoPage() {
           >
             <option value="">Todos los Estados</option>
             <option value="pendiente">Pendiente</option>
-            <option value="enviado">Enviado</option>
-            <option value="aprobado">Aprobado</option>
-            <option value="cancelado">Cancelado</option>
+            <option value="enviada">Enviada</option>
+            <option value="aprobada">Aprobada</option>
+            <option value="cancelada">Cancelada</option>
+            <option value="rechazada">Rechazada</option>
           </select>
 
           <button 
@@ -412,7 +561,7 @@ export default function DespachoPage() {
                   "Estado",
                   "Camión",
                   "Items",
-                  "Total Kg",
+                  "Productos",
                   "PDF",
                   "Accion",
                 ].map((col) => (
@@ -457,10 +606,22 @@ export default function DespachoPage() {
                     </td>
                     <td style={tdStyle}>{d.camion}</td>
                     <td style={tdStyle}>{d.cantidadItems}</td>
-                    <td style={tdStyle}>{d.totalKg} kg</td>
+                    <td style={tdStyle}>
+                      <span
+                        onClick={() => handleViewProducts(d.id)}
+                        style={{
+                          color: "#ff7300",
+                          fontWeight: "bold",
+                          textDecoration: "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Ver Productos
+                      </span>
+                    </td>
                     <td style={tdStyle}>
                       <a
-                        href={`https://api-inventario.tssw.cl/api/despachos/${d.id}/pdf`}
+                        href={`${apiInventarioUrl}/api/despachos/${d.id}/pdf`}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
@@ -513,6 +674,90 @@ export default function DespachoPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Productos */}
+      {showProductModal && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <div style={modalHeaderStyle}>
+              <h2 style={modalTitleStyle}>
+                Productos del Despacho #{selectedDespachoId}
+              </h2>
+              <span 
+                onClick={handleCloseModal}
+                style={closeButtonStyle}
+              >
+                ✕
+              </span>
+            </div>
+            
+            <div style={modalBodyStyle}>
+              {loadingProductos ? (
+                <div style={loadingStyle}>Cargando productos...</div>
+              ) : (
+                <>
+                  <div style={summaryStyle}>
+                    <div style={summaryItemStyle}>
+                      <strong>Total Kgs: </strong>
+                      {productos.reduce((total, p) => {
+                        const peso = Number(p.peso) || 0;
+                        const cantidad = Number(p.cantidad) || 1;
+                        return total + (peso * cantidad);
+                      }, 0).toFixed(2)} kg
+                    </div>
+                    <div style={summaryItemStyle}>
+                      <strong>Total Precio: </strong>
+                      ${productos.reduce((total, p) => {
+                        const precio = Number(p.precio) || 0;
+                        const cantidad = Number(p.cantidad) || 1;
+                        return total + (precio * cantidad);
+                      }, 0).toLocaleString()}
+                    </div>
+                  </div>
+                  
+                  <div style={tableWrapperStyle}>
+                    <table style={tableStyle}>
+                      <thead>
+                        <tr>
+                          <th style={thStyle}>SKU</th>
+                          <th style={thStyle}>Nombre</th>
+                          <th style={thStyle}>Descripción</th>
+                          <th style={thStyle}>Cantidad</th>
+                          <th style={thStyle}>Peso (kg)</th>
+                          <th style={thStyle}>Alto (cm)</th>
+                          <th style={thStyle}>Ancho (cm)</th>
+                          <th style={thStyle}>Precio</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {productos.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} style={tdStyle}>
+                              No hay productos para este despacho
+                            </td>
+                          </tr>
+                        ) : (                          productos.map((producto) => (
+                            <tr key={producto.id}>
+                              <td style={tdStyle}>{producto.sku || 'N/A'}</td>
+                              <td style={tdStyle}>{producto.nombre || 'N/A'}</td>
+                              <td style={tdStyle}>{producto.descripcion || 'N/A'}</td>
+                              <td style={tdStyle}>{producto.cantidad || 1}</td>
+                              <td style={tdStyle}>{producto.peso || 0} kg</td>
+                              <td style={tdStyle}>{producto.alto || 0} cm</td>
+                              <td style={tdStyle}>{producto.ancho || 0} cm</td>
+                              <td style={tdStyle}>${(producto.precio || 0).toLocaleString()}</td>
+                            </tr>
+                          ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
@@ -683,4 +928,86 @@ const paginationNextButtonStyle: React.CSSProperties = {
   justifyContent: 'center',
   display: 'flex',
   alignItems: 'center',
+};
+
+// =====================
+// 7. ESTILOS DEL MODAL
+// =====================
+
+const modalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000,
+};
+
+const modalContentStyle: React.CSSProperties = {
+  backgroundColor: '#ffffff',
+  borderRadius: '12px',
+  maxWidth: '90vw',
+  maxHeight: '90vh',
+  overflow: 'hidden',
+  boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+};
+
+const modalHeaderStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: '#ffffff',
+  padding: '1.5rem 2rem',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+};
+
+const modalTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: '1.5rem',
+  fontWeight: 'bold',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const closeButtonStyle: React.CSSProperties = {
+  cursor: 'pointer',
+  fontSize: '1.5rem',
+  fontWeight: 'bold',
+  color: '#ffffff',
+  background: 'none',
+  border: 'none',
+  padding: '0.5rem',
+};
+
+const modalBodyStyle: React.CSSProperties = {
+  padding: '2rem',
+  maxHeight: '70vh',
+  overflowY: 'auto',
+};
+
+const summaryStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-around',
+  backgroundColor: '#f3f4f6',
+  padding: '1rem',
+  borderRadius: '8px',
+  marginBottom: '2rem',
+  border: '1px solid #e5e7eb',
+};
+
+const summaryItemStyle: React.CSSProperties = {
+  fontSize: '1.1rem',
+  fontFamily: 'Montserrat, sans-serif',
+  color: '#333333',
+};
+
+const loadingStyle: React.CSSProperties = {
+  textAlign: 'center',
+  padding: '2rem',
+  fontSize: '1.2rem',
+  color: '#666666',
+  fontFamily: 'Roboto, sans-serif',
 };

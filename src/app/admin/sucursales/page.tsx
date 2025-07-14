@@ -2,12 +2,62 @@
 
 import React, { useState, useEffect, useMemo} from "react";
 import Image from "next/image";
+import Swal from 'sweetalert2';
 
 // Importaciones de imágenes
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import buscarImg from "@/styles/images/buscar.png";
 
+// =====================
+// 1. INTERFACES DE DATOS
+// =====================
+interface Sucursal {
+  id: number;
+  nombre: string;
+  direccion: string;
+  telefono: string;
+  comuna?: string;
+  ciudad?: string;
+}
+
+const CIUDADES = ['Santiago'];
+
+const COMUNAS_POR_CIUDAD: { [key: string]: string[] } = {
+  Santiago: [
+    'Cerro Navia',
+    'Conchalí',
+    'El Bosque',
+    'Estación Central',
+    'Huechuraba',
+    'Independencia',
+    'La Cisterna',
+    'La Florida',
+    'La Granja',
+    'La Pintana',
+    'La Reina',
+    'Las Condes',
+    'Lo Barnechea',
+    'Lo Espejo',
+    'Lo Prado',
+    'Macul',
+    'Maipú',
+    'Ñuñoa',
+    'Pedro Aguirre Cerda',
+    'Peñalolén',
+    'Providencia',
+    'Pudahuel',
+    'Quilicura',
+    'Quinta Normal',
+    'Recoleta',
+    'Renca',
+    'San Joaquín',
+    'San Miguel',
+    'San Ramón',
+    'Santiago',
+    'Vitacura'
+  ]
+};
 
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
@@ -41,65 +91,191 @@ function useWindowSize() {
   };
 }
 
+// Add sorting function outside the component
+const sortSucursales = (data: Sucursal[]) => {
+  return [...data].sort((a, b) => a.id - b.id);
+};
+
 export default function SucursalesPage() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sucursalesData, setSucursalesData] = useState<Sucursal[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [selectedComuna, setSelectedComuna] = useState("");
+  const [selectedCiudad, setSelectedCiudad] = useState("");
+  const [selectedTipo, setSelectedTipo] = useState("");
 
-  // Datos de ejemplo para sucursales
-  const sucursalesData = useMemo(() => [
-    { 
-      id: 1, 
-      nombre: 'Tienda Centro', 
-      direccion: 'Av. Principal 123, Centro', 
-      telefono: '123-456-7890', 
-      estado: 'Activa',
-      fechaApertura: '2020-01-15',
-      empleados: 25
-    },
-    { 
-      id: 2, 
-      nombre: 'Tienda Norte', 
-      direccion: 'Calle Norte 456, Zona Norte', 
-      telefono: '098-765-4321', 
-      estado: 'Activa',
-      fechaApertura: '2021-03-20',
-      empleados: 18
-    },
-    { 
-      id: 3, 
-      nombre: 'Tienda Sur', 
-      direccion: 'Blvd. Sur 789, Zona Sur', 
-      telefono: '555-123-4567', 
+  // Agregar estados temporales para los filtros
+  const [tempCiudad, setTempCiudad] = useState("");
+  const [tempComuna, setTempComuna] = useState("");
+  const [tempTipo, setTempTipo] = useState("");
 
-      estado: 'Activa',
-      fechaApertura: '2021-08-10',
-      empleados: 22
-    },
-    { 
-      id: 4, 
-      nombre: 'Bodega Central', 
-      direccion: 'Calle Oeste 654, Zona Oeste', 
-      telefono: '777-888-9999', 
-      estado: 'Activa',
-      fechaApertura: '2022-11-05',
-      empleados: 20
-    },
-  ], []);
+  // =====================
+  // 2. LLAMADA A LA API
+  // =====================
+  useEffect(() => {
+    // Agregar estilos CSS para la animación de carga
+    if (typeof document !== 'undefined') {
+      const existingStyle = document.getElementById('spin-animation-style');
+      if (!existingStyle) {
+        const style = document.createElement('style');
+        style.id = 'spin-animation-style';
+        style.textContent = `
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
 
-  // Filtrar datos según búsqueda
+    const fetchSucursales = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔄 Intentando conectar con la API de sucursales...');
+        
+        // Timeout manual con AbortController
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
+        
+        const response = await fetch('http://localhost:8080/api/sucursales', {
+          method: 'GET',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('📡 Respuesta de la API:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Datos recibidos:', data);
+        
+        // Validar que los datos tengan la estructura esperada
+        if (Array.isArray(data)) {
+          setSucursalesData(sortSucursales(data)); // Apply sorting here
+        } else {
+          console.warn('⚠️ Los datos no son un array:', data);
+          setSucursalesData([]);
+        }
+        
+      } catch (err) {
+        console.error('❌ Error al cargar datos de sucursales:', err);
+        
+        let errorMessage = "Error desconocido al cargar datos";
+        if (err instanceof Error) {
+          if (err.name === 'AbortError') {
+            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+          } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+          } else {
+            errorMessage = err.message;
+          }
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSucursales();
+  }, []);
+
+  // Función para reintentar la carga de datos
+  const retryFetch = () => {
+    setError(null);
+    setLoading(true);
+    
+    const fetchSucursales = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔄 Reintentando conexión con la API...');
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch('http://localhost:8080/api/sucursales', {
+          method: 'GET',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('📡 Respuesta de la API:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Datos recibidos:', data);
+        
+        if (Array.isArray(data)) {
+          setSucursalesData(sortSucursales(data)); // Apply sorting here
+        } else {
+          console.warn('⚠️ Los datos no son un array:', data);
+          setSucursalesData([]);
+        }
+        
+      } catch (err) {
+        console.error('❌ Error al cargar datos de sucursales:', err);
+        
+        let errorMessage = "Error desconocido al cargar datos";
+        if (err instanceof Error) {
+          if (err.name === 'AbortError') {
+            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+          } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+          } else {
+            errorMessage = err.message;
+          }
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSucursales();
+  };
+
+  // Modificar la función de filtrado para que solo busque por nombre
   const filteredData = useMemo(() => {
-    return sucursalesData.filter(sucursal => {
+    return sortSucursales(sucursalesData.filter(sucursal => {
       const searchLower = searchTerm.toLowerCase();
-      return (
-        sucursal.nombre.toLowerCase().includes(searchLower) ||
-        sucursal.direccion.toLowerCase().includes(searchLower) ||
-        sucursal.telefono.includes(searchLower)
-      );
-    });
-  }, [sucursalesData, searchTerm]);
+      const matchesSearch = sucursal.nombre.toLowerCase().includes(searchLower);
+
+      const matchesCiudad = selectedCiudad ? sucursal.ciudad === selectedCiudad : true;
+      const matchesComuna = selectedComuna ? sucursal.comuna === selectedComuna : true;
+      const matchesTipo = selectedTipo 
+        ? (selectedTipo === 'bodega' 
+          ? sucursal.nombre.toLowerCase().includes('bodega')
+          : !sucursal.nombre.toLowerCase().includes('bodega'))
+        : true;
+
+      return matchesSearch && matchesCiudad && matchesComuna && matchesTipo;
+    }));
+  }, [sucursalesData, searchTerm, selectedCiudad, selectedComuna, selectedTipo]);
 
   // Calcular datos paginados
   const currentTableData = useMemo(() => {
@@ -224,6 +400,134 @@ export default function SucursalesPage() {
     };
   };
 
+  // Agregar función para aplicar filtros
+  const handleApplyFilters = () => {
+    const filtersApplied = Boolean(tempCiudad || tempComuna || tempTipo);
+    
+    if (!filtersApplied) {
+      Swal.fire({
+        title: 'Sin filtros',
+        text: 'No has seleccionado ningún filtro',
+        icon: 'info',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    // Aplicar los filtros temporales a los estados reales
+    setSelectedCiudad(tempCiudad);
+    setSelectedComuna(tempComuna);
+    setSelectedTipo(tempTipo);
+    setShowFilterModal(false);
+    
+    // Mostrar mensaje de éxito con los filtros aplicados
+    Swal.fire({
+      title: 'Filtros aplicados',
+      html: `
+        ${tempCiudad ? `<p>Ciudad: ${tempCiudad}</p>` : ''}
+        ${tempComuna ? `<p>Comuna: ${tempComuna}</p>` : ''}
+        ${tempTipo ? `<p>Tipo: ${tempTipo}</p>` : ''}
+      `,
+      icon: 'success',
+      confirmButtonColor: '#ff7300'
+    });
+  };
+
+  // Estados para el modal de edición
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState<Sucursal | null>(null);
+
+  // Agregar función para manejar la edición
+  const handleEdit = (sucursal: Sucursal) => {
+    setEditFormData(sucursal);
+    setShowEditModal(true);
+  };
+
+  // Función para guardar cambios
+  const handleSaveChanges = async () => {
+    if (!editFormData) return;
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/sucursales/${editFormData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editFormData),
+      });
+
+      if (!response.ok) throw new Error('Error al actualizar');
+
+      // Update and sort the data
+      setSucursalesData(prevData => 
+        sortSucursales(prevData.map(item => 
+          item.id === editFormData.id ? editFormData : item
+        ))
+      );
+
+      setShowEditModal(false);
+      Swal.fire({
+        title: 'Éxito',
+        text: 'Sucursal actualizada correctamente',
+        icon: 'success',
+        confirmButtonColor: '#ff7300'
+      });
+    } catch (err) {
+      console.error('Error al actualizar sucursal:', err);
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo actualizar la sucursal',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+    }
+  };
+
+  // Agregar función para manejar la eliminación
+  const handleDelete = (sucursal: Sucursal) => {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: `¿Deseas eliminar la sucursal "${sucursal.nombre}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const response = await fetch(`http://localhost:8080/api/sucursales/${sucursal.id}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) throw new Error('Error al eliminar');
+
+          // Actualizar el estado eliminando la sucursal
+          setSucursalesData(prevData => prevData.filter(item => item.id !== sucursal.id));
+
+          Swal.fire({
+            title: 'Eliminado',
+            text: 'La sucursal ha sido eliminada correctamente',
+            icon: 'success',
+            confirmButtonColor: '#ff7300'
+          });
+        } catch (err) {
+          console.error('Error al eliminar sucursal:', err);
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo eliminar la sucursal',
+            icon: 'error',
+            confirmButtonColor: '#ff7300'
+          });
+        }
+      }
+    });
+  };
+
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
@@ -257,7 +561,7 @@ export default function SucursalesPage() {
             }}>
               <input
                 type="text"
-                placeholder="Buscar por Nombre, Dirección..."
+                placeholder="Buscar por Nombre..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
@@ -273,12 +577,15 @@ export default function SucursalesPage() {
               </button>
             </div>
             
-            <button style={{
-              ...filterButtonStyle,
-              width: isMobile ? "100%" : "auto",
-              fontSize: isMobile ? "0.875rem" : "1rem",
-              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-            }}>
+            <button 
+              style={{
+                ...filterButtonStyle,
+                width: isMobile ? "100%" : "auto",
+                fontSize: isMobile ? "0.875rem" : "1rem",
+                padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
+              }}
+              onClick={() => setShowFilterModal(true)}
+            >
               <Image
                 src={filtrosImg.src}
                 alt="Filtros"
@@ -318,63 +625,232 @@ export default function SucursalesPage() {
           maxWidth: "100%",
           marginTop: "1rem"
         }}>
-          <table style={{
-            ...tableStyle,
-            fontSize: isMobile ? "0.875rem" : "1rem",
-            maxWidth: "100%"
-          }}>
-            <thead style={{ 
-              position: "sticky", 
-              top: 0, 
-              zIndex: 2, 
-              background: "#5C5C5C",
-              fontSize: isMobile ? "0.75rem" : "0.875rem"
+          {loading ? (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '3rem',
+              backgroundColor: 'white',
+              borderRadius: '10px',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
             }}>
-              <tr>
-                <th style={thStyle}>ID Sucursal</th>
-                <th style={thStyle}>Nombre</th>
-                <th style={thStyle}>Dirección</th>
-                <th style={thStyle}>Teléfono</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
+              <div style={{
+                width: '40px',
+                height: '40px',
+                border: '4px solid #f3f4f6',
+                borderTop: '4px solid #ff7300',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                marginBottom: '1rem'
+              }} />
+              <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando sucursales...</div>
+              <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
+                Conectando con http://localhost:8080
+              </div>
+            </div>
+          ) : error ? (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '3rem',
+              backgroundColor: 'white',
+              borderRadius: '10px',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              maxWidth: '600px',
+              margin: '0 auto'
+            }}>
+              <div style={{ 
+                fontSize: '1.1rem', 
+                color: '#ef4444',
+                textAlign: 'center',
+                marginBottom: '1.5rem'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>❌ Error al cargar las sucursales</div>
+                <div style={{ 
+                  fontSize: '0.9rem', 
+                  marginTop: '0.5rem',
+                  whiteSpace: 'pre-line',
+                  lineHeight: '1.5',
+                  color: '#666'
+                }}>
+                  {error}
+                </div>
+              </div>
+              
+              <div style={{
+                display: 'flex',
+                gap: '1rem',
+                flexDirection: isMobile ? 'column' : 'row',
+                width: isMobile ? '100%' : 'auto'
+              }}>
+                <button
+                  onClick={retryFetch}
+                  style={{
+                    backgroundColor: '#10b981',
+                    color: 'white',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontWeight: 'semibold',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                    transition: 'all 0.3s ease',
+                    minWidth: '120px'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
+                >
+                  🔄 Reintentar
+                </button>
+                
+                <button
+                  onClick={() => {
+                    console.log('🔍 Diagnóstico de red:');
+                    console.log('• URL del backend:', 'http://localhost:8080/api/sucursales');
+                    console.log('• User Agent:', navigator.userAgent);
+                    console.log('• Conexión:', navigator.onLine ? 'En línea' : 'Sin conexión');
+                    alert('Información de diagnóstico enviada a la consola del navegador (F12)');
+                  }}
+                  style={{
+                    backgroundColor: '#6b7280',
+                    color: 'white',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontWeight: 'semibold',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                    transition: 'all 0.3s ease',
+                    minWidth: '120px'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
+                >
+                  🔍 Diagnóstico
+                </button>
+              </div>
+              
+              <div style={{
+                marginTop: '1.5rem',
+                padding: '1rem',
+                backgroundColor: '#f3f4f6',
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                color: '#666',
+                textAlign: 'left',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>💡 Posibles soluciones:</div>
+                <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
+                  <li>Verificar que el backend esté ejecutándose en el puerto 8080</li>
+                  <li>Comprobar que la URL de la API sea correcta</li>
+                  <li>Revisar la configuración de CORS en el backend</li>
+                  <li>Verificar la conexión a internet</li>
+                  <li>Intentar acceder directamente a: <a href="http://localhost:8080/api/sucursales" target="_blank" style={{ color: '#3b82f6' }}>http://localhost:8080/api/sucursales</a></li>
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <table style={{
+              ...tableStyle,
+              fontSize: isMobile ? "0.875rem" : "1rem",
+              maxWidth: "100%"
+            }}>
+              <thead style={{ 
+                position: "sticky", 
+                top: 0, 
+                zIndex: 2, 
+                background: "#5C5C5C",
+                fontSize: isMobile ? "0.75rem" : "0.875rem"
+              }}>
                 <tr>
-                  <td colSpan={4} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px" }}>
-                      <div style={{ 
-                        width: "20px", 
-                        height: "20px", 
-                        border: "2px solid #f3f3f3", 
-                        borderTop: "2px solid #ff7300", 
-                        borderRadius: "50%", 
-                        animation: "spin 1s linear infinite" 
-                      }}></div>
-                      Cargando sucursales...
-                    </div>
-                  </td>
+                  <th style={thStyle}>ID</th>
+                  <th style={thStyle}>Nombre</th>
+                  <th style={thStyle}>Dirección</th>
+                  <th style={thStyle}>Teléfono</th>
+                  <th style={thStyle}>Comuna</th>
+                  <th style={thStyle}>Ciudad</th>
+                  <th style={thStyle}>Tipo</th>
+                  <th style={thStyle}>Acciones</th>
                 </tr>
-              ) : currentTableData.length === 0 ? (
-                <tr>
-                  <td colSpan={4} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
-                    No hay sucursales disponibles
-                  </td>
-                </tr>
-              ) : (
-                currentTableData.map((sucursal) => (
-                  <tr key={sucursal.id}>
-                    <td style={tdStyle}>#{sucursal.id}</td>
-                    <td style={tdStyle}>{sucursal.nombre}</td>
-                    <td style={tdStyle}>{sucursal.direccion}</td>
-                    <td style={tdStyle}>{sucursal.telefono}</td>
+              </thead>
+              <tbody>
+                {currentTableData.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
+                      No hay sucursales disponibles
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  currentTableData.map((sucursal) => (
+                    <tr key={sucursal.id}>
+                      <td style={tdStyle}>#{sucursal.id}</td>
+                      <td style={tdStyle}>{sucursal.nombre}</td>
+                      <td style={tdStyle}>{sucursal.direccion}</td>
+                      <td style={tdStyle}>{sucursal.telefono}</td>
+                      <td style={tdStyle}>{sucursal.comuna || 'N/A'}</td>
+                      <td style={tdStyle}>{sucursal.ciudad || 'N/A'}</td>
+                      <td style={tdStyle}>
+                        <span style={{
+                          backgroundColor: sucursal.nombre?.toLowerCase()?.includes('bodega') ? '#10b981' : '#3b82f6',
+                          color: 'white',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          fontWeight: 'semibold'
+                        }}>
+                          {sucursal.nombre?.toLowerCase()?.includes('bodega') ? 'Bodega' : 'Sucursal'}
+                        </span>
+                      </td>
+                      <td style={{...tdStyle, minWidth: '200px'}}>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          <button
+                            onClick={() => handleEdit(sucursal)}
+                            style={{
+                              ...editButtonStyle,
+                              padding: '0.25rem 0.75rem',
+                              height: 'auto',
+                              fontSize: '0.875rem'
+                            }}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDelete(sucursal)}
+                            style={{
+                              ...editButtonStyle,
+                              padding: '0.25rem 0.75rem',
+                              height: 'auto',
+                              fontSize: '0.875rem',
+                              backgroundColor: '#ef4444',
+                            }}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
 
-        {filteredData.length > 0 && (
+        {!loading && !error && filteredData.length > 0 && (
           <div style={{
             ...paginationContainerStyle,
             flexDirection: isMobile ? "column" : "row",
@@ -397,7 +873,7 @@ export default function SucursalesPage() {
               <button
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages}
-                style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
+                style={paginationButtonBaseStyle}
               >
                 Siguiente
               </button>
@@ -405,6 +881,183 @@ export default function SucursalesPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Filtros */}
+      {showFilterModal && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <h2 style={modalTitleStyle}>Filtros</h2>
+            
+            <div style={modalFormStyle}>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Ciudad</label>
+                <select 
+                  value={tempCiudad} 
+                  onChange={(e) => {
+                    setTempCiudad(e.target.value);
+                    setTempComuna(''); // Reset comuna temporal when city changes
+                  }}
+                  style={selectStyle}
+                >
+                  <option value="">Todas las ciudades</option>
+                  {CIUDADES.map(ciudad => (
+                    <option key={ciudad} value={ciudad}>{ciudad}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Comuna</label>
+                <select 
+                  value={tempComuna} 
+                  onChange={(e) => setTempComuna(e.target.value)}
+                  style={selectStyle}
+                  disabled={!tempCiudad}
+                >
+                  <option value="">Todas las comunas</option>
+                  {tempCiudad && COMUNAS_POR_CIUDAD[tempCiudad]?.map(comuna => (
+                    <option key={comuna} value={comuna}>{comuna}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Tipo</label>
+                <select 
+                  value={tempTipo} 
+                  onChange={(e) => setTempTipo(e.target.value)}
+                  style={selectStyle}
+                >
+                  <option value="">Todos los tipos</option>
+                  <option value="sucursal">Sucursal</option>
+                  <option value="bodega">Bodega</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={modalButtonsStyle}>
+              <button 
+                onClick={() => {
+                  // Limpiar tanto los estados temporales como los reales
+                  setTempCiudad('');
+                  setTempComuna('');
+                  setTempTipo('');
+                  setSelectedCiudad('');
+                  setSelectedComuna('');
+                  setSelectedTipo('');
+                  setShowFilterModal(false);
+                  Swal.fire({
+                    title: 'Filtros reiniciados',
+                    text: 'Se han eliminado todos los filtros',
+                    icon: 'info',
+                    confirmButtonColor: '#ff7300'
+                  });
+                }} 
+                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Limpiar filtros
+              </button>
+              <button 
+                onClick={handleApplyFilters}
+                style={modalButtonStyle}
+              >
+                Aplicar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edición */}
+      {showEditModal && editFormData && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <h2 style={modalTitleStyle}>Editar Sucursal</h2>
+            
+            <div style={modalFormStyle}>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Nombre</label>
+                <input
+                  type="text"
+                  value={editFormData.nombre}
+                  onChange={(e) => setEditFormData({...editFormData, nombre: e.target.value})}
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Dirección</label>
+                <input
+                  type="text"
+                  value={editFormData.direccion}
+                  onChange={(e) => setEditFormData({...editFormData, direccion: e.target.value})}
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Teléfono</label>
+                <input
+                  type="text"
+                  value={editFormData.telefono}
+                  onChange={(e) => setEditFormData({...editFormData, telefono: e.target.value})}
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Ciudad</label>
+                <select 
+                  value={editFormData.ciudad || ''}
+                  onChange={(e) => {
+                    setEditFormData({
+                      ...editFormData,
+                      ciudad: e.target.value,
+                      comuna: '' // Reset comuna when city changes
+                    });
+                  }}
+                  style={selectStyle}
+                >
+                  <option value="">Seleccionar ciudad</option>
+                  {CIUDADES.map(ciudad => (
+                    <option key={ciudad} value={ciudad}>{ciudad}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Comuna</label>
+                <select 
+                  value={editFormData.comuna || ''}
+                  onChange={(e) => setEditFormData({...editFormData, comuna: e.target.value})}
+                  style={selectStyle}
+                  disabled={!editFormData.ciudad}
+                >
+                  <option value="">Seleccionar comuna</option>
+                  {editFormData.ciudad && COMUNAS_POR_CIUDAD[editFormData.ciudad]?.map(comuna => (
+                    <option key={comuna} value={comuna}>{comuna}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div style={modalButtonsStyle}>
+              <button 
+                onClick={() => setShowEditModal(false)} 
+                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSaveChanges}
+                style={modalButtonStyle}
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -495,7 +1148,7 @@ const tableStyle: React.CSSProperties = {
   borderCollapse: "collapse",
   border: "none",
   backgroundColor: "#fff",
-  minWidth: "1000px",
+  minWidth: "1400px",
   transition: "all 0.3s ease"
 };
 
@@ -617,6 +1270,12 @@ const paginationControlsStyle: React.CSSProperties = {
   boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
 };
 
+const paginationButtonsWrapperStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+};
+
 const paginationButtonBaseStyle: React.CSSProperties = {
   backgroundColor: '#ff7300',
   color: '#fff',
@@ -640,29 +1299,80 @@ const paginationDotsStyle: React.CSSProperties = {
 };
 
 const paginationButtonActiveStyle: React.CSSProperties = {
-  backgroundColor: '#5c5c5c ',
+  backgroundColor: '#5c5c5c',
   color: '#fff',
 };
 
-const paginationNextButtonStyle: React.CSSProperties = {
+const modalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000,
+};
+
+const modalContentStyle: React.CSSProperties = {
+  backgroundColor: 'white',
+  padding: '2rem',
+  borderRadius: '12px',
+  width: '90%',
+  maxWidth: '500px',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+};
+
+const modalTitleStyle: React.CSSProperties = {
+  color: '#374151',
+  fontSize: '1.5rem',
+  fontWeight: 'bold',
+  marginBottom: '1.5rem',
+  textAlign: 'center',
+};
+
+const modalFormStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+};
+
+const selectGroupStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.5rem',
+};
+
+const labelStyle: React.CSSProperties = {
+  color: '#374151',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+};
+
+const selectStyle: React.CSSProperties = {
+  padding: '0.5rem',
+  borderRadius: '6px',
+  border: '1px solid #d1d5db',
+  fontSize: '0.875rem',
+  width: '100%',
+};
+
+const modalButtonsStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '1rem',
+  marginTop: '2rem',
+};
+
+const modalButtonStyle: React.CSSProperties = {
   backgroundColor: '#ff7300',
-  color: '#fff',
+  color: 'white',
   padding: '0.5rem 1rem',
-  borderRadius: '8px',
+  borderRadius: '6px',
   border: 'none',
   cursor: 'pointer',
-  fontFamily: 'Montserrat, sans-serif',
-  fontSize: '0.9375rem',
-  fontWeight: 'semibold',
-  minWidth: '50px',
-  justifyContent: 'center',
-  display: 'flex',
-  alignItems: 'center',
-};
-
-const paginationButtonsWrapperStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: '5px',
-  flexWrap: 'wrap',
-  justifyContent: 'center'
+  fontSize: '0.875rem',
+  fontWeight: '500',
 };

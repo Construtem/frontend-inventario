@@ -38,8 +38,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const handleLogout = async () => {
     localStorage.removeItem("user");
     console.log("Usuario ha cerrado sesión");
-    // Redirige al usuario a la página de login principal
-    window.location.href = "https://login.tssw.cl"; // Asegúrate de que esta URL sea la correcta para tu aplicación
+    // Redirige al usuario a la página raíz
+    window.location.href = "http://localhost:3000/"; // Redirige a la página principal
   };
 
   return (
