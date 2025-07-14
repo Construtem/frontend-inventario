@@ -8,6 +8,7 @@ import Papa from 'papaparse';
 // import Head from "next/head"; // <-- Eliminar Head, no se usa
 import Swal from 'sweetalert2';
 import Image from "next/image"; // Para reemplazar <img> por <Image />
+import { useSearchParams } from 'next/navigation';
 
 // Importaciones de imágenes (considerando que están en @/styles/images)
 import filtrosImg from "@/styles/images/filtros.png";
@@ -126,6 +127,26 @@ const deleteProduct = async (sku: string): Promise<void> => {
     }
   } catch (error) {
     console.error('Error al eliminar producto:', error);
+    throw error;
+  }
+};
+
+// Obtener datos de una sucursal específica
+const fetchSucursal = async (id: string): Promise<any> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/sucursales/${id}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error al obtener sucursal:', error);
     throw error;
   }
 };
@@ -1017,6 +1038,9 @@ function useWindowSize() {
 
 export default function Sucursal1Page() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
+  const searchParams = useSearchParams();
+  const sucursalId = searchParams.get('id');
+  const [sucursalNombre, setSucursalNombre] = useState<string>('Sucursal Slot 3');
 
   // Calcular estilos dinámicos basados en el ancho
   const getSearchWidth = () => {
@@ -1127,6 +1151,23 @@ export default function Sucursal1Page() {
 
     loadProducts();
   }, []);
+
+  // Cargar nombre de la sucursal
+  useEffect(() => {
+    const loadSucursalName = async () => {
+      if (sucursalId) {
+        try {
+          const sucursalData = await fetchSucursal(sucursalId);
+          setSucursalNombre(sucursalData.nombre || 'Sucursal Slot 3');
+        } catch (err) {
+          console.error('Error al cargar nombre de sucursal:', err);
+          setSucursalNombre('Sucursal Slot 3');
+        }
+      }
+    };
+
+    loadSucursalName();
+  }, [sucursalId]);
 
   // Función para el botón FILTROS
   const handleFiltersProduct = () => {
@@ -1486,7 +1527,7 @@ export default function Sucursal1Page() {
           ...titleStyle,
           fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
           marginBottom: "1.5rem"
-        }}>Inventario de Productos (Tienda Centro)</h1>
+        }}>Inventario de Productos ({sucursalNombre})</h1>
         
         <div style={{
           ...toolbarStyle,

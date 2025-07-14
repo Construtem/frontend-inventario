@@ -2,12 +2,22 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
+import Swal from 'sweetalert2';
 
 // Importaciones de imágenes
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import buscarImg from "@/styles/images/buscar.png";
 
+
+// Interfaz para los datos de proveedores
+interface Proveedor {
+  id: number;
+  marca: string;
+  email: string;
+  telefono: string;
+  direccion: string;
+}
 
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
@@ -44,64 +54,347 @@ function useWindowSize() {
 export default function GestionProveedoresPage() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [proveedoresData, setProveedoresData] = useState<Proveedor[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const [filtroFechas, setFiltroFechas] = useState(false);
+  const [fechaInicio, setFechaInicio] = useState("");
+  const [fechaFin, setFechaFin] = useState("");
 
-  // Datos de ejemplo para gestión de proveedores
-  const proveedoresData = useMemo(() => [
-    {
-      id: 1,
-      idProveedor: "PROV001",
-      nombre: "Tech Solutions S.A.",
-      correoElectronico: "contacto@techsolutions.com",
-      telefono: "+1-555-0123",
-      direccion: "Av. Principal 123, Ciudad Tech"
-    },
-    {
-      id: 2,
-      idProveedor: "PROV002",
-      nombre: "Periféricos SA",
-      correoElectronico: "ventas@perifericos.com",
-      telefono: "+1-555-0456",
-      direccion: "Calle Comercio 456, Zona Industrial"
-    },
-    {
-      id: 3,
-      idProveedor: "PROV003",
-      nombre: "Displays Corp",
-      correoElectronico: "info@displayscorp.com",
-      telefono: "+1-555-0789",
-      direccion: "Boulevard Digital 789, Centro Empresarial"
-    },
-    {
-      id: 4,
-      idProveedor: "PROV004",
-      nombre: "Gaming Gear",
-      correoElectronico: "soporte@gaminggear.com",
-      telefono: "+1-555-0321",
-      direccion: "Plaza Gaming 321, Distrito Tecnológico"
-    },
-    {
-      id: 5,
-      idProveedor: "PROV005",
-      nombre: "Office Solutions",
-      correoElectronico: "admin@officesol.com",
-      telefono: "+1-555-0654",
-      direccion: "Sector Oficinas 654, Complejo Corporativo"
+  // Efecto para cargar los datos
+  useEffect(() => {
+    const fetchProveedores = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('🔄 Intentando conectar con la API de proveedores...');
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch('http://localhost:8080/api/proveedores', {
+          method: 'GET',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Datos recibidos:', data);
+        
+        if (Array.isArray(data)) {
+          setProveedoresData(data);
+        } else {
+          console.warn('⚠️ Los datos no son un array:', data);
+          setProveedoresData([]);
+        }
+        
+      } catch (err) {
+        console.error('❌ Error al cargar datos de proveedores:', err);
+        
+        let errorMessage = "Error desconocido al cargar datos";
+        if (err instanceof Error) {
+          if (err.name === 'AbortError') {
+            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+          } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+          } else {
+            errorMessage = err.message;
+          }
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProveedores();
+  }, []);
+
+  // Función para reintentar la carga de datos
+  const retryFetch = () => {
+    setError(null);
+    setLoading(true);
+    
+    const fetchProveedores = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/proveedores', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (Array.isArray(data)) {
+          setProveedoresData(data);
+          setError(null);
+        } else {
+          throw new Error('Los datos recibidos no tienen el formato esperado');
+        }
+      } catch (err) {
+        console.error('Error al recargar datos:', err);
+        setError(err instanceof Error ? err.message : 'Error al recargar los datos');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProveedores();
+  };
+
+  // Función para manejar el botón de filtros
+  const handleFiltros = async () => {
+    const { value: formValues } = await Swal.fire({
+      title: 'Filtros',
+      html: `
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <div>
+            <label for="fecha-inicio" style="display: block; margin-bottom: 0.5rem;">Fecha Inicio:</label>
+            <input type="date" id="fecha-inicio" class="swal2-input" ${fechaInicio ? `value="${fechaInicio}"` : ''}>
+          </div>
+          <div>
+            <label for="fecha-fin" style="display: block; margin-bottom: 0.5rem;">Fecha Fin:</label>
+            <input type="date" id="fecha-fin" class="swal2-input" ${fechaFin ? `value="${fechaFin}"` : ''}>
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Aplicar Filtros',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ff7300',
+      preConfirm: () => {
+        const inicio = (document.getElementById('fecha-inicio') as HTMLInputElement).value;
+        const fin = (document.getElementById('fecha-fin') as HTMLInputElement).value;
+        if (inicio && fin && new Date(inicio) > new Date(fin)) {
+          Swal.showValidationMessage('La fecha de inicio no puede ser mayor que la fecha fin');
+          return false;
+        }
+        return [inicio, fin];
+      }
+    });
+
+    if (formValues) {
+      const [inicio, fin] = formValues;
+      setFechaInicio(inicio);
+      setFechaFin(fin);
+      setFiltroFechas(true);
+      // Aquí implementarías la lógica para filtrar por fechas
     }
-  ], []);
+  };
+
+  // Función para agregar un nuevo proveedor
+  const handleAgregarProveedor = async () => {
+    const { value: formValues } = await Swal.fire({
+      title: 'Agregar Nuevo Proveedor',
+      html: `
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <input type="text" id="marca" class="swal2-input" placeholder="Marca">
+          <input type="email" id="email" class="swal2-input" placeholder="Email">
+          <input type="tel" id="telefono" class="swal2-input" placeholder="Teléfono">
+          <input type="text" id="direccion" class="swal2-input" placeholder="Dirección">
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ff7300',
+      preConfirm: () => {
+        const marca = (document.getElementById('marca') as HTMLInputElement).value;
+        const email = (document.getElementById('email') as HTMLInputElement).value;
+        const telefono = (document.getElementById('telefono') as HTMLInputElement).value;
+        const direccion = (document.getElementById('direccion') as HTMLInputElement).value;
+
+        if (!marca || !email || !telefono || !direccion) {
+          Swal.showValidationMessage('Todos los campos son requeridos');
+          return false;
+        }
+
+        if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+          Swal.showValidationMessage('Email inválido');
+          return false;
+        }
+
+        return { marca, email, telefono, direccion };
+      }
+    });
+
+    if (formValues) {
+      try {
+        const response = await fetch('http://localhost:8080/api/proveedores', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formValues),
+        });
+
+        if (!response.ok) throw new Error('Error al crear el proveedor');
+
+        const nuevoProveedor = await response.json();
+        setProveedoresData([...proveedoresData, nuevoProveedor]);
+
+        await Swal.fire({
+          title: '¡Éxito!',
+          text: 'Proveedor agregado correctamente',
+          icon: 'success',
+          confirmButtonColor: '#ff7300'
+        });
+      } catch (error) {
+        console.error('Error:', error);
+        await Swal.fire({
+          title: 'Error',
+          text: 'No se pudo agregar el proveedor',
+          icon: 'error',
+          confirmButtonColor: '#ff7300'
+        });
+      }
+    }
+  };
+
+  // Función para editar un proveedor
+  const handleEditar = async (proveedor: Proveedor) => {
+    const { value: formValues } = await Swal.fire({
+      title: 'Editar Proveedor',
+      html: `
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <input type="text" id="marca" class="swal2-input" placeholder="Marca" value="${proveedor.marca}">
+          <input type="email" id="email" class="swal2-input" placeholder="Email" value="${proveedor.email}">
+          <input type="tel" id="telefono" class="swal2-input" placeholder="Teléfono" value="${proveedor.telefono}">
+          <input type="text" id="direccion" class="swal2-input" placeholder="Dirección" value="${proveedor.direccion}">
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Guardar Cambios',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ff7300',
+      preConfirm: () => {
+        const marca = (document.getElementById('marca') as HTMLInputElement).value;
+        const email = (document.getElementById('email') as HTMLInputElement).value;
+        const telefono = (document.getElementById('telefono') as HTMLInputElement).value;
+        const direccion = (document.getElementById('direccion') as HTMLInputElement).value;
+
+        if (!marca || !email || !telefono || !direccion) {
+          Swal.showValidationMessage('Todos los campos son requeridos');
+          return false;
+        }
+
+        if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+          Swal.showValidationMessage('Email inválido');
+          return false;
+        }
+
+        return { marca, email, telefono, direccion };
+      }
+    });
+
+    if (formValues) {
+      try {
+        const response = await fetch(`http://localhost:8080/api/proveedores/${proveedor.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ...formValues, id: proveedor.id }),
+        });
+
+        if (!response.ok) throw new Error('Error al actualizar el proveedor');
+
+        const proveedorActualizado = await response.json();
+        setProveedoresData(proveedoresData.map(p => 
+          p.id === proveedor.id ? proveedorActualizado : p
+        ));
+
+        await Swal.fire({
+          title: '¡Éxito!',
+          text: 'Proveedor actualizado correctamente',
+          icon: 'success',
+          confirmButtonColor: '#ff7300'
+        });
+      } catch (error) {
+        console.error('Error:', error);
+        await Swal.fire({
+          title: 'Error',
+          text: 'No se pudo actualizar el proveedor',
+          icon: 'error',
+          confirmButtonColor: '#ff7300'
+        });
+      }
+    }
+  };
+
+  // Función para eliminar un proveedor
+  const handleEliminar = async (proveedor: Proveedor) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: `¿Deseas eliminar el proveedor ${proveedor.marca}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(`http://localhost:8080/api/proveedores/${proveedor.id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) throw new Error('Error al eliminar el proveedor');
+
+        setProveedoresData(proveedoresData.filter(p => p.id !== proveedor.id));
+
+        await Swal.fire({
+          title: '¡Eliminado!',
+          text: 'El proveedor ha sido eliminado correctamente',
+          icon: 'success',
+          confirmButtonColor: '#ff7300'
+        });
+      } catch (error) {
+        console.error('Error:', error);
+        await Swal.fire({
+          title: 'Error',
+          text: 'No se pudo eliminar el proveedor',
+          icon: 'error',
+          confirmButtonColor: '#ff7300'
+        });
+      }
+    }
+  };
 
   // Filtrar datos según búsqueda
   const filteredData = useMemo(() => {
-    return proveedoresData.filter(item => {
+    return proveedoresData
+      .sort((a, b) => (a?.id || 0) - (b?.id || 0)) // Ordenar por ID ascendente
+      .filter(item => {
       const searchLower = searchTerm.toLowerCase();
       return (
-        item.idProveedor.toLowerCase().includes(searchLower) ||
-        item.nombre.toLowerCase().includes(searchLower) ||
-        item.correoElectronico.toLowerCase().includes(searchLower) ||
-        item.telefono.toLowerCase().includes(searchLower) ||
-        item.direccion.toLowerCase().includes(searchLower)
+          (item?.id?.toString() || '').includes(searchLower) ||
+          (item?.marca?.toLowerCase() || '').includes(searchLower) ||
+          (item?.email?.toLowerCase() || '').includes(searchLower) ||
+          (item?.telefono?.toLowerCase() || '').includes(searchLower) ||
+          (item?.direccion?.toLowerCase() || '').includes(searchLower)
       );
     });
   }, [proveedoresData, searchTerm]);
@@ -262,7 +555,7 @@ export default function GestionProveedoresPage() {
             }}>
               <input
                 type="text"
-                placeholder="Buscar por ID, Nombre, Correo..."
+                placeholder="Buscar por ID, Marca, Email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
@@ -278,12 +571,15 @@ export default function GestionProveedoresPage() {
               </button>
             </div>
             
-            <button style={{
+            <button 
+              onClick={handleFiltros}
+              style={{
               ...filterButtonStyle,
               width: isMobile ? "100%" : "auto",
               fontSize: isMobile ? "0.875rem" : "1rem",
               padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-            }}>
+              }}
+            >
               <Image
                 src={filtrosImg.src}
                 alt="Filtros"
@@ -292,6 +588,7 @@ export default function GestionProveedoresPage() {
                 style={filterIconStyle}
               />
               Filtros
+              {filtroFechas && <span style={{ marginLeft: '5px', fontSize: '0.8em' }}>•</span>}
             </button>
           </div>
 
@@ -300,12 +597,15 @@ export default function GestionProveedoresPage() {
             width: isMobile ? "100%" : "auto",
             marginTop: isMobile ? "1rem" : isSmall ? "1rem" : "0"
           }}>
-            <button style={{
+            <button 
+              onClick={handleAgregarProveedor}
+              style={{
               ...editButtonStyle,
               width: isMobile ? "100%" : "auto",
               fontSize: isMobile ? "0.875rem" : "1rem",
               padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-            }}>
+              }}
+            >
               <Image
                 src={agregarImg.src}
                 alt="Agregar proveedor"
@@ -348,16 +648,147 @@ export default function GestionProveedoresPage() {
               {loading ? (
                 <tr>
                   <td colSpan={6} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px" }}>
                       <div style={{ 
-                        width: "20px", 
-                        height: "20px", 
-                        border: "2px solid #f3f3f3", 
-                        borderTop: "2px solid #ff7300", 
-                        borderRadius: "50%", 
-                        animation: "spin 1s linear infinite" 
-                      }}></div>
-                      Cargando proveedores...
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      padding: '3rem',
+                      backgroundColor: 'white',
+                      borderRadius: '10px',
+                      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                    }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        border: '4px solid #f3f4f6',
+                        borderTop: '4px solid #ff7300',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                        marginBottom: '1rem'
+                      }} />
+                      <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando proveedores...</div>
+                      <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
+                        Conectando con http://localhost:8080
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      padding: '3rem',
+                      backgroundColor: 'white',
+                      borderRadius: '10px',
+                      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                      maxWidth: '600px',
+                      margin: '0 auto'
+                    }}>
+                      <div style={{ 
+                        fontSize: '1.1rem', 
+                        color: '#ef4444',
+                        textAlign: 'center',
+                        marginBottom: '1.5rem'
+                      }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>❌ Error al cargar los proveedores</div>
+                        <div style={{ 
+                          fontSize: '0.9rem', 
+                          marginTop: '0.5rem',
+                          whiteSpace: 'pre-line',
+                          lineHeight: '1.5',
+                          color: '#666'
+                        }}>
+                          {error}
+                        </div>
+                      </div>
+                      
+                      <div style={{
+                        display: 'flex',
+                        gap: '1rem',
+                        flexDirection: isMobile ? 'column' : 'row',
+                        width: isMobile ? '100%' : 'auto'
+                      }}>
+                        <button
+                          onClick={retryFetch}
+                          style={{
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '1rem',
+                            fontFamily: 'Montserrat, sans-serif',
+                            fontWeight: 'semibold',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                            transition: 'all 0.3s ease',
+                            minWidth: '120px'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
+                        >
+                          🔄 Reintentar
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            console.log('🔍 Diagnóstico de red:');
+                            console.log('• URL del backend:', 'http://localhost:8080/api/proveedores');
+                            console.log('• User Agent:', navigator.userAgent);
+                            console.log('• Conexión:', navigator.onLine ? 'En línea' : 'Sin conexión');
+                            Swal.fire({
+                              title: 'Diagnóstico',
+                              text: 'Información de diagnóstico enviada a la consola del navegador (F12)',
+                              icon: 'info',
+                              confirmButtonColor: '#ff7300'
+                            });
+                          }}
+                          style={{
+                            backgroundColor: '#6b7280',
+                            color: 'white',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '1rem',
+                            fontFamily: 'Montserrat, sans-serif',
+                            fontWeight: 'semibold',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                            transition: 'all 0.3s ease',
+                            minWidth: '120px'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
+                        >
+                          🔍 Diagnóstico
+                        </button>
+                      </div>
+                      
+                      <div style={{
+                        marginTop: '1.5rem',
+                        padding: '1rem',
+                        backgroundColor: '#f3f4f6',
+                        borderRadius: '8px',
+                        fontSize: '0.875rem',
+                        color: '#666',
+                        textAlign: 'left',
+                        width: '100%',
+                        boxSizing: 'border-box'
+                      }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>💡 Posibles soluciones:</div>
+                        <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
+                          <li>Verificar que el backend esté ejecutándose en el puerto 8080</li>
+                          <li>Comprobar que la URL de la API sea correcta</li>
+                          <li>Revisar la configuración de CORS en el backend</li>
+                          <li>Verificar la conexión a internet</li>
+                          <li>Intentar acceder directamente a: <a href="http://localhost:8080/api/proveedores" target="_blank" style={{ color: '#3b82f6' }}>http://localhost:8080/api/proveedores</a></li>
+                        </ul>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -368,30 +799,38 @@ export default function GestionProveedoresPage() {
                   </td>
                 </tr>
               ) : (
-                currentTableData.map((item) => (
-                  <tr key={item.id}>
-                    <td style={tdStyle}>{item.idProveedor}</td>
-                    <td style={tdStyle}>{item.nombre}</td>
-                    <td style={tdStyle}>{item.correoElectronico}</td>
-                    <td style={tdStyle}>{item.telefono}</td>
-                    <td style={tdStyle}>{item.direccion}</td>
+                currentTableData.map((item, index) => (
+                  <tr key={item?.id || `proveedor-${index}`}>
+                    <td style={tdStyle}>{item?.id || '-'}</td>
+                    <td style={tdStyle}>{item?.marca || '-'}</td>
+                    <td style={tdStyle}>{item?.email || '-'}</td>
+                    <td style={tdStyle}>{item?.telefono || '-'}</td>
+                    <td style={tdStyle}>{item?.direccion || '-'}</td>
                     <td style={tdStyle}>
                       <div style={{ display: "flex", justifyContent: "center", gap: "5px" }}>
-                        <button style={{
+                        <button 
+                          key={`edit-${item?.id || index}`}
+                          onClick={() => handleEditar(item)}
+                          style={{
                           ...modifyProductButtonStyle,
                           fontSize: '0.75rem',
                           padding: '0.25rem 0.5rem',
                           maxWidth: '60px'
-                        }}>
+                          }}
+                        >
                           EDITAR
                         </button>
-                        <button style={{
+                        <button 
+                          key={`delete-${item?.id || index}`}
+                          onClick={() => handleEliminar(item)}
+                          style={{
                           ...modifyProductButtonStyle,
                           backgroundColor: '#ef4444',
                           fontSize: '0.75rem',
                           padding: '0.25rem 0.5rem',
                           maxWidth: '60px'
-                        }}>
+                          }}
+                        >
                           ELIMINAR
                         </button>
                       </div>

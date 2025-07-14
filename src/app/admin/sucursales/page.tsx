@@ -437,6 +437,17 @@ export default function SucursalesPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState<Sucursal | null>(null);
 
+  // Estados para el modal de agregar
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addFormData, setAddFormData] = useState({
+    nombre: '',
+    direccion: '',
+    telefono: '',
+    ciudad: '',
+    comuna: '',
+    tipo: '2' // valor por defecto (2 = Sucursal)
+  });
+
   // Agregar función para manejar la edición
   const handleEdit = (sucursal: Sucursal) => {
     setEditFormData(sucursal);
@@ -528,6 +539,175 @@ export default function SucursalesPage() {
     });
   };
 
+  // Función para contar sucursales y bodegas
+  const countByType = useMemo(() => {
+    const sucursales = sucursalesData.filter(item => 
+      !item.nombre?.toLowerCase()?.includes('bodega')
+    ).length;
+    const bodegas = sucursalesData.filter(item => 
+      item.nombre?.toLowerCase()?.includes('bodega')
+    ).length;
+    
+    return { sucursales, bodegas };
+  }, [sucursalesData]);
+
+  // Función para manejar agregar sucursal
+  const handleAddSucursal = () => {
+    const { sucursales, bodegas } = countByType;
+    
+    // Verificar si se puede agregar algo
+    if (sucursales >= 3 && bodegas >= 3) {
+      Swal.fire({
+        title: 'Límite alcanzado',
+        text: 'Ya tienes el máximo permitido de 3 sucursales y 3 bodegas.',
+        icon: 'warning',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    // Determinar qué tipos están disponibles
+    const tiposDisponibles = [];
+    if (sucursales < 3) tiposDisponibles.push('2');
+    if (bodegas < 3) tiposDisponibles.push('1');
+
+    // Si solo hay un tipo disponible, preseleccionarlo
+    const tipoInicial = tiposDisponibles.length === 1 ? tiposDisponibles[0] : '2';
+
+    // Resetear el formulario
+    setAddFormData({
+      nombre: '',
+      direccion: '',
+      telefono: '',
+      ciudad: '',
+      comuna: '',
+      tipo: tipoInicial
+    });
+    setShowAddModal(true);
+  };
+
+  // Función para guardar nueva sucursal
+  const handleSaveNewSucursal = async () => {
+    const { sucursales, bodegas } = countByType;
+    
+    // Validar límites antes de crear
+    if (addFormData.tipo === '2' && sucursales >= 3) {
+      Swal.fire({
+        title: 'Límite alcanzado',
+        text: 'Ya tienes el máximo de 3 sucursales permitidas.',
+        icon: 'warning',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+    
+    if (addFormData.tipo === '1' && bodegas >= 3) {
+      Swal.fire({
+        title: 'Límite alcanzado',
+        text: 'Ya tienes el máximo de 3 bodegas permitidas.',
+        icon: 'warning',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    // Validaciones
+    if (!addFormData.nombre.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El nombre es requerido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!addFormData.direccion.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'La dirección es requerida',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!addFormData.telefono.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El teléfono es requerido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!addFormData.ciudad) {
+      Swal.fire({
+        title: 'Error',
+        text: 'La ciudad es requerida',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!addFormData.comuna) {
+      Swal.fire({
+        title: 'Error',
+        text: 'La comuna es requerida',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    try {
+      // Preparar los datos para enviar
+      const dataToSend = {
+        nombre: addFormData.tipo === '1' 
+          ? `Bodega ${addFormData.nombre}` 
+          : addFormData.nombre,
+        direccion: addFormData.direccion,
+        telefono: addFormData.telefono,
+        ciudad: addFormData.ciudad,
+        comuna: addFormData.comuna,
+        tipo_id: parseInt(addFormData.tipo)
+      };
+
+      const response = await fetch('http://localhost:8080/api/sucursales', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend),
+      });
+
+      if (!response.ok) throw new Error('Error al crear la sucursal');
+
+      const nuevaSucursal = await response.json();
+
+      // Actualizar el estado agregando la nueva sucursal y ordenando
+      setSucursalesData(prevData => sortSucursales([...prevData, nuevaSucursal]));
+
+      setShowAddModal(false);
+      Swal.fire({
+        title: 'Éxito',
+        text: 'Sucursal creada correctamente',
+        icon: 'success',
+        confirmButtonColor: '#ff7300'
+      });
+    } catch (err) {
+      console.error('Error al crear sucursal:', err);
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo crear la sucursal',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+    }
+  };
+
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
@@ -602,12 +782,27 @@ export default function SucursalesPage() {
             width: isMobile ? "100%" : "auto",
             marginTop: isMobile ? "1rem" : isSmall ? "1rem" : "0"
           }}>
-            <button style={{
-              ...editButtonStyle,
-              width: isMobile ? "100%" : "auto",
-              fontSize: isMobile ? "0.875rem" : "1rem",
-              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-            }}>
+            <button 
+              onClick={handleAddSucursal}
+              disabled={countByType.sucursales >= 3 && countByType.bodegas >= 3}
+              style={{
+                ...editButtonStyle,
+                width: isMobile ? "100%" : "auto",
+                fontSize: isMobile ? "0.875rem" : "1rem",
+                padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                opacity: (countByType.sucursales >= 3 && countByType.bodegas >= 3) ? 0.5 : 1,
+                cursor: (countByType.sucursales >= 3 && countByType.bodegas >= 3) ? 'not-allowed' : 'pointer'
+              }}
+              title={
+                countByType.sucursales >= 3 && countByType.bodegas >= 3 
+                  ? 'Límite máximo alcanzado (3 sucursales y 3 bodegas)'
+                  : countByType.sucursales >= 3 
+                    ? `Solo puedes agregar ${3 - countByType.bodegas} bodega(s) más`
+                    : countByType.bodegas >= 3
+                      ? `Solo puedes agregar ${3 - countByType.sucursales} sucursal(es) más`
+                      : `Puedes agregar ${3 - countByType.sucursales} sucursal(es) y ${3 - countByType.bodegas} bodega(s) más`
+              }
+            >
               <Image
                 src={agregarImg.src}
                 alt="Agregar sucursal"
@@ -793,7 +988,7 @@ export default function SucursalesPage() {
                 ) : (
                   currentTableData.map((sucursal) => (
                     <tr key={sucursal.id}>
-                      <td style={tdStyle}>#{sucursal.id}</td>
+                      <td style={tdStyle}>{sucursal.id}</td>
                       <td style={tdStyle}>{sucursal.nombre}</td>
                       <td style={tdStyle}>{sucursal.direccion}</td>
                       <td style={tdStyle}>{sucursal.telefono}</td>
@@ -1053,6 +1248,155 @@ export default function SucursalesPage() {
                 style={modalButtonStyle}
               >
                 Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Agregar Sucursal */}
+      {showAddModal && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <h2 style={modalTitleStyle}>Agregar Nueva Sucursal</h2>
+            
+            {/* Mostrar información de límites */}
+            <div style={{
+              backgroundColor: '#f3f4f6',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              fontSize: '0.875rem',
+              color: '#374151'
+            }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>📊 Estado actual:</div>
+              <div>• Sucursales: {countByType.sucursales}/3</div>
+              <div>• Bodegas: {countByType.bodegas}/3</div>
+              {countByType.sucursales >= 3 && (
+                <div style={{ color: '#ef4444', marginTop: '0.5rem' }}>
+                  ⚠️ Límite de sucursales alcanzado
+                </div>
+              )}
+              {countByType.bodegas >= 3 && (
+                <div style={{ color: '#ef4444', marginTop: '0.5rem' }}>
+                  ⚠️ Límite de bodegas alcanzado
+                </div>
+              )}
+            </div>
+            
+            <div style={modalFormStyle}>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Tipo</label>
+                <select 
+                  value={addFormData.tipo}
+                  onChange={(e) => {
+                    setAddFormData({...addFormData, tipo: e.target.value});
+                  }}
+                  style={selectStyle}
+                >
+                  <option 
+                    value="2" 
+                    disabled={countByType.sucursales >= 3}
+                  >
+                    Sucursal {countByType.sucursales >= 3 ? '(Límite alcanzado)' : `(${countByType.sucursales}/3)`}
+                  </option>
+                  <option 
+                    value="1" 
+                    disabled={countByType.bodegas >= 3}
+                  >
+                    Bodega {countByType.bodegas >= 3 ? '(Límite alcanzado)' : `(${countByType.bodegas}/3)`}
+                  </option>
+                </select>
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>
+                  Nombre {addFormData.tipo === '1' && <span style={{fontSize: '0.8rem', color: '#666'}}>(se agregará "Bodega" al inicio automáticamente)</span>}
+                </label>
+                <input
+                  type="text"
+                  value={addFormData.nombre}
+                  onChange={(e) => setAddFormData({...addFormData, nombre: e.target.value})}
+                  style={inputStyle}
+                  placeholder={addFormData.tipo === '1' ? 'Ej: Central' : 'Ej: Sucursal Centro'}
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Dirección</label>
+                <input
+                  type="text"
+                  value={addFormData.direccion}
+                  onChange={(e) => setAddFormData({...addFormData, direccion: e.target.value})}
+                  style={inputStyle}
+                  placeholder="Ej: Av. Principal 123"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Teléfono</label>
+                <input
+                  type="text"
+                  value={addFormData.telefono}
+                  onChange={(e) => setAddFormData({...addFormData, telefono: e.target.value})}
+                  style={inputStyle}
+                  placeholder="Ej: +56 9 1234 5678"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Ciudad</label>
+                <select 
+                  value={addFormData.ciudad}
+                  onChange={(e) => {
+                    setAddFormData({
+                      ...addFormData,
+                      ciudad: e.target.value,
+                      comuna: '' // Reset comuna when city changes
+                    });
+                  }}
+                  style={selectStyle}
+                >
+                  <option value="">Seleccionar ciudad</option>
+                  {CIUDADES.map(ciudad => (
+                    <option key={ciudad} value={ciudad}>{ciudad}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Comuna</label>
+                <select 
+                  value={addFormData.comuna}
+                  onChange={(e) => setAddFormData({...addFormData, comuna: e.target.value})}
+                  style={selectStyle}
+                  disabled={!addFormData.ciudad}
+                >
+                  <option value="">Seleccionar comuna</option>
+                  {addFormData.ciudad && COMUNAS_POR_CIUDAD[addFormData.ciudad]?.map(comuna => (
+                    <option key={comuna} value={comuna}>{comuna}</option>
+                  ))}
+                </select>
+                {!addFormData.ciudad && (
+                  <span style={{fontSize: '0.8rem', color: '#666', marginTop: '0.25rem'}}>
+                    Primero selecciona una ciudad
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div style={modalButtonsStyle}>
+              <button 
+                onClick={() => setShowAddModal(false)} 
+                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSaveNewSucursal}
+                style={modalButtonStyle}
+              >
+                Crear Sucursal
               </button>
             </div>
           </div>

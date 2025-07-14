@@ -8,6 +8,7 @@ import Papa from 'papaparse';
 // import Head from "next/head"; // <-- Eliminar Head, no se usa
 import Swal from 'sweetalert2';
 import Image from "next/image"; // Para reemplazar <img> por <Image />
+import { useSearchParams } from 'next/navigation';
 
 // Importaciones de imágenes (considerando que están en @/styles/images)
 import filtrosImg from "@/styles/images/filtros.png";
@@ -18,7 +19,7 @@ import buscarImg from "@/styles/images/buscar.png";
 // =====================
 // 1.1 CONFIGURACIÓN DEL BACKEND
 // =====================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
 
 // Headers comunes para las peticiones
 const getHeaders = () => ({
@@ -34,7 +35,7 @@ const getHeaders = () => ({
 // Obtener todos los productos
 const fetchProducts = async (): Promise<ProductData[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/productos`, {
+    const response = await fetch(`${API_BASE_URL}/api/productos`, {
       method: 'GET',
       headers: getHeaders(),
     });
@@ -116,7 +117,7 @@ const updateProduct = async (sku: string, product: Partial<ProductData>): Promis
 // Eliminar un producto por SKU
 const deleteProduct = async (sku: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
+    const response = await fetch(`${API_BASE_URL}/api/productos/${sku}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
@@ -126,6 +127,26 @@ const deleteProduct = async (sku: string): Promise<void> => {
     }
   } catch (error) {
     console.error('Error al eliminar producto:', error);
+    throw error;
+  }
+};
+
+// Obtener datos de una sucursal específica (incluye bodegas)
+const fetchSucursal = async (id: string): Promise<any> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/sucursales/${id}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error al obtener bodega:', error);
     throw error;
   }
 };
@@ -1017,6 +1038,9 @@ function useWindowSize() {
 
 export default function Sucursal1Page() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
+  const searchParams = useSearchParams();
+  const bodegaId = searchParams.get('id');
+  const [bodegaNombre, setBodegaNombre] = useState<string>('Bodega Slot 1');
 
   // Calcular estilos dinámicos basados en el ancho
   const getSearchWidth = () => {
@@ -1127,6 +1151,23 @@ export default function Sucursal1Page() {
 
     loadProducts();
   }, []);
+
+  // Cargar nombre de la bodega
+  useEffect(() => {
+    const loadBodegaName = async () => {
+      if (bodegaId) {
+        try {
+          const bodegaData = await fetchSucursal(bodegaId);
+          setBodegaNombre(bodegaData.nombre || 'Bodega Slot 1');
+        } catch (err) {
+          console.error('Error al cargar nombre de bodega:', err);
+          setBodegaNombre('Bodega Slot 1');
+        }
+      }
+    };
+
+    loadBodegaName();
+  }, [bodegaId]);
 
   // Función para el botón FILTROS
   const handleFiltersProduct = () => {
@@ -1486,7 +1527,7 @@ export default function Sucursal1Page() {
           ...titleStyle,
           fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
           marginBottom: "1.5rem"
-        }}>Inventario de Productos (Bodega Sur)</h1>
+        }}>Inventario de Productos ({bodegaNombre})</h1>
         
         <div style={{
           ...toolbarStyle,
