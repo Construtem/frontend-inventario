@@ -157,7 +157,6 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
       }}>
         {[
           { name: 'Bodega general', path: '/admin/bodega/bodega-general' },
-          { name: 'Lista de bodegas', path: '/admin/bodega/lista-de-bodegas' },
         ].map((item) => (
           <Link
             key={item.name}
