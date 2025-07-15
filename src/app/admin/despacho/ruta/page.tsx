@@ -137,14 +137,14 @@ export default function RutaDespachoPage() {
     }
   };
 
-  // Función para calcular distancia si no está calculada
+  /*// Función para calcular distancia si no está calculada
   const calcularDistancia = async (origen: string, destino: string) => {
     // Por ahora, no intentar calcular distancia desde el backend
     // Ya que los endpoints no están disponibles todavía
     console.log('ℹ️ Saltando cálculo de distancia del backend - endpoints no disponibles');
     console.log('🗺️ Google Maps calculará la distancia directamente en el mapa');
     return null;
-  };
+  };*/
 
   useEffect(() => {
     const loadDespachoData = async () => {
