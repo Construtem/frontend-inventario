@@ -18,7 +18,7 @@ import buscarImg from "@/styles/images/buscar.png";
 // =====================
 // 1.1 CONFIGURACIÓN DEL BACKEND
 // =====================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
 // Headers comunes para las peticiones
 const getHeaders = () => ({
@@ -34,7 +34,7 @@ const getHeaders = () => ({
 // Obtener todos los productos
 const fetchProducts = async (): Promise<ProductData[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/productos`, {
+    const response = await fetch(`${API_BASE_URL}/api/productos`, {
       method: 'GET',
       headers: getHeaders(),
     });
@@ -54,7 +54,7 @@ const fetchProducts = async (): Promise<ProductData[]> => {
 // Obtener un producto por SKU
 /*const fetchProductBySKU = async (sku: string): Promise<ProductData> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
+    const response = await fetch(`${API_BASE_URL}/api/productos/${sku}`, {
       method: 'GET',
       headers: getHeaders(),
     });
@@ -74,7 +74,7 @@ const fetchProducts = async (): Promise<ProductData[]> => {
 // Crear un producto
 const createProduct = async (product: Omit<ProductData, 'idProducto'>): Promise<ProductData> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/productos`, {
+    const response = await fetch(`${API_BASE_URL}/api/productos`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(product),
@@ -95,7 +95,7 @@ const createProduct = async (product: Omit<ProductData, 'idProducto'>): Promise<
 // Actualizar un producto por SKU
 const updateProduct = async (sku: string, product: Partial<ProductData>): Promise<ProductData> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
+    const response = await fetch(`${API_BASE_URL}/api/productos/${sku}`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(product),
@@ -116,7 +116,7 @@ const updateProduct = async (sku: string, product: Partial<ProductData>): Promis
 // Eliminar un producto por SKU
 const deleteProduct = async (sku: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
+    const response = await fetch(`${API_BASE_URL}/api/productos/${sku}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });

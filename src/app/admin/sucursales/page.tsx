@@ -113,6 +113,7 @@ export default function SucursalesPage() {
   const [tempCiudad, setTempCiudad] = useState("");
   const [tempComuna, setTempComuna] = useState("");
   const [tempTipo, setTempTipo] = useState("");
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
   // =====================
   // 2. LLAMADA A LA API
@@ -145,7 +146,7 @@ export default function SucursalesPage() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
         
-        const response = await fetch('http://localhost:8080/api/sucursales', {
+        const response = await fetch(`${apiInventarioUrl}/api/sucursales`, {
           method: 'GET',
           signal: controller.signal,
           headers: {
@@ -210,7 +211,7 @@ export default function SucursalesPage() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        const response = await fetch('http://localhost:8080/api/sucursales', {
+        const response = await fetch(`${apiInventarioUrl}/api/sucursales`, {
           method: 'GET',
           signal: controller.signal,
           headers: {
@@ -448,7 +449,7 @@ export default function SucursalesPage() {
     if (!editFormData) return;
 
     try {
-      const response = await fetch(`http://localhost:8080/api/sucursales/${editFormData.id}`, {
+      const response = await fetch(`${apiInventarioUrl}/api/sucursales/${editFormData.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -497,7 +498,7 @@ export default function SucursalesPage() {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const response = await fetch(`http://localhost:8080/api/sucursales/${sucursal.id}`, {
+          const response = await fetch(`${apiInventarioUrl}/api/sucursales/${sucursal.id}`, {
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json',
@@ -712,7 +713,7 @@ export default function SucursalesPage() {
                 <button
                   onClick={() => {
                     console.log('🔍 Diagnóstico de red:');
-                    console.log('• URL del backend:', 'http://localhost:8080/api/sucursales');
+                    console.log('• URL del backend:', `${apiInventarioUrl}/api/sucursales`);
                     console.log('• User Agent:', navigator.userAgent);
                     console.log('• Conexión:', navigator.onLine ? 'En línea' : 'Sin conexión');
                     alert('Información de diagnóstico enviada a la consola del navegador (F12)');
