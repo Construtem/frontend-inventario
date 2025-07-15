@@ -5,12 +5,10 @@
 // =====================
 import React, { useRef, useState, useMemo, useEffect } from "react";
 import Papa from 'papaparse';
-// import Head from "next/head"; // <-- Eliminar Head, no se usa
 import Swal from 'sweetalert2';
-import Image from "next/image"; // Para reemplazar <img> por <Image />
+import Image from "next/image";
 import { useSearchParams } from 'next/navigation';
 
-// Importaciones de imágenes (considerando que están en @/styles/images)
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import logo1Img from "@/styles/images/logo1.png";
@@ -19,7 +17,7 @@ import buscarImg from "@/styles/images/buscar.png";
 // =====================
 // 1.1 CONFIGURACIÓN DEL BACKEND
 // =====================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
 // Headers comunes para las peticiones
 const getHeaders = () => ({
@@ -32,87 +30,53 @@ const getHeaders = () => ({
 // 1.2 FUNCIONES DE API
 // =====================
 
-// Obtener todos los productos
-const fetchProducts = async (): Promise<ProductData[]> => {
+// Obtener todos los productos (adaptado para sucursales)
+const fetchProducts = async (sucursalId?: string): Promise<ProductData[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/productos`, {
+    if (!sucursalId) {
+      return [];
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/stock-sucursal?sucursal_id=${sucursalId}`, {
       method: 'GET',
       headers: getHeaders(),
+      credentials: 'include',
+      mode: 'cors',
     });
 
     if (!response.ok) {
+      if (response.status === 404) {
+        return [];
+      }
       throw new Error(`Error ${response.status}: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    return data;
+    const stockData = await response.json();
+    
+    // Transformar la respuesta de la API al formato esperado por el componente
+    const transformedData: ProductData[] = stockData
+      .filter((item: any) => item.sucursal_id.toString() === sucursalId)
+      .map((item: any) => ({
+        sku: item.producto.sku,
+        nombre: item.producto.nombre,
+        descripcion: item.producto.descripcion,
+        marca: item.producto.proveedor?.marca || 'N/A',
+        categoria: 'General',
+        pesoKg: item.producto.peso,
+        largoCm: item.producto.largo,
+        anchoCm: item.producto.ancho,
+        altoCm: item.producto.alto,
+        precioVentaCu: item.producto.precio,
+        stock: item.cantidad,
+        estado: true,
+      }));
+    
+    return transformedData;
   } catch (error) {
     console.error('Error al obtener productos:', error);
     throw error;
   }
 };
-
-// Obtener un producto por SKU
-/*const fetchProductBySKU = async (sku: string): Promise<ProductData> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
-      method: 'GET',
-      headers: getHeaders(),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error al obtener producto por SKU:', error);
-    throw error;
-  }
-};
-
-// Crear un producto
-const createProduct = async (product: Omit<ProductData, 'idProducto'>): Promise<ProductData> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/productos`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(product),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error al crear producto:', error);
-    throw error;
-  }
-};
-
-// Actualizar un producto por SKU
-const updateProduct = async (sku: string, product: Partial<ProductData>): Promise<ProductData> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/productos/${sku}`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify(product),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error al actualizar producto:', error);
-    throw error;
-  }
-};*/
 
 // Eliminar un producto por SKU
 const deleteProduct = async (sku: string): Promise<void> => {
@@ -120,6 +84,8 @@ const deleteProduct = async (sku: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/api/productos/${sku}`, {
       method: 'DELETE',
       headers: getHeaders(),
+      credentials: 'include',
+      mode: 'cors',
     });
 
     if (!response.ok) {
@@ -137,6 +103,8 @@ const fetchSucursal = async (id: string): Promise<any> => {
     const response = await fetch(`${API_BASE_URL}/api/sucursales/${id}`, {
       method: 'GET',
       headers: getHeaders(),
+      credentials: 'include',
+      mode: 'cors',
     });
 
     if (!response.ok) {
@@ -146,7 +114,7 @@ const fetchSucursal = async (id: string): Promise<any> => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error al obtener bodega:', error);
+    console.error('Error al obtener sucursal:', error);
     throw error;
   }
 };
@@ -163,7 +131,6 @@ interface ProductData {
   largoCm: number;
   anchoCm: number;
   altoCm: number;
-  costoBaseCu: number;
   precioVentaCu: number;
   stock: number;
   categoria: string;
@@ -347,7 +314,6 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             "Largo (CM)",
             "Ancho (CM)",
             "Alto (CM)",
-            "Costo base (C/U)",
             "Precio venta (C/U)",
             "Estado",
             "Stock"
@@ -397,7 +363,6 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             const largoCm = parseFloat(row["Largo (CM)"]);
             const anchoCm = parseFloat(row["Ancho (CM)"]);
             const altoCm = parseFloat(row["Alto (CM)"]);
-            const costoBaseCu = parseFloat(row["Costo base (C/U)"]);
             const precioVentaCu = parseFloat(row["Precio venta (C/U)"]);
 
             const estadoParsed = parseestado(row["Estado"]);
@@ -415,7 +380,6 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             if (isNaN(anchoCm) || anchoCm < 0) rowErrors.push('Ancho (CM) debe ser un número positivo');
             if (isNaN(altoCm) || altoCm < 0) rowErrors.push('Alto (CM) debe ser un número positivo');
 
-            if (isNaN(costoBaseCu) || costoBaseCu < 0) rowErrors.push('Costo base (C/U) debe ser un número positivo');
             if (isNaN(precioVentaCu) || precioVentaCu < 0) rowErrors.push('Precio venta (C/U) debe ser un número positivo');
 
             if (estado === null) rowErrors.push('Estado debe ser "Activo" o "Inactivo"');
@@ -436,7 +400,6 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
                 largoCm,
                 anchoCm,
                 altoCm,
-                costoBaseCu,
                 precioVentaCu,
                 stock,
                 estado: estado as boolean,
@@ -781,9 +744,7 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
                       <td style={tdModalStyle}>{product.largoCm}</td>
                       <td style={tdModalStyle}>{product.anchoCm}</td>
                       <td style={tdModalStyle}>{product.altoCm}</td>
-                      <td style={tdModalStyle}>${product.costoBaseCu}</td>
                       <td style={tdModalStyle}>${product.precioVentaCu}</td>
-                      <td style={tdModalStyle}>{product.stock}</td>
                       <td style={tdModalStyle}>
                         <span style={{
                           backgroundColor: product.estado ? '#10b981' : '#ef4444',
@@ -796,6 +757,7 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
                           {product.estado ? 'Activo' : 'Inactivo'}
                         </span>
                       </td>
+                      <td style={tdModalStyle}>{product.stock}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1036,11 +998,11 @@ function useWindowSize() {
   };
 }
 
-export default function Sucursal1Page() {
+export default function SucursalSlot1Page() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const searchParams = useSearchParams();
-  const bodegaId = searchParams.get('id');
-  const [bodegaNombre, setBodegaNombre] = useState<string>('Bodega Slot 1');
+  const sucursalId = searchParams.get('id');
+  const [sucursalNombre, setSucursalNombre] = useState<string>('Sucursal Slot 1');
 
   // Calcular estilos dinámicos basados en el ancho
   const getSearchWidth = () => {
@@ -1096,6 +1058,7 @@ export default function Sucursal1Page() {
   const [loadedProducts, setLoadedProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState<{ categoria: string; estado: string }>({
     categoria: "",
     estado: ""
@@ -1126,7 +1089,7 @@ export default function Sucursal1Page() {
       try {
         setLoading(true);
         setError(null);
-        const products = await fetchProducts();
+        const products = await fetchProducts(sucursalId || undefined);
         setLoadedProducts(products);
       } catch (err) {
         console.error('Error al cargar productos:', err);
@@ -1150,24 +1113,24 @@ export default function Sucursal1Page() {
     };
 
     loadProducts();
-  }, []);
+  }, [sucursalId]);
 
-  // Cargar nombre de la bodega
+  // Cargar nombre de la sucursal
   useEffect(() => {
-    const loadBodegaName = async () => {
-      if (bodegaId) {
+    const loadSucursalName = async () => {
+      if (sucursalId) {
         try {
-          const bodegaData = await fetchSucursal(bodegaId);
-          setBodegaNombre(bodegaData.nombre || 'Bodega Slot 1');
+          const sucursalData = await fetchSucursal(sucursalId);
+          setSucursalNombre(sucursalData.nombre || 'Sucursal Slot 1');
         } catch (err) {
-          console.error('Error al cargar nombre de bodega:', err);
-          setBodegaNombre('Bodega Slot 1');
+          console.error('Error al cargar nombre de sucursal:', err);
+          setSucursalNombre('Sucursal Slot 1');
         }
       }
     };
 
-    loadBodegaName();
-  }, [bodegaId]);
+    loadSucursalName();
+  }, [sucursalId]);
 
   // Función para el botón FILTROS
   const handleFiltersProduct = () => {
@@ -1226,12 +1189,18 @@ export default function Sucursal1Page() {
   // Filtrar productos según los filtros activos
   const filteredProducts = useMemo(() => {
     return loadedProducts.filter(product => {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = !searchTerm || 
+        product.sku.toLowerCase().includes(searchLower) ||
+        product.nombre.toLowerCase().includes(searchLower) ||
+        product.descripcion.toLowerCase().includes(searchLower);
+      
       const matchesCategoria = !activeFilters.categoria || product.categoria === activeFilters.categoria;
       const matchesEstado = !activeFilters.estado || 
         (activeFilters.estado === "activo" ? product.estado : !product.estado);
-      return matchesCategoria && matchesEstado;
+      return matchesSearch && matchesCategoria && matchesEstado;
     });
-  }, [loadedProducts, activeFilters]);
+  }, [loadedProducts, searchTerm, activeFilters]);
 
   // Calcular los datos a mostrar en la página actual usando los productos filtrados
   const currentTableData = useMemo(() => {
@@ -1516,6 +1485,11 @@ export default function Sucursal1Page() {
     });
   };
 
+  // Función para formatear precio con separadores de miles
+  const formatPrice = (price: number) => {
+    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
   return (
     <div style={{
       ...containerStyle
@@ -1527,7 +1501,7 @@ export default function Sucursal1Page() {
           ...titleStyle,
           fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
           marginBottom: "1.5rem"
-        }}>Inventario de Productos ({bodegaNombre})</h1>
+        }}>Inventario de Productos ({sucursalNombre})</h1>
         
         <div style={{
           ...toolbarStyle,
@@ -1554,6 +1528,8 @@ export default function Sucursal1Page() {
               <input
                 type="text"
                 placeholder="Buscar por SKU, Nombre..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   ...inputStyle,
                   fontSize: isMobile ? "0.875rem" : "1rem"
@@ -1685,7 +1661,6 @@ export default function Sucursal1Page() {
                   "Largo (CM)",
                   "Ancho (CM)",
                   "Alto (CM)",
-                  "Costo base (C/U)",
                   "Precio venta (C/U)",
                   "Estado",
                   "Stock",
@@ -1700,7 +1675,7 @@ export default function Sucursal1Page() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={13} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
+                  <td colSpan={14} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
                     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px" }}>
                       <div style={{ 
                         width: "20px", 
@@ -1716,7 +1691,7 @@ export default function Sucursal1Page() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={13} style={{ ...tdStyle, textAlign: "center", padding: "2rem", color: "#d33" }}>
+                  <td colSpan={14} style={{ ...tdStyle, textAlign: "center", padding: "2rem", color: "#d33" }}>
                     {error}
                   </td>
                 </tr>
@@ -1732,8 +1707,7 @@ export default function Sucursal1Page() {
                     <td style={tdStyle}>{product.largoCm}</td>
                     <td style={tdStyle}>{product.anchoCm}</td>
                     <td style={tdStyle}>{product.altoCm}</td>
-                    <td style={tdStyle}>${product.costoBaseCu}</td>
-                    <td style={tdStyle}>${product.precioVentaCu}</td>
+                    <td style={tdStyle}>${formatPrice(product.precioVentaCu)}</td>
                     <td style={tdStyle}>
                       <span style={{
                         backgroundColor: product.estado ? '#10b981' : '#ef4444',
@@ -1778,7 +1752,7 @@ export default function Sucursal1Page() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={13} style={{ ...tdStyle, textAlign: 'center', color: '#888', padding: "2rem" }}>
+                  <td colSpan={14} style={{ ...tdStyle, textAlign: 'center', color: '#888', padding: "2rem" }}>
                     No hay productos disponibles. Usa &quot;AGREGAR PRODUCTOS&quot; para cargar productos desde CSV o contacta al administrador.
                   </td>
                 </tr>
