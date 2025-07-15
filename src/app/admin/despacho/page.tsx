@@ -273,7 +273,7 @@ export default function DespachoPage() {
     try {
       console.log(`Consultando productos detallados para despacho ID: ${despachoId}`);
       
-      const res = await fetch(`http://localhost:8080/api/productos_despacho/despacho/${despachoId}/detallado`, {
+      const res = await fetch(`${apiInventarioUrl}/api/productos_despacho/despacho/${despachoId}/detallado`, {
         headers: {
           'Content-Type': 'application/json',
         },

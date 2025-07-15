@@ -5,12 +5,10 @@
 // =====================
 import React, { useRef, useState, useMemo, useEffect } from "react";
 import Papa from 'papaparse';
-// import Head from "next/head"; // <-- Eliminar Head, no se usa
 import Swal from 'sweetalert2';
-import Image from "next/image"; // Para reemplazar <img> por <Image />
+import Image from "next/image";
 import { useSearchParams } from 'next/navigation';
 
-// Importaciones de imágenes (considerando que están en @/styles/images)
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import logo1Img from "@/styles/images/logo1.png";
@@ -19,7 +17,7 @@ import buscarImg from "@/styles/images/buscar.png";
 // =====================
 // 1.1 CONFIGURACIÓN DEL BACKEND
 // =====================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
 // Headers comunes para las peticiones
 const getHeaders = () => ({
@@ -38,6 +36,8 @@ const fetchProducts = async (): Promise<ProductData[]> => {
     const response = await fetch(`${API_BASE_URL}/api/productos`, {
       method: 'GET',
       headers: getHeaders(),
+      credentials: 'include',
+      mode: 'cors',
     });
 
     if (!response.ok) {
@@ -58,6 +58,8 @@ const fetchSucursal = async (id: string): Promise<any> => {
     const response = await fetch(`${API_BASE_URL}/api/sucursales/${id}`, {
       method: 'GET',
       headers: getHeaders(),
+      credentials: 'include',
+      mode: 'cors',
     });
 
     if (!response.ok) {
@@ -140,6 +142,8 @@ const deleteProduct = async (sku: string): Promise<void> => {
     const response = await fetch(`${API_BASE_URL}/api/productos/${sku}`, {
       method: 'DELETE',
       headers: getHeaders(),
+      credentials: 'include',
+      mode: 'cors',
     });
 
     if (!response.ok) {
@@ -163,7 +167,6 @@ interface ProductData {
   largoCm: number;
   anchoCm: number;
   altoCm: number;
-  costoBaseCu: number;
   precioVentaCu: number;
   stock: number;
   categoria: string;
@@ -347,7 +350,6 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             "Largo (CM)",
             "Ancho (CM)",
             "Alto (CM)",
-            "Costo base (C/U)",
             "Precio venta (C/U)",
             "Estado",
             "Stock"
@@ -397,7 +399,6 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             const largoCm = parseFloat(row["Largo (CM)"]);
             const anchoCm = parseFloat(row["Ancho (CM)"]);
             const altoCm = parseFloat(row["Alto (CM)"]);
-            const costoBaseCu = parseFloat(row["Costo base (C/U)"]);
             const precioVentaCu = parseFloat(row["Precio venta (C/U)"]);
 
             const estadoParsed = parseestado(row["Estado"]);
@@ -415,7 +416,6 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
             if (isNaN(anchoCm) || anchoCm < 0) rowErrors.push('Ancho (CM) debe ser un número positivo');
             if (isNaN(altoCm) || altoCm < 0) rowErrors.push('Alto (CM) debe ser un número positivo');
 
-            if (isNaN(costoBaseCu) || costoBaseCu < 0) rowErrors.push('Costo base (C/U) debe ser un número positivo');
             if (isNaN(precioVentaCu) || precioVentaCu < 0) rowErrors.push('Precio venta (C/U) debe ser un número positivo');
 
             if (estado === null) rowErrors.push('Estado debe ser "Activo" o "Inactivo"');
@@ -436,7 +436,6 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
                 largoCm,
                 anchoCm,
                 altoCm,
-                costoBaseCu,
                 precioVentaCu,
                 stock,
                 estado: estado as boolean,
@@ -781,7 +780,6 @@ const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUplo
                       <td style={tdModalStyle}>{product.largoCm}</td>
                       <td style={tdModalStyle}>{product.anchoCm}</td>
                       <td style={tdModalStyle}>{product.altoCm}</td>
-                      <td style={tdModalStyle}>${product.costoBaseCu}</td>
                       <td style={tdModalStyle}>${product.precioVentaCu}</td>
                       <td style={tdModalStyle}>{product.stock}</td>
                       <td style={tdModalStyle}>
@@ -1685,7 +1683,6 @@ export default function Sucursal1Page() {
                   "Largo (CM)",
                   "Ancho (CM)",
                   "Alto (CM)",
-                  "Costo base (C/U)",
                   "Precio venta (C/U)",
                   "Estado",
                   "Stock",
@@ -1732,7 +1729,6 @@ export default function Sucursal1Page() {
                     <td style={tdStyle}>{product.largoCm}</td>
                     <td style={tdStyle}>{product.anchoCm}</td>
                     <td style={tdStyle}>{product.altoCm}</td>
-                    <td style={tdStyle}>${product.costoBaseCu}</td>
                     <td style={tdStyle}>${product.precioVentaCu}</td>
                     <td style={tdStyle}>
                       <span style={{

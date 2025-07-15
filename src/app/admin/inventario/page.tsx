@@ -11,6 +11,7 @@ interface Sucursal {
   telefono: string;
   direccion: string;
   comuna: string;
+  tipo_id?: number; // Agregar tipo_id que viene del backend
 }
 
 interface CardProps {
@@ -146,46 +147,65 @@ export default function InventarioPage() {
     fetchSucursales();
   };
 
-  // Convertir sucursales a formato de cards con mapeo de slots
+  // Convertir sucursales a formato de cards con mapeo de slots - corregir lógica
   const cardData: CardProps[] = useMemo(() => {
     if (sucursales.length === 0) return [];
 
-    // Separar sucursales y bodegas
+    console.log('🔍 Datos de sucursales para cards:', sucursales); // Debug
+
+    // Separar sucursales y bodegas usando la misma lógica que en el módulo de sucursales
     const sucursalesOnly = sucursales
-      .filter(item => !item.nombre?.toLowerCase()?.includes('bodega'))
+      .filter(item => {
+        const tipoValue = item.tipo_id || item.tipo;
+        const esSucursal = tipoValue === 2 || tipoValue === '2' || 
+                          (!item.nombre?.toLowerCase()?.includes('bodega') && !tipoValue);
+        console.log(`Item ${item.id} - ${item.nombre}: tipo_id=${item.tipo_id}, tipo=${item.tipo}, esSucursal=${esSucursal}`);
+        return esSucursal;
+      })
       .sort((a, b) => (a?.id || 0) - (b?.id || 0));
     
     const bodegasOnly = sucursales
-      .filter(item => item.nombre?.toLowerCase()?.includes('bodega'))
+      .filter(item => {
+        const tipoValue = item.tipo_id || item.tipo;
+        const esBodega = tipoValue === 1 || tipoValue === '1' || 
+                        (item.nombre?.toLowerCase()?.includes('bodega') && !tipoValue);
+        console.log(`Item ${item.id} - ${item.nombre}: tipo_id=${item.tipo_id}, tipo=${item.tipo}, esBodega=${esBodega}`);
+        return esBodega;
+      })
       .sort((a, b) => (a?.id || 0) - (b?.id || 0));
 
     const cards: CardProps[] = [];
 
-         // Asignar slots a sucursales (máximo 3)
-     sucursalesOnly.slice(0, 3).forEach((sucursal, index) => {
-       const slot = index + 1;
-       cards.push({
-         id: Number(sucursal.id) || 0,
-         mainText: String(sucursal.nombre || `Sucursal ${sucursal.id}`),
-         subText: `Slot ${slot}`,
-         imagePath: "/images/inicio/sucursales.png",
-         extraInfo: `${String(sucursal.direccion || 'Dirección no especificada')}, ${String(sucursal.comuna || 'Comuna no especificada')} | Tel: ${String(sucursal.telefono || 'No especificado')}`,
-         route: `/admin/inventario/sucursal-slot-${slot}?id=${sucursal.id}`
-       });
-     });
+    // Asignar slots a sucursales (máximo 3)
+    sucursalesOnly.slice(0, 3).forEach((sucursal, index) => {
+      const slot = index + 1;
+      const card = {
+        id: Number(sucursal.id) || 0,
+        mainText: String(sucursal.nombre || `Sucursal ${sucursal.id}`),
+        subText: `Slot ${slot}`,
+        imagePath: "/images/inicio/sucursales.png",
+        extraInfo: `${String(sucursal.direccion || 'Dirección no especificada')}, ${String(sucursal.comuna || 'Comuna no especificada')} | Tel: ${String(sucursal.telefono || 'No especificado')}`,
+        route: `/admin/inventario/sucursal-slot-${slot}?id=${sucursal.id}`
+      };
+      console.log(`✅ Card creada para sucursal - Slot ${slot}:`, card);
+      cards.push(card);
+    });
 
-         // Asignar slots a bodegas (máximo 3)
-     bodegasOnly.slice(0, 3).forEach((bodega, index) => {
-       const slot = index + 1;
-       cards.push({
-         id: Number(bodega.id) || 0,
-         mainText: String(bodega.nombre || `Bodega ${bodega.id}`),
-         subText: `Slot ${slot}`,
-         imagePath: "/images/inicio/bodegas.png",
-         extraInfo: `${String(bodega.direccion || 'Dirección no especificada')}, ${String(bodega.comuna || 'Comuna no especificada')} | Tel: ${String(bodega.telefono || 'No especificado')}`,
-         route: `/admin/inventario/bodega-slot-${slot}?id=${bodega.id}`
-       });
-     });
+    // Asignar slots a bodegas (máximo 3)
+    bodegasOnly.slice(0, 3).forEach((bodega, index) => {
+      const slot = index + 1;
+      const card = {
+        id: Number(bodega.id) || 0,
+        mainText: String(bodega.nombre || `Bodega ${bodega.id}`),
+        subText: `Slot ${slot}`,
+        imagePath: "/images/inicio/bodegas.png",
+        extraInfo: `${String(bodega.direccion || 'Dirección no especificada')}, ${String(bodega.comuna || 'Comuna no especificada')} | Tel: ${String(bodega.telefono || 'No especificado')}`,
+        route: `/admin/inventario/bodega-slot-${slot}?id=${bodega.id}`
+      };
+
+      cards.push(card);
+    });
+
 
     return cards;
   }, [sucursales]);

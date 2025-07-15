@@ -19,6 +19,8 @@ interface Sucursal {
   telefono: string;
   comuna?: string;
   ciudad?: string;
+  tipo?: string; // '1' for Bodega, '2' for Sucursal (frontend)
+  tipo_id?: number; // ID del tipo que viene del backend
 }
 
 const CIUDADES = ['Santiago'];
@@ -259,7 +261,7 @@ export default function SucursalesPage() {
     fetchSucursales();
   };
 
-  // Modificar la función de filtrado para que solo busque por nombre
+  // Modificar la función de filtrado para usar el campo tipo en lugar del nombre
   const filteredData = useMemo(() => {
     return sortSucursales(sucursalesData.filter(sucursal => {
       const searchLower = searchTerm.toLowerCase();
@@ -267,11 +269,18 @@ export default function SucursalesPage() {
 
       const matchesCiudad = selectedCiudad ? sucursal.ciudad === selectedCiudad : true;
       const matchesComuna = selectedComuna ? sucursal.comuna === selectedComuna : true;
-      const matchesTipo = selectedTipo 
-        ? (selectedTipo === 'bodega' 
-          ? sucursal.nombre.toLowerCase().includes('bodega')
-          : !sucursal.nombre.toLowerCase().includes('bodega'))
-        : true;
+      
+      let matchesTipo = true;
+      if (selectedTipo) {
+        const tipoValue = sucursal.tipo_id || sucursal.tipo;
+        if (selectedTipo === 'bodega') {
+          matchesTipo = tipoValue === 1 || tipoValue === '1' || 
+                       sucursal.nombre?.toLowerCase()?.includes('bodega');
+        } else if (selectedTipo === 'sucursal') {
+          matchesTipo = tipoValue === 2 || tipoValue === '2' || 
+                       !sucursal.nombre?.toLowerCase()?.includes('bodega');
+        }
+      }
 
       return matchesSearch && matchesCiudad && matchesComuna && matchesTipo;
     }));
@@ -448,31 +457,48 @@ export default function SucursalesPage() {
     tipo: '2' // valor por defecto (2 = Sucursal)
   });
 
-  // Agregar función para manejar la edición
+  // Agregar función para manejar la edición - eliminar lógica de determinación de tipo
   const handleEdit = (sucursal: Sucursal) => {
     setEditFormData(sucursal);
     setShowEditModal(true);
   };
 
-  // Función para guardar cambios
+  // Modificar handleSaveChanges para incluir tipo_id
   const handleSaveChanges = async () => {
     if (!editFormData) return;
 
     try {
+      const dataToSend = {
+        nombre: editFormData.nombre,
+        direccion: editFormData.direccion,
+        telefono: editFormData.telefono,
+        ciudad: editFormData.ciudad,
+        comuna: editFormData.comuna,
+        tipo_id: parseInt(editFormData.tipo || '2') // Asegurar que se envíe tipo_id
+      };
+
+      console.log('Datos a enviar:', dataToSend); // Debug log
+
       const response = await fetch(`http://localhost:8080/api/sucursales/${editFormData.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(editFormData),
+        body: JSON.stringify(dataToSend),
       });
 
-      if (!response.ok) throw new Error('Error al actualizar');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error al actualizar: ${response.status} - ${errorText}`);
+      }
+
+      const updatedSucursal = await response.json();
 
       // Update and sort the data
       setSucursalesData(prevData => 
         sortSucursales(prevData.map(item => 
-          item.id === editFormData.id ? editFormData : item
+          item.id === editFormData.id ? updatedSucursal : item
         ))
       );
 
@@ -487,106 +513,14 @@ export default function SucursalesPage() {
       console.error('Error al actualizar sucursal:', err);
       Swal.fire({
         title: 'Error',
-        text: 'No se pudo actualizar la sucursal',
+        text: `No se pudo actualizar la sucursal: ${err instanceof Error ? err.message : 'Error desconocido'}`,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
     }
   };
 
-  // Agregar función para manejar la eliminación
-  const handleDelete = (sucursal: Sucursal) => {
-    Swal.fire({
-      title: '¿Estás seguro?',
-      text: `¿Deseas eliminar la sucursal "${sucursal.nombre}"?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const response = await fetch(`http://localhost:8080/api/sucursales/${sucursal.id}`, {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (!response.ok) throw new Error('Error al eliminar');
-
-          // Actualizar el estado eliminando la sucursal
-          setSucursalesData(prevData => prevData.filter(item => item.id !== sucursal.id));
-
-          Swal.fire({
-            title: 'Eliminado',
-            text: 'La sucursal ha sido eliminada correctamente',
-            icon: 'success',
-            confirmButtonColor: '#ff7300'
-          });
-        } catch (err) {
-          console.error('Error al eliminar sucursal:', err);
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudo eliminar la sucursal',
-            icon: 'error',
-            confirmButtonColor: '#ff7300'
-          });
-        }
-      }
-    });
-  };
-
-  // Función para contar sucursales y bodegas
-  const countByType = useMemo(() => {
-    const sucursales = sucursalesData.filter(item => 
-      !item.nombre?.toLowerCase()?.includes('bodega')
-    ).length;
-    const bodegas = sucursalesData.filter(item => 
-      item.nombre?.toLowerCase()?.includes('bodega')
-    ).length;
-    
-    return { sucursales, bodegas };
-  }, [sucursalesData]);
-
-  // Función para manejar agregar sucursal
-  const handleAddSucursal = () => {
-    const { sucursales, bodegas } = countByType;
-    
-    // Verificar si se puede agregar algo
-    if (sucursales >= 3 && bodegas >= 3) {
-      Swal.fire({
-        title: 'Límite alcanzado',
-        text: 'Ya tienes el máximo permitido de 3 sucursales y 3 bodegas.',
-        icon: 'warning',
-        confirmButtonColor: '#ff7300'
-      });
-      return;
-    }
-
-    // Determinar qué tipos están disponibles
-    const tiposDisponibles = [];
-    if (sucursales < 3) tiposDisponibles.push('2');
-    if (bodegas < 3) tiposDisponibles.push('1');
-
-    // Si solo hay un tipo disponible, preseleccionarlo
-    const tipoInicial = tiposDisponibles.length === 1 ? tiposDisponibles[0] : '2';
-
-    // Resetear el formulario
-    setAddFormData({
-      nombre: '',
-      direccion: '',
-      telefono: '',
-      ciudad: '',
-      comuna: '',
-      tipo: tipoInicial
-    });
-    setShowAddModal(true);
-  };
-
-  // Función para guardar nueva sucursal
+  // También modificar handleSaveNewSucursal para usar el mismo formato
   const handleSaveNewSucursal = async () => {
     const { sucursales, bodegas } = countByType;
     
@@ -663,7 +597,7 @@ export default function SucursalesPage() {
     }
 
     try {
-      // Preparar los datos para enviar
+      // Preparar los datos para enviar con tipo_id
       const dataToSend = {
         nombre: addFormData.tipo === '1' 
           ? `Bodega ${addFormData.nombre}` 
@@ -672,8 +606,10 @@ export default function SucursalesPage() {
         telefono: addFormData.telefono,
         ciudad: addFormData.ciudad,
         comuna: addFormData.comuna,
-        tipo_id: parseInt(addFormData.tipo)
+        tipo_id: parseInt(addFormData.tipo) // Incluir tipo_id
       };
+
+      console.log('Datos a enviar (crear):', dataToSend); // Debug log
 
       const response = await fetch('http://localhost:8080/api/sucursales', {
         method: 'POST',
@@ -683,7 +619,11 @@ export default function SucursalesPage() {
         body: JSON.stringify(dataToSend),
       });
 
-      if (!response.ok) throw new Error('Error al crear la sucursal');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error al crear la sucursal: ${response.status} - ${errorText}`);
+      }
 
       const nuevaSucursal = await response.json();
 
@@ -701,12 +641,164 @@ export default function SucursalesPage() {
       console.error('Error al crear sucursal:', err);
       Swal.fire({
         title: 'Error',
-        text: 'No se pudo crear la sucursal',
+        text: `No se pudo crear la sucursal: ${err instanceof Error ? err.message : 'Error desconocido'}`,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
     }
   };
+
+  // Función para contar sucursales y bodegas - corregir lógica
+  const countByType = useMemo(() => {
+    const sucursales = sucursalesData.filter(item => {
+      // Verificar tanto tipo como tipo_id y también el nombre como fallback
+      const tipoValue = item.tipo_id || item.tipo;
+      return tipoValue === 2 || tipoValue === '2' || 
+             (!item.nombre?.toLowerCase()?.includes('bodega') && !tipoValue);
+    }).length;
+    
+    const bodegas = sucursalesData.filter(item => {
+      // Verificar tanto tipo como tipo_id y también el nombre como fallback
+      const tipoValue = item.tipo_id || item.tipo;
+      return tipoValue === 1 || tipoValue === '1' || 
+             (item.nombre?.toLowerCase()?.includes('bodega') && !tipoValue);
+    }).length;
+    
+    console.log('Conteo por tipo:', { sucursales, bodegas, totalItems: sucursalesData.length }); // Debug
+    console.log('Datos completos:', sucursalesData); // Debug
+    
+    return { sucursales, bodegas };
+  }, [sucursalesData]);
+
+  // Modificar handleDelete para usar la misma lógica
+  const handleDelete = (sucursal: Sucursal) => {
+    const tipoValue = sucursal.tipo_id || sucursal.tipo;
+    const tipo = (tipoValue === 1 || tipoValue === '1' || 
+                  sucursal.nombre?.toLowerCase()?.includes('bodega')) ? 'bodega' : 'sucursal';
+    
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: `¿Deseas eliminar la ${tipo} "${sucursal.nombre}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, continuar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Segunda confirmación con advertencia de productos
+        Swal.fire({
+          title: '⚠️ ATENCIÓN: Eliminación Permanente',
+          html: `
+            <div style="text-align: left; margin: 1rem 0;">
+              <p><strong>Al eliminar esta ${tipo}:</strong></p>
+              <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                <li>Todos los productos asociados se eliminarán <strong>PERMANENTEMENTE</strong></li>
+                <li>Esta acción <strong>NO SE PUEDE DESHACER</strong></li>
+                <li>Se perderán todos los datos relacionados</li>
+              </ul>
+              <p style="color: #ef4444; font-weight: bold;">¿Estás completamente seguro de que deseas continuar?</p>
+            </div>
+          `,
+          icon: 'error',
+          showCancelButton: true,
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#6b7280',
+          confirmButtonText: 'SÍ, ELIMINAR PERMANENTEMENTE',
+          cancelButtonText: 'No, cancelar',
+          reverseButtons: true,
+          focusCancel: true
+        }).then(async (finalResult) => {
+          if (finalResult.isConfirmed) {
+            try {
+              const response = await fetch(`http://localhost:8080/api/sucursales/${sucursal.id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              });
+
+              if (!response.ok) throw new Error('Error al eliminar');
+
+              // Actualizar el estado eliminando la sucursal
+              setSucursalesData(prevData => prevData.filter(item => item.id !== sucursal.id));
+
+              Swal.fire({
+                title: 'Eliminado',
+                text: `La ${tipo} y todos sus productos asociados han sido eliminados permanentemente`,
+                icon: 'success',
+                confirmButtonColor: '#ff7300'
+              });
+            } catch (err) {
+              console.error('Error al eliminar sucursal:', err);
+              Swal.fire({
+                title: 'Error',
+                text: `No se pudo eliminar la ${tipo}`,
+                icon: 'error',
+                confirmButtonColor: '#ff7300'
+              });
+            }
+          }
+        });
+      }
+    });
+  };
+
+  // Función para manejar agregar sucursal
+  const handleAddSucursal = () => {
+    const { sucursales, bodegas } = countByType;
+    
+    // Verificar si se puede agregar algo
+    if (sucursales >= 3 && bodegas >= 3) {
+      Swal.fire({
+        title: 'Límite alcanzado',
+        text: 'Ya tienes el máximo permitido de 3 sucursales y 3 bodegas.',
+        icon: 'warning',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    // Determinar qué tipos están disponibles
+    const tiposDisponibles = [];
+    if (sucursales < 3) tiposDisponibles.push('2');
+    if (bodegas < 3) tiposDisponibles.push('1');
+
+    // Si solo hay un tipo disponible, preseleccionarlo
+    const tipoInicial = tiposDisponibles.length === 1 ? tiposDisponibles[0] : '2';
+
+    // Resetear el formulario
+    setAddFormData({
+      nombre: '',
+      direccion: '',
+      telefono: '',
+      ciudad: '',
+      comuna: '',
+      tipo: tipoInicial
+    });
+    setShowAddModal(true);
+  };
+
+  // Agregar función para limpiar filtros desde la barra de herramientas
+  const handleClearFiltersFromToolbar = () => {
+    setSelectedCiudad('');
+    setSelectedComuna('');
+    setSelectedTipo('');
+    setTempCiudad('');
+    setTempComuna('');
+    setTempTipo('');
+    setCurrentPage(1);
+    Swal.fire({
+      title: 'Filtros reiniciados',
+      text: 'Se han eliminado todos los filtros',
+      icon: 'info',
+      confirmButtonColor: '#ff7300'
+    });
+  };
+
+  // Verificar si hay filtros activos
+  const hasActiveFilters = Boolean(selectedCiudad || selectedComuna || selectedTipo);
 
   return (
     <div style={containerStyle}>
@@ -757,24 +849,55 @@ export default function SucursalesPage() {
               </button>
             </div>
             
-            <button 
-              style={{
-                ...filterButtonStyle,
-                width: isMobile ? "100%" : "auto",
-                fontSize: isMobile ? "0.875rem" : "1rem",
-                padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-              }}
-              onClick={() => setShowFilterModal(true)}
-            >
-              <Image
-                src={filtrosImg.src}
-                alt="Filtros"
-                width={20}
-                height={20}
-                style={filterIconStyle}
-              />
-              Filtros
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                style={{
+                  ...filterButtonStyle,
+                  width: isMobile ? "100%" : "auto",
+                  fontSize: isMobile ? "0.875rem" : "1rem",
+                  padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                  backgroundColor: hasActiveFilters ? '#ff7300' : '#5c5c5c',
+                  position: 'relative'
+                }}
+                onClick={() => setShowFilterModal(true)}
+              >
+                <Image
+                  src={filtrosImg.src}
+                  alt="Filtros"
+                  width={20}
+                  height={20}
+                  style={filterIconStyle}
+                />
+                Filtros
+                {hasActiveFilters && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '-5px',
+                    right: '-5px',
+                    width: '10px',
+                    height: '10px',
+                    backgroundColor: '#10b981',
+                    borderRadius: '50%',
+                    border: '2px solid white'
+                  }} />
+                )}
+              </button>
+
+              {hasActiveFilters && (
+                <button 
+                  onClick={handleClearFiltersFromToolbar}
+                  style={{
+                    ...filterButtonStyle,
+                    backgroundColor: '#ef4444',
+                    width: isMobile ? "100%" : "auto",
+                    fontSize: isMobile ? "0.875rem" : "1rem",
+                    padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                  }}
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
           </div>
 
           <div style={{
@@ -996,14 +1119,22 @@ export default function SucursalesPage() {
                       <td style={tdStyle}>{sucursal.ciudad || 'N/A'}</td>
                       <td style={tdStyle}>
                         <span style={{
-                          backgroundColor: sucursal.nombre?.toLowerCase()?.includes('bodega') ? '#10b981' : '#3b82f6',
+                          backgroundColor: (() => {
+                            const tipoValue = sucursal.tipo_id || sucursal.tipo;
+                            return (tipoValue === 1 || tipoValue === '1' || 
+                                   sucursal.nombre?.toLowerCase()?.includes('bodega')) ? '#10b981' : '#3b82f6';
+                          })(),
                           color: 'white',
                           padding: '0.25rem 0.5rem',
                           borderRadius: '4px',
                           fontSize: '0.75rem',
                           fontWeight: 'semibold'
                         }}>
-                          {sucursal.nombre?.toLowerCase()?.includes('bodega') ? 'Bodega' : 'Sucursal'}
+                          {(() => {
+                            const tipoValue = sucursal.tipo_id || sucursal.tipo;
+                            return (tipoValue === 1 || tipoValue === '1' || 
+                                   sucursal.nombre?.toLowerCase()?.includes('bodega')) ? 'Bodega' : 'Sucursal';
+                          })()}
                         </span>
                       </td>
                       <td style={{...tdStyle, minWidth: '200px'}}>
@@ -1174,9 +1305,10 @@ export default function SucursalesPage() {
                 <label style={labelStyle}>Nombre</label>
                 <input
                   type="text"
-                  value={editFormData.nombre}
+                  value={editFormData.nombre || ''}
                   onChange={(e) => setEditFormData({...editFormData, nombre: e.target.value})}
                   style={inputStyle}
+                  placeholder="Nombre de la sucursal"
                 />
               </div>
 
