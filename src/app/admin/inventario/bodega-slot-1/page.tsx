@@ -61,19 +61,19 @@ const fetchProducts = async (sucursalId?: string): Promise<ProductData[]> => {
         nombre: item.producto.nombre,
         descripcion: item.producto.descripcion,
         marca: item.producto.proveedor?.marca || 'N/A',
-        categoria: 'General',
+        categoria: item.producto.categoria?.nombre || 'N/A',
         pesoKg: item.producto.peso,
         largoCm: item.producto.largo,
         anchoCm: item.producto.ancho,
         altoCm: item.producto.alto,
         precioVentaCu: item.producto.precio,
         stock: item.cantidad,
-        estado: true,
+        estado: item.producto.estado,
       }));
     
     return transformedData;
   } catch (error) {
-    console.error('Error al obtener productos:', error);
+
     throw error;
   }
 };
@@ -92,7 +92,7 @@ const deleteProduct = async (sku: string): Promise<void> => {
       throw new Error(`Error ${response.status}: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('Error al eliminar producto:', error);
+
     throw error;
   }
 };
@@ -114,7 +114,36 @@ const fetchSucursal = async (id: string): Promise<any> => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error al obtener sucursal:', error);
+
+    throw error;
+  }
+};
+
+// Actualizar un producto por SKU
+const updateProduct = async (sku: string, productData: Partial<ProductData>): Promise<void> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/productos/${sku}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      credentials: 'include',
+      mode: 'cors',
+      body: JSON.stringify({
+        nombre: productData.nombre,
+        descripcion: productData.descripcion,
+        peso: productData.pesoKg,
+        largo: productData.largoCm,
+        ancho: productData.anchoCm,
+        alto: productData.altoCm,
+        precio: productData.precioVentaCu,
+        estado: productData.estado,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+  } catch (error) {
+
     throw error;
   }
 };
@@ -147,6 +176,13 @@ interface FiltersModalProps {
   isOpen: boolean;
   onClose: () => void;
   onApplyFilters: (filters: { categoria: string; estado: string }) => void;
+}
+
+interface EditProductModalProps {
+  isOpen: boolean;
+  product: ProductData | null;
+  onClose: () => void;
+  onSave: (product: ProductData) => void;
 }
 
 // =====================
@@ -911,11 +947,14 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
               style={selectStyle}
             >
               <option value="">Todas las categorías</option>
-              <option value="electronica">Electrónica</option>
-              <option value="ropa">Ropa</option>
-              <option value="hogar">Hogar</option>
-              <option value="alimentos">Alimentos</option>
-              <option value="otros">Otros</option>
+              <option value="Herramientas manuales">Herramientas manuales</option>
+              <option value="Herramientas eléctricas">Herramientas eléctricas</option>
+              <option value="Materiales de construcción">Materiales de construcción</option>
+              <option value="Fijaciones">Fijaciones</option>
+              <option value="Pinturas">Pinturas</option>
+              <option value="Medición">Medición</option>
+              <option value="Seguridad">Seguridad</option>
+              <option value="Maquinaria liviana">Maquinaria liviana</option>
             </select>
           </div>
 
@@ -960,6 +999,181 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
               APLICAR FILTROS
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, onClose, onSave }) => {
+  const [formData, setFormData] = useState<ProductData | null>(null);
+
+  useEffect(() => {
+    if (product) {
+      setFormData({ ...product });
+    }
+  }, [product]);
+
+  if (!isOpen || !formData) return null;
+
+  const handleSave = () => {
+    // Validaciones
+    if (!formData.nombre.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El nombre es requerido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!formData.descripcion.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'La descripción es requerida',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (isNaN(formData.pesoKg) || formData.pesoKg < 0) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El peso debe ser un número válido y positivo',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (isNaN(formData.precioVentaCu) || formData.precioVentaCu < 0) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El precio debe ser un número válido y positivo',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    onSave(formData);
+  };
+
+  return (
+    <div style={modalOverlayStyle}>
+      <div style={{...modalContentStyle, maxWidth: '650px', padding: '2rem'}}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+          <h2 style={{...modalTitleStyle, margin: 0}}>Editar Producto</h2>
+          <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+            SKU: <strong>{formData.sku}</strong>
+          </div>
+        </div>
+        
+        <div style={{...modalFormStyle, padding: '0 1rem'}}>
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Nombre</label>
+            <input
+              type="text"
+              value={formData.nombre}
+              onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+              style={selectStyle}
+              placeholder="Nombre del producto"
+            />
+          </div>
+
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Descripción</label>
+            <textarea
+              value={formData.descripcion}
+              onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+              style={{...selectStyle, height: '80px', resize: 'vertical'}}
+              placeholder="Descripción del producto"
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={selectGroupStyle}>
+              <label style={labelStyle}>Peso (KG)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={formData.pesoKg}
+                onChange={(e) => setFormData({...formData, pesoKg: parseFloat(e.target.value) || 0})}
+                style={selectStyle}
+              />
+            </div>
+
+            <div style={selectGroupStyle}>
+              <label style={labelStyle}>Precio (CLP)</label>
+              <input
+                type="number"
+                value={formData.precioVentaCu}
+                onChange={(e) => setFormData({...formData, precioVentaCu: parseFloat(e.target.value) || 0})}
+                style={selectStyle}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+            <div style={selectGroupStyle}>
+              <label style={labelStyle}>Largo (CM)</label>
+              <input
+                type="number"
+                value={formData.largoCm}
+                onChange={(e) => setFormData({...formData, largoCm: parseFloat(e.target.value) || 0})}
+                style={selectStyle}
+              />
+            </div>
+
+            <div style={selectGroupStyle}>
+              <label style={labelStyle}>Ancho (CM)</label>
+              <input
+                type="number"
+                value={formData.anchoCm}
+                onChange={(e) => setFormData({...formData, anchoCm: parseFloat(e.target.value) || 0})}
+                style={selectStyle}
+              />
+            </div>
+
+            <div style={selectGroupStyle}>
+              <label style={labelStyle}>Alto (CM)</label>
+              <input
+                type="number"
+                value={formData.altoCm}
+                onChange={(e) => setFormData({...formData, altoCm: parseFloat(e.target.value) || 0})}
+                style={selectStyle}
+              />
+            </div>
+          </div>
+
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Estado</label>
+            <select 
+              value={formData.estado ? 'true' : 'false'}
+              onChange={(e) => setFormData({...formData, estado: e.target.value === 'true'})}
+              style={selectStyle}
+            >
+              <option value="true">Activo</option>
+              <option value="false">Inactivo</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{...modalButtonsStyle, padding: '0 1rem'}}>
+          <button 
+            onClick={onClose} 
+            style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={handleSave}
+            style={modalButtonStyle}
+          >
+            Guardar Cambios
+          </button>
         </div>
       </div>
     </div>
@@ -1055,6 +1269,8 @@ export default function SucursalSlot1Page() {
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<ProductData | null>(null);
   const [loadedProducts, setLoadedProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1092,7 +1308,7 @@ export default function SucursalSlot1Page() {
         const products = await fetchProducts(sucursalId || undefined);
         setLoadedProducts(products);
       } catch (err) {
-        console.error('Error al cargar productos:', err);
+
         setError('Error al cargar productos desde el servidor');
         Swal.fire({
           icon: 'error',
@@ -1123,7 +1339,7 @@ export default function SucursalSlot1Page() {
           const sucursalData = await fetchSucursal(sucursalId);
           setSucursalNombre(sucursalData.nombre || 'Sucursal Slot 1');
         } catch (err) {
-          console.error('Error al cargar nombre de sucursal:', err);
+
           setSucursalNombre('Sucursal Slot 1');
         }
       }
@@ -1191,9 +1407,7 @@ export default function SucursalSlot1Page() {
     return loadedProducts.filter(product => {
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = !searchTerm || 
-        product.sku.toLowerCase().includes(searchLower) ||
-        product.nombre.toLowerCase().includes(searchLower) ||
-        product.descripcion.toLowerCase().includes(searchLower);
+        product.nombre.toLowerCase().includes(searchLower);
       
       const matchesCategoria = !activeFilters.categoria || product.categoria === activeFilters.categoria;
       const matchesEstado = !activeFilters.estado || 
@@ -1216,7 +1430,7 @@ export default function SucursalSlot1Page() {
 
   const handleConfirmBulkUpload = async (data: ProductData[]) => {
     try {
-      console.log("Datos para cargar masivamente:", data);
+
       // Aquí podrías implementar la carga masiva real al backend
       // const newProducts = await bulkCreateProducts(data);
       
@@ -1224,7 +1438,7 @@ export default function SucursalSlot1Page() {
       setLoadedProducts(prev => [...prev, ...data]);
       setCurrentPage(1); // Reset a la primera página cuando se cargan nuevos datos
     } catch (error) {
-      console.error('Error en carga masiva:', error);
+
       Swal.fire({
         icon: 'error',
         html: `
@@ -1242,24 +1456,99 @@ export default function SucursalSlot1Page() {
   };
 
   // Función para el botón MODIFICAR
-  const handleModifyProduct = (sku: string) => {
-    Swal.fire({
-      html: `
-        <div style="${swalTituloCssString}">
-          ¡<b>Funcionalidad en Desarrollo</b>!
-        </div>
-        <div style="${swalTextoConMargenCssString}">
-          Modificar producto con SKU: <b>${sku}</b><br>
-          Esta funcionalidad estará disponible próximamente.
-        </div>
-      `,
-      imageUrl: logo1Img.src,
-      imageWidth: 400,
-      imageHeight: 200,
-      imageAlt: "Funcionalidad en Desarrollo",
-      confirmButtonText: 'ACEPTAR',
-      confirmButtonColor: '#ff7300',
-    });
+  const handleModifyProduct = async (sku: string) => {
+    if (sku === 'NUEVO') {
+      // Mostrar modal para agregar productos
+      Swal.fire({
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Funcionalidad en Mantenimiento</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Esta funcionalidad estará nuevamente disponible próximamente.
+          </div>
+        `,
+        imageUrl: logo1Img.src,
+        imageWidth: 400,
+        imageHeight: 200,
+        imageAlt: "Funcionalidad en Mantenimiento",
+        confirmButtonText: 'ACEPTAR',
+        confirmButtonColor: '#ff7300',
+      });
+      return;
+    }
+
+    // Buscar el producto a editar
+    const product = loadedProducts.find(p => p.sku === sku);
+    if (!product) {
+      Swal.fire({
+        icon: 'error',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No se encontró el producto con SKU: <b>${sku}</b>
+          </div>
+        `,
+        confirmButtonText: 'ACEPTAR',
+        confirmButtonColor: '#ff7300',
+      });
+      return;
+    }
+
+    // Mostrar el modal de edición
+    setEditingProduct(product);
+    setIsEditModalOpen(true);
+  };
+
+  // Función para manejar la actualización del producto
+  const handleSaveProduct = async (updatedProduct: ProductData) => {
+    try {
+      // Actualizar en el backend
+      await updateProduct(updatedProduct.sku, updatedProduct);
+      
+      // Actualizar en el estado local
+      setLoadedProducts(prev => 
+        prev.map(p => 
+          p.sku === updatedProduct.sku 
+            ? updatedProduct
+            : p
+        )
+      );
+
+      setIsEditModalOpen(false);
+      setEditingProduct(null);
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        html: `
+          <div style="${swalTextoCssString}">
+            ¡Producto actualizado exitosamente!
+          </div>
+        `,
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+    } catch (error) {
+
+      Swal.fire({
+        icon: 'error',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error al actualizar
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No se pudo actualizar el producto en el servidor.
+          </div>
+        `,
+        confirmButtonText: 'ACEPTAR',
+        confirmButtonColor: '#ff7300',
+      });
+    }
   };
 
   // Función para el botón ELIMINAR
@@ -1302,7 +1591,6 @@ export default function SucursalSlot1Page() {
           timerProgressBar: true,
         });
       } catch (error) {
-        console.error('Error al eliminar producto:', error);
         Swal.fire({
           icon: 'error',
           html: `
@@ -1527,7 +1815,7 @@ export default function SucursalSlot1Page() {
             }}>
               <input
                 type="text"
-                placeholder="Buscar por SKU, Nombre..."
+                placeholder="Buscar por nombre del producto..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
@@ -1604,7 +1892,7 @@ export default function SucursalSlot1Page() {
               width: isMobile ? "100%" : "auto",
               fontSize: isMobile ? "0.875rem" : "1rem",
               padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-            }} onClick={() => setIsUploadModalOpen(true)}>
+            }} onClick={() => handleModifyProduct('NUEVO')}>
               <Image
                 src={agregarImg.src}
                 alt="Agregar productos"
@@ -1629,19 +1917,18 @@ export default function SucursalSlot1Page() {
           }}>
             <colgroup>
               <col style={{ width: isMobile ? "8%" : "6%" }} />
-              <col style={{ width: isMobile ? "10%" : "8%" }} />
               <col style={{ width: isMobile ? "12%" : "10%" }} />
+              <col style={{ width: isMobile ? "15%" : "12%" }} />
               <col style={{ width: isMobile ? "10%" : "8%" }} />
               <col style={{ width: isMobile ? "10%" : "8%" }} />
+              <col style={{ width: isMobile ? "7%" : "6%" }} />
+              <col style={{ width: isMobile ? "7%" : "6%" }} />
+              <col style={{ width: isMobile ? "7%" : "6%" }} />
+              <col style={{ width: isMobile ? "7%" : "6%" }} />
+              <col style={{ width: isMobile ? "10%" : "8%" }} />
               <col style={{ width: isMobile ? "8%" : "7%" }} />
-              <col style={{ width: isMobile ? "8%" : "7%" }} />
-              <col style={{ width: isMobile ? "8%" : "7%" }} />
-              <col style={{ width: isMobile ? "8%" : "7%" }} />
-              <col style={{ width: isMobile ? "11%" : "9%" }} />
-              <col style={{ width: isMobile ? "12%" : "10%" }} />
-              <col style={{ width: isMobile ? "8%" : "6%" }} />
-              <col style={{ width: isMobile ? "8%" : "6%" }} />
-              <col style={{ width: isMobile ? "16%" : "14%" }} />
+              <col style={{ width: isMobile ? "7%" : "6%" }} />
+              <col style={{ width: isMobile ? "18%" : "16%" }} />
             </colgroup>
             <thead style={{ 
               position: "sticky", 
@@ -1796,6 +2083,16 @@ export default function SucursalSlot1Page() {
         isOpen={isFiltersModalOpen}
         onClose={() => setIsFiltersModalOpen(false)}
         onApplyFilters={handleApplyFilters}
+      />
+
+      <EditProductModal
+        isOpen={isEditModalOpen}
+        product={editingProduct}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingProduct(null);
+        }}
+        onSave={handleSaveProduct}
       />
     </div>
   );
@@ -2221,3 +2518,29 @@ const buttonContainerStyle: React.CSSProperties = {
   display: "flex",
   justifyContent: "flex-end",
 };
+
+// Estilos adicionales para el modal de edición (copiados exactamente de sucursales)
+const modalFormStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+};
+
+const modalButtonsStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '1rem',
+  marginTop: '2rem',
+};
+
+const modalButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: 'white',
+  padding: '0.5rem 1rem',
+  borderRadius: '6px',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+};
+

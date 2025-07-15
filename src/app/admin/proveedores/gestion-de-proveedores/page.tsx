@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import buscarImg from "@/styles/images/buscar.png";
+import logo1Img from "@/styles/images/logo1.png";
 
 
 // Interfaz para los datos de proveedores
@@ -18,6 +19,47 @@ interface Proveedor {
   telefono: string;
   direccion: string;
 }
+
+// =====================
+// DEFINICIONES DE ESTILOS PARA SWEETALERT2
+// (Fuera de los componentes para reutilización y generación de CSS en línea)
+// =====================
+
+const estiloSwalTituloObj: React.CSSProperties = {
+  fontFamily: "'Montserrat', sans-serif",
+  fontSize: '1.5rem',
+  fontWeight: '600',
+  color: '#222'
+};
+
+const estiloSwalTextoObj: React.CSSProperties = {
+  fontFamily: "'Roboto', sans-serif",
+  fontSize: '1rem',
+  fontWeight: '400',
+  color: '#333'
+};
+
+// Combinación para el texto que necesita un margen superior
+const estiloSwalTextoConMargenObj: React.CSSProperties = {
+  ...estiloSwalTextoObj,
+  marginTop: '10px'
+};
+
+// Función auxiliar para convertir un objeto JS de estilos a una cadena CSS en línea
+function objToInlineCss(styleObj: React.CSSProperties): string {
+  return Object.entries(styleObj)
+    .map(([key, value]) => {
+      // Convierte camelCase a kebab-case (ej. 'fontSize' a 'font-size')
+      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      // Retorna la propiedad CSS en formato "clave: valor;"
+      return `${cssKey}: ${value};`;
+    })
+    .join(' '); // Une todas las propiedades con un espacio
+}
+
+// Genera las cadenas CSS que se usarán directamente en el HTML de SweetAlert2
+const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
+const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
@@ -59,9 +101,21 @@ export default function GestionProveedoresPage() {
   const [proveedoresData, setProveedoresData] = useState<Proveedor[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const [filtroFechas, setFiltroFechas] = useState(false);
-  const [fechaInicio, setFechaInicio] = useState("");
-  const [fechaFin, setFechaFin] = useState("");
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
+
+  // Estados para el modal de edición
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProveedor, setEditingProveedor] = useState<Proveedor | null>(null);
+  const [editFormData, setEditFormData] = useState<Proveedor | null>(null);
+  
+  // Estados para el modal de agregar
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addFormData, setAddFormData] = useState({
+    marca: '',
+    email: '',
+    telefono: '',
+    direccion: ''
+  });
 
   // Efecto para cargar los datos
   useEffect(() => {
@@ -70,12 +124,12 @@ export default function GestionProveedoresPage() {
         setLoading(true);
         setError(null);
         
-        console.log('🔄 Intentando conectar con la API de proveedores...');
+
         
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        const response = await fetch('http://localhost:8080/api/proveedores', {
+        const response = await fetch(`${apiInventarioUrl}/api/proveedores`, { 
           method: 'GET',
           signal: controller.signal,
           headers: {
@@ -90,17 +144,17 @@ export default function GestionProveedoresPage() {
         }
         
         const data = await response.json();
-        console.log('✅ Datos recibidos:', data);
+
         
         if (Array.isArray(data)) {
           setProveedoresData(data);
         } else {
-          console.warn('⚠️ Los datos no son un array:', data);
+
           setProveedoresData([]);
         }
         
       } catch (err) {
-        console.error('❌ Error al cargar datos de proveedores:', err);
+
         
         let errorMessage = "Error desconocido al cargar datos";
         if (err instanceof Error) {
@@ -129,7 +183,7 @@ export default function GestionProveedoresPage() {
     
     const fetchProveedores = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/proveedores', {
+        const response = await fetch(`${apiInventarioUrl}/api/proveedores`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -149,7 +203,7 @@ export default function GestionProveedoresPage() {
           throw new Error('Los datos recibidos no tienen el formato esperado');
         }
       } catch (err) {
-        console.error('Error al recargar datos:', err);
+
         setError(err instanceof Error ? err.message : 'Error al recargar los datos');
       } finally {
         setLoading(false);
@@ -160,185 +214,228 @@ export default function GestionProveedoresPage() {
   };
 
   // Función para manejar el botón de filtros
-  const handleFiltros = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: 'Filtros',
+  const handleFiltros = () => {
+    // Mostrar modal de funcionalidad en mantenimiento
+    Swal.fire({
       html: `
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-          <div>
-            <label for="fecha-inicio" style="display: block; margin-bottom: 0.5rem;">Fecha Inicio:</label>
-            <input type="date" id="fecha-inicio" class="swal2-input" ${fechaInicio ? `value="${fechaInicio}"` : ''}>
-          </div>
-          <div>
-            <label for="fecha-fin" style="display: block; margin-bottom: 0.5rem;">Fecha Fin:</label>
-            <input type="date" id="fecha-fin" class="swal2-input" ${fechaFin ? `value="${fechaFin}"` : ''}>
-          </div>
+        <div style="${swalTituloCssString}">
+          ¡<b>Funcionalidad en Mantenimiento</b>!
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          Esta funcionalidad estará nuevamente disponible próximamente.
         </div>
       `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: 'Aplicar Filtros',
-      cancelButtonText: 'Cancelar',
+      imageUrl: logo1Img.src,
+      imageWidth: 400,
+      imageHeight: 200,
+      imageAlt: "Funcionalidad en Mantenimiento",
+      confirmButtonText: 'ACEPTAR',
       confirmButtonColor: '#ff7300',
-      preConfirm: () => {
-        const inicio = (document.getElementById('fecha-inicio') as HTMLInputElement).value;
-        const fin = (document.getElementById('fecha-fin') as HTMLInputElement).value;
-        if (inicio && fin && new Date(inicio) > new Date(fin)) {
-          Swal.showValidationMessage('La fecha de inicio no puede ser mayor que la fecha fin');
-          return false;
-        }
-        return [inicio, fin];
-      }
     });
-
-    if (formValues) {
-      const [inicio, fin] = formValues;
-      setFechaInicio(inicio);
-      setFechaFin(fin);
-      setFiltroFechas(true);
-      // Aquí implementarías la lógica para filtrar por fechas
-    }
   };
 
   // Función para agregar un nuevo proveedor
-  const handleAgregarProveedor = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: 'Agregar Nuevo Proveedor',
-      html: `
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-          <input type="text" id="marca" class="swal2-input" placeholder="Marca">
-          <input type="email" id="email" class="swal2-input" placeholder="Email">
-          <input type="tel" id="telefono" class="swal2-input" placeholder="Teléfono">
-          <input type="text" id="direccion" class="swal2-input" placeholder="Dirección">
-        </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: 'Guardar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ff7300',
-      preConfirm: () => {
-        const marca = (document.getElementById('marca') as HTMLInputElement).value;
-        const email = (document.getElementById('email') as HTMLInputElement).value;
-        const telefono = (document.getElementById('telefono') as HTMLInputElement).value;
-        const direccion = (document.getElementById('direccion') as HTMLInputElement).value;
-
-        if (!marca || !email || !telefono || !direccion) {
-          Swal.showValidationMessage('Todos los campos son requeridos');
-          return false;
-        }
-
-        if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-          Swal.showValidationMessage('Email inválido');
-          return false;
-        }
-
-        return { marca, email, telefono, direccion };
-      }
+  const handleAgregarProveedor = () => {
+    // Resetear el formulario
+    setAddFormData({
+      marca: '',
+      email: '',
+      telefono: '',
+      direccion: ''
     });
+    setShowAddModal(true);
+  };
 
-    if (formValues) {
-      try {
-        const response = await fetch('http://localhost:8080/api/proveedores', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formValues),
-        });
+  // Función para guardar el nuevo proveedor
+  const handleSaveNewProveedor = async () => {
+    // Validaciones
+    if (!addFormData.marca.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'La marca es requerida',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
 
-        if (!response.ok) throw new Error('Error al crear el proveedor');
+    if (!addFormData.email.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El email es requerido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
 
-        const nuevoProveedor = await response.json();
-        setProveedoresData([...proveedoresData, nuevoProveedor]);
+    if (!addFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Email inválido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
 
-        await Swal.fire({
-          title: '¡Éxito!',
-          text: 'Proveedor agregado correctamente',
-          icon: 'success',
-          confirmButtonColor: '#ff7300'
-        });
-      } catch (error) {
-        console.error('Error:', error);
-        await Swal.fire({
-          title: 'Error',
-          text: 'No se pudo agregar el proveedor',
-          icon: 'error',
-          confirmButtonColor: '#ff7300'
-        });
-      }
+    if (!addFormData.telefono.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El teléfono es requerido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!addFormData.direccion.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'La dirección es requerida',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiInventarioUrl}/api/proveedores`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(addFormData),
+      });
+
+      if (!response.ok) throw new Error('Error al crear el proveedor');
+
+      const nuevoProveedor = await response.json();
+      setProveedoresData(prevData => [...prevData, nuevoProveedor]);
+
+      setShowAddModal(false);
+      
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: '¡Proveedor agregado exitosamente!',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+    } catch (error) {
+
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo agregar el proveedor',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
     }
   };
 
   // Función para editar un proveedor
-  const handleEditar = async (proveedor: Proveedor) => {
-    const { value: formValues } = await Swal.fire({
-      title: 'Editar Proveedor',
-      html: `
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-          <input type="text" id="marca" class="swal2-input" placeholder="Marca" value="${proveedor.marca}">
-          <input type="email" id="email" class="swal2-input" placeholder="Email" value="${proveedor.email}">
-          <input type="tel" id="telefono" class="swal2-input" placeholder="Teléfono" value="${proveedor.telefono}">
-          <input type="text" id="direccion" class="swal2-input" placeholder="Dirección" value="${proveedor.direccion}">
-        </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: 'Guardar Cambios',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ff7300',
-      preConfirm: () => {
-        const marca = (document.getElementById('marca') as HTMLInputElement).value;
-        const email = (document.getElementById('email') as HTMLInputElement).value;
-        const telefono = (document.getElementById('telefono') as HTMLInputElement).value;
-        const direccion = (document.getElementById('direccion') as HTMLInputElement).value;
+  const handleEditar = (proveedor: Proveedor) => {
+    setEditingProveedor(proveedor);
+    setEditFormData({ ...proveedor });
+    setShowEditModal(true);
+  };
 
-        if (!marca || !email || !telefono || !direccion) {
-          Swal.showValidationMessage('Todos los campos son requeridos');
-          return false;
-        }
+  // Función para guardar cambios del modal de edición
+  const handleSaveEditChanges = async () => {
+    if (!editFormData || !editingProveedor) return;
 
-        if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-          Swal.showValidationMessage('Email inválido');
-          return false;
-        }
+    // Validaciones
+    if (!editFormData.marca.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'La marca es requerida',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
 
-        return { marca, email, telefono, direccion };
-      }
-    });
+    if (!editFormData.email.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El email es requerido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
 
-    if (formValues) {
-      try {
-        const response = await fetch(`http://localhost:8080/api/proveedores/${proveedor.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ...formValues, id: proveedor.id }),
-        });
+    if (!editFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Email inválido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
 
-        if (!response.ok) throw new Error('Error al actualizar el proveedor');
+    if (!editFormData.telefono.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El teléfono es requerido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
 
-        const proveedorActualizado = await response.json();
-        setProveedoresData(proveedoresData.map(p => 
-          p.id === proveedor.id ? proveedorActualizado : p
-        ));
+    if (!editFormData.direccion.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'La dirección es requerida',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
 
-        await Swal.fire({
-          title: '¡Éxito!',
-          text: 'Proveedor actualizado correctamente',
-          icon: 'success',
-          confirmButtonColor: '#ff7300'
-        });
-      } catch (error) {
-        console.error('Error:', error);
-        await Swal.fire({
-          title: 'Error',
-          text: 'No se pudo actualizar el proveedor',
-          icon: 'error',
-          confirmButtonColor: '#ff7300'
-        });
-      }
+    try {
+      const response = await fetch(`${apiInventarioUrl}/api/proveedores/${editingProveedor.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editFormData),
+      });
+
+      if (!response.ok) throw new Error('Error al actualizar el proveedor');
+
+      const proveedorActualizado = await response.json();
+      setProveedoresData(prevData => 
+        prevData.map(p => 
+          p.id === editingProveedor.id ? proveedorActualizado : p
+        )
+      );
+
+      setShowEditModal(false);
+      setEditingProveedor(null);
+      setEditFormData(null);
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: '¡Proveedor actualizado exitosamente!',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+    } catch (error) {
+
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo actualizar el proveedor',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
     }
   };
 
@@ -357,7 +454,7 @@ export default function GestionProveedoresPage() {
 
     if (result.isConfirmed) {
       try {
-        const response = await fetch(`http://localhost:8080/api/proveedores/${proveedor.id}`, {
+          const response = await fetch(`${apiInventarioUrl}/api/proveedores/${proveedor.id}`, {
           method: 'DELETE',
         });
 
@@ -372,7 +469,7 @@ export default function GestionProveedoresPage() {
           confirmButtonColor: '#ff7300'
         });
       } catch (error) {
-        console.error('Error:', error);
+
         await Swal.fire({
           title: 'Error',
           text: 'No se pudo eliminar el proveedor',
@@ -588,7 +685,6 @@ export default function GestionProveedoresPage() {
                 style={filterIconStyle}
               />
               Filtros
-              {filtroFechas && <span style={{ marginLeft: '5px', fontSize: '0.8em' }}>•</span>}
             </button>
           </div>
 
@@ -737,10 +833,7 @@ export default function GestionProveedoresPage() {
                         
                         <button
                           onClick={() => {
-                            console.log('🔍 Diagnóstico de red:');
-                            console.log('• URL del backend:', 'http://localhost:8080/api/proveedores');
-                            console.log('• User Agent:', navigator.userAgent);
-                            console.log('• Conexión:', navigator.onLine ? 'En línea' : 'Sin conexión');
+
                             Swal.fire({
                               title: 'Diagnóstico',
                               text: 'Información de diagnóstico enviada a la consola del navegador (F12)',
@@ -874,6 +967,175 @@ export default function GestionProveedoresPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Edición */}
+      {showEditModal && editFormData && (
+        <div style={modalOverlayStyle}>
+          <div style={{...modalContentStyle, maxWidth: '500px', padding: '2rem'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={{...modalTitleStyle, margin: 0}}>Editar Proveedor</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+                  ID: <strong>{editFormData.id}</strong>
+                </div>
+                <button 
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingProveedor(null);
+                    setEditFormData(null);
+                  }}
+                  style={closeButtonStyle}
+                >
+                  &times;
+                </button>
+              </div>
+            </div>
+            
+            <div style={{...modalFormStyle, padding: '0 1rem'}}>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Marca</label>
+                <input
+                  type="text"
+                  value={editFormData.marca}
+                  onChange={(e) => setEditFormData({...editFormData, marca: e.target.value})}
+                  style={selectStyle}
+                  placeholder="Nombre de la marca"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Email</label>
+                <input
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                  style={selectStyle}
+                  placeholder="correo@ejemplo.com"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Teléfono</label>
+                <input
+                  type="tel"
+                  value={editFormData.telefono}
+                  onChange={(e) => setEditFormData({...editFormData, telefono: e.target.value})}
+                  style={selectStyle}
+                  placeholder="+56 9 1234 5678"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Dirección</label>
+                <input
+                  type="text"
+                  value={editFormData.direccion}
+                  onChange={(e) => setEditFormData({...editFormData, direccion: e.target.value})}
+                  style={selectStyle}
+                  placeholder="Dirección completa"
+                />
+              </div>
+            </div>
+
+            <div style={{...modalButtonsStyle, padding: '0 1rem'}}>
+              <button 
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingProveedor(null);
+                  setEditFormData(null);
+                }} 
+                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSaveEditChanges}
+                style={modalButtonStyle}
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Agregar Proveedor */}
+      {showAddModal && (
+        <div style={modalOverlayStyle}>
+          <div style={{...modalContentStyle, maxWidth: '500px', padding: '2rem'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={{...modalTitleStyle, margin: 0}}>Agregar Nuevo Proveedor</h2>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                style={closeButtonStyle}
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div style={{...modalFormStyle, padding: '0 1rem'}}>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Marca</label>
+                <input
+                  type="text"
+                  value={addFormData.marca}
+                  onChange={(e) => setAddFormData({...addFormData, marca: e.target.value})}
+                  style={selectStyle}
+                  placeholder="Nombre de la marca"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Email</label>
+                <input
+                  type="email"
+                  value={addFormData.email}
+                  onChange={(e) => setAddFormData({...addFormData, email: e.target.value})}
+                  style={selectStyle}
+                  placeholder="correo@ejemplo.com"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Teléfono</label>
+                <input
+                  type="tel"
+                  value={addFormData.telefono}
+                  onChange={(e) => setAddFormData({...addFormData, telefono: e.target.value})}
+                  style={selectStyle}
+                  placeholder="+56 9 1234 5678"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Dirección</label>
+                <input
+                  type="text"
+                  value={addFormData.direccion}
+                  onChange={(e) => setAddFormData({...addFormData, direccion: e.target.value})}
+                  style={selectStyle}
+                  placeholder="Dirección completa"
+                />
+              </div>
+            </div>
+
+            <div style={{...modalButtonsStyle, padding: '0 1rem'}}>
+              <button 
+                onClick={() => setShowAddModal(false)} 
+                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSaveNewProveedor}
+                style={modalButtonStyle}
+              >
+                Crear Proveedor
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1152,4 +1414,103 @@ const paginationButtonsWrapperStyle: React.CSSProperties = {
   gap: '5px',
   flexWrap: 'wrap',
   justifyContent: 'center'
+};
+
+// Estilos para el modal de edición
+const modalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000,
+};
+
+const modalContentStyle: React.CSSProperties = {
+  backgroundColor: 'white',
+  borderRadius: '12px',
+  width: '90%',
+  maxWidth: '500px',
+  maxHeight: '90vh',
+  overflow: 'auto',
+  position: 'relative',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+};
+
+const modalTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: '1.25rem',
+  fontWeight: 'bold',
+  color: '#111827',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const modalFormStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+};
+
+const selectGroupStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "0.5rem",
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: "0.9rem",
+  fontWeight: "500",
+  color: "#333",
+  fontFamily: "Montserrat, sans-serif",
+};
+
+const selectStyle: React.CSSProperties = {
+  padding: "0.5rem",
+  borderRadius: "4px",
+  border: "1px solid #ddd",
+  fontSize: "0.9rem",
+  color: "#333",
+  backgroundColor: "#fff",
+  cursor: "pointer",
+  outline: "none",
+  fontFamily: "Roboto, sans-serif",
+  transition: "border-color 0.2s ease",
+};
+
+const modalButtonsStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '1rem',
+  marginTop: '2rem',
+};
+
+const modalButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: 'white',
+  padding: '0.5rem 1rem',
+  borderRadius: '6px',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+};
+
+const closeButtonStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontSize: '1.5rem',
+  cursor: 'pointer',
+  padding: '0.5rem',
+  color: '#6b7280',
+  transition: 'color 0.2s ease',
+  borderRadius: '4px',
+  width: '2rem',
+  height: '2rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 };

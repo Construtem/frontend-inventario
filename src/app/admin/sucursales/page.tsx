@@ -27,36 +27,57 @@ const CIUDADES = ['Santiago'];
 
 const COMUNAS_POR_CIUDAD: { [key: string]: string[] } = {
   Santiago: [
+    'Alhué',
+    'Buin',
+    'Calera de Tango',
+    'Cerrillos',
     'Cerro Navia',
+    'Colina',
     'Conchalí',
+    'Curacaví',
     'El Bosque',
+    'El Monte',
     'Estación Central',
     'Huechuraba',
     'Independencia',
+    'Isla de Maipo',
     'La Cisterna',
     'La Florida',
     'La Granja',
     'La Pintana',
     'La Reina',
+    'Lampa',
     'Las Condes',
     'Lo Barnechea',
     'Lo Espejo',
     'Lo Prado',
     'Macul',
     'Maipú',
+    'María Pinto',
+    'Melipilla',
     'Ñuñoa',
+    'Padre Hurtado',
+    'Paine',
     'Pedro Aguirre Cerda',
+    'Peñaflor',
     'Peñalolén',
+    'Pirque',
     'Providencia',
     'Pudahuel',
+    'Puente Alto',
     'Quilicura',
     'Quinta Normal',
     'Recoleta',
     'Renca',
+    'San Bernardo',
     'San Joaquín',
+    'San José de Maipo',
     'San Miguel',
+    'San Pedro',
     'San Ramón',
     'Santiago',
+    'Talagante',
+    'Tiltil',
     'Vitacura'
   ]
 };
@@ -141,7 +162,7 @@ export default function SucursalesPage() {
         setLoading(true);
         setError(null);
         
-        console.log('🔄 Intentando conectar con la API de sucursales...');
+
         
         // Timeout manual con AbortController
         const controller = new AbortController();
@@ -157,25 +178,25 @@ export default function SucursalesPage() {
         
         clearTimeout(timeoutId);
         
-        console.log('📡 Respuesta de la API:', response.status, response.statusText);
+
         
         if (!response.ok) {
           throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('✅ Datos recibidos:', data);
+
         
         // Validar que los datos tengan la estructura esperada
         if (Array.isArray(data)) {
           setSucursalesData(sortSucursales(data)); // Apply sorting here
         } else {
-          console.warn('⚠️ Los datos no son un array:', data);
+
           setSucursalesData([]);
         }
         
       } catch (err) {
-        console.error('❌ Error al cargar datos de sucursales:', err);
+
         
         let errorMessage = "Error desconocido al cargar datos";
         if (err instanceof Error) {
@@ -207,7 +228,7 @@ export default function SucursalesPage() {
         setLoading(true);
         setError(null);
         
-        console.log('🔄 Reintentando conexión con la API...');
+
         
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -222,24 +243,22 @@ export default function SucursalesPage() {
         
         clearTimeout(timeoutId);
         
-        console.log('📡 Respuesta de la API:', response.status, response.statusText);
+
         
         if (!response.ok) {
           throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('✅ Datos recibidos:', data);
+
         
         if (Array.isArray(data)) {
           setSucursalesData(sortSucursales(data)); // Apply sorting here
         } else {
-          console.warn('⚠️ Los datos no son un array:', data);
           setSucursalesData([]);
         }
         
       } catch (err) {
-        console.error('❌ Error al cargar datos de sucursales:', err);
         
         let errorMessage = "Error desconocido al cargar datos";
         if (err instanceof Error) {
@@ -477,7 +496,7 @@ export default function SucursalesPage() {
         tipo_id: parseInt(editFormData.tipo || '2') // Asegurar que se envíe tipo_id
       };
 
-      console.log('Datos a enviar:', dataToSend); // Debug log
+
 
       const response = await fetch(`http://localhost:8080/api/sucursales/${editFormData.id}`, {
         method: 'PUT',
@@ -489,7 +508,7 @@ export default function SucursalesPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Error response:', errorText);
+
         throw new Error(`Error al actualizar: ${response.status} - ${errorText}`);
       }
 
@@ -510,7 +529,7 @@ export default function SucursalesPage() {
         confirmButtonColor: '#ff7300'
       });
     } catch (err) {
-      console.error('Error al actualizar sucursal:', err);
+
       Swal.fire({
         title: 'Error',
         text: `No se pudo actualizar la sucursal: ${err instanceof Error ? err.message : 'Error desconocido'}`,
@@ -609,7 +628,7 @@ export default function SucursalesPage() {
         tipo_id: parseInt(addFormData.tipo) // Incluir tipo_id
       };
 
-      console.log('Datos a enviar (crear):', dataToSend); // Debug log
+
 
       const response = await fetch('http://localhost:8080/api/sucursales', {
         method: 'POST',
@@ -621,7 +640,7 @@ export default function SucursalesPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Error response:', errorText);
+
         throw new Error(`Error al crear la sucursal: ${response.status} - ${errorText}`);
       }
 
@@ -638,7 +657,7 @@ export default function SucursalesPage() {
         confirmButtonColor: '#ff7300'
       });
     } catch (err) {
-      console.error('Error al crear sucursal:', err);
+
       Swal.fire({
         title: 'Error',
         text: `No se pudo crear la sucursal: ${err instanceof Error ? err.message : 'Error desconocido'}`,
@@ -664,8 +683,7 @@ export default function SucursalesPage() {
              (item.nombre?.toLowerCase()?.includes('bodega') && !tipoValue);
     }).length;
     
-    console.log('Conteo por tipo:', { sucursales, bodegas, totalItems: sucursalesData.length }); // Debug
-    console.log('Datos completos:', sucursalesData); // Debug
+
     
     return { sucursales, bodegas };
   }, [sucursalesData]);
@@ -689,7 +707,7 @@ export default function SucursalesPage() {
       if (result.isConfirmed) {
         // Segunda confirmación con advertencia de productos
         Swal.fire({
-          title: '⚠️ ATENCIÓN: Eliminación Permanente',
+          title: 'ATENCIÓN: Eliminación Permanente',
           html: `
             <div style="text-align: left; margin: 1rem 0;">
               <p><strong>Al eliminar esta ${tipo}:</strong></p>
@@ -731,7 +749,7 @@ export default function SucursalesPage() {
                 confirmButtonColor: '#ff7300'
               });
             } catch (err) {
-              console.error('Error al eliminar sucursal:', err);
+
               Swal.fire({
                 title: 'Error',
                 text: `No se pudo eliminar la ${tipo}`,
@@ -1029,11 +1047,6 @@ export default function SucursalesPage() {
                 
                 <button
                   onClick={() => {
-                    console.log('🔍 Diagnóstico de red:');
-                    console.log('• URL del backend:', 'http://localhost:8080/api/sucursales');
-                    console.log('• User Agent:', navigator.userAgent);
-                    console.log('• Conexión:', navigator.onLine ? 'En línea' : 'Sin conexión');
-                    alert('Información de diagnóstico enviada a la consola del navegador (F12)');
                   }}
                   style={{
                     backgroundColor: '#6b7280',
@@ -1211,8 +1224,16 @@ export default function SucursalesPage() {
       {/* Modal de Filtros */}
       {showFilterModal && (
         <div style={modalOverlayStyle}>
-          <div style={modalContentStyle}>
-            <h2 style={modalTitleStyle}>Filtros</h2>
+          <div style={{...modalContentStyle, padding: '2rem'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={{...modalTitleStyle, margin: 0}}>Filtros</h2>
+              <button 
+                onClick={() => setShowFilterModal(false)}
+                style={closeButtonStyle}
+              >
+                &times;
+              </button>
+            </div>
             
             <div style={modalFormStyle}>
               <div style={selectGroupStyle}>
@@ -1297,8 +1318,21 @@ export default function SucursalesPage() {
       {/* Modal de Edición */}
       {showEditModal && editFormData && (
         <div style={modalOverlayStyle}>
-          <div style={modalContentStyle}>
-            <h2 style={modalTitleStyle}>Editar Sucursal</h2>
+          <div style={{...modalContentStyle, padding: '2rem'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={{...modalTitleStyle, margin: 0}}>Editar Sucursal</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+                  ID: <strong>{editFormData.id}</strong>
+                </div>
+                <button 
+                  onClick={() => setShowEditModal(false)}
+                  style={closeButtonStyle}
+                >
+                  &times;
+                </button>
+              </div>
+            </div>
             
             <div style={modalFormStyle}>
               <div style={selectGroupStyle}>
@@ -1389,8 +1423,16 @@ export default function SucursalesPage() {
       {/* Modal de Agregar Sucursal */}
       {showAddModal && (
         <div style={modalOverlayStyle}>
-          <div style={modalContentStyle}>
-            <h2 style={modalTitleStyle}>Agregar Nueva Sucursal</h2>
+          <div style={{...modalContentStyle, padding: '2rem'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={{...modalTitleStyle, margin: 0}}>Agregar Nueva Sucursal</h2>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                style={closeButtonStyle}
+              >
+                &times;
+              </button>
+            </div>
             
             {/* Mostrar información de límites */}
             <div style={{
@@ -1401,17 +1443,17 @@ export default function SucursalesPage() {
               fontSize: '0.875rem',
               color: '#374151'
             }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>📊 Estado actual:</div>
+              <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Estado actual:</div>
               <div>• Sucursales: {countByType.sucursales}/3</div>
               <div>• Bodegas: {countByType.bodegas}/3</div>
               {countByType.sucursales >= 3 && (
                 <div style={{ color: '#ef4444', marginTop: '0.5rem' }}>
-                  ⚠️ Límite de sucursales alcanzado
+                  Límite de sucursales alcanzado
                 </div>
               )}
               {countByType.bodegas >= 3 && (
                 <div style={{ color: '#ef4444', marginTop: '0.5rem' }}>
-                  ⚠️ Límite de bodegas alcanzado
+                  Límite de bodegas alcanzado
                 </div>
               )}
             </div>
@@ -1851,4 +1893,20 @@ const modalButtonStyle: React.CSSProperties = {
   cursor: 'pointer',
   fontSize: '0.875rem',
   fontWeight: '500',
+};
+
+const closeButtonStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontSize: '1.5rem',
+  cursor: 'pointer',
+  padding: '0.5rem',
+  color: '#6b7280',
+  transition: 'color 0.2s ease',
+  borderRadius: '4px',
+  width: '2rem',
+  height: '2rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 };
