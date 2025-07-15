@@ -111,9 +111,9 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
   const directionsOptions = useMemo(() => ({
     suppressMarkers: false,
     polylineOptions: {
-      strokeColor: '#4285F4',
-      strokeWeight: 4,
-      strokeOpacity: 0.8,
+      strokeColor: '#10B981', // Verde claro (emerald-500)
+      strokeWeight: 5,
+      strokeOpacity: 0.9,
     },
   }), []);
 
