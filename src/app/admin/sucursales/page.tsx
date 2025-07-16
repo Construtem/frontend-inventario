@@ -19,6 +19,7 @@ interface Sucursal {
   telefono: string;
   comuna?: string;
   ciudad?: string;
+  tipo_id?: number;
 }
 
 const CIUDADES = ['Santiago'];
@@ -438,15 +439,266 @@ export default function SucursalesPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState<Sucursal | null>(null);
 
+  // Estados para el modal de agregar
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addFormData, setAddFormData] = useState<Omit<Sucursal, 'id'>>({
+    nombre: '',
+    direccion: '',
+    telefono: '',
+    comuna: '',
+    ciudad: '',
+    tipo_id: 1 // 1 para sucursal, 2 para bodega por defecto
+  });
+
   // Agregar función para manejar la edición
   const handleEdit = (sucursal: Sucursal) => {
     setEditFormData(sucursal);
     setShowEditModal(true);
   };
 
+  // Función para manejar agregar nueva sucursal
+  const handleAdd = () => {
+    setAddFormData({
+      nombre: '',
+      direccion: '',
+      telefono: '',
+      comuna: '',
+      ciudad: '',
+      tipo_id: 1 // 1 para sucursal por defecto
+    });
+    setShowAddModal(true);
+  };
+
+  // Función para crear nueva sucursal
+  const handleCreateSucursal = async () => {
+    // Validar nombre
+    if (!addFormData.nombre.trim()) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'El nombre de la sucursal es obligatorio',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!validateNombre(addFormData.nombre)) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'El nombre de la sucursal solo puede contener letras, espacios y guiones',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    // Validar dirección
+    if (!addFormData.direccion.trim()) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'La dirección es obligatoria',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!validateDireccion(addFormData.direccion)) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'La dirección contiene caracteres no válidos. Solo se permiten letras, números, espacios, puntos, comas, guiones y #',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    // Validar teléfono
+    if (!addFormData.telefono.trim()) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'El teléfono es obligatorio',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!validateTelefono(addFormData.telefono)) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'El teléfono solo puede contener números, espacios, guiones, paréntesis y el símbolo +',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    // Validar ciudad
+    if (!addFormData.ciudad || !addFormData.ciudad.trim()) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'La ciudad es obligatoria',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    // Validar comuna
+    if (!addFormData.comuna || !addFormData.comuna.trim()) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'La comuna es obligatoria',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiInventarioUrl}/api/sucursales`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nombre: addFormData.nombre,
+          telefono: addFormData.telefono,
+          direccion: addFormData.direccion,
+          comuna: addFormData.comuna,
+          ciudad: addFormData.ciudad,
+          tipo_id: parseInt(addFormData.tipo_id?.toString() || '1') // Asegúrate de que sea número
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Error al crear la sucursal: ${response.status} - ${errorData}`);
+      }
+
+      const newSucursal = await response.json();
+
+      // Agregar la nueva sucursal al estado y ordenar
+      setSucursalesData(prevData => sortSucursales([...prevData, newSucursal]));
+
+      setShowAddModal(false);
+      Swal.fire({
+        title: 'Éxito',
+        text: 'Sucursal creada correctamente',
+        icon: 'success',
+        confirmButtonColor: '#ff7300'
+      });
+    } catch (err) {
+      console.error('Error al crear sucursal:', err);
+      
+      let errorMessage = 'No se pudo crear la sucursal';
+      if (err instanceof Error) {
+        if (err.message.includes('fetch')) {
+          errorMessage = 'Error de conexión con el servidor. Verifique su conexión a internet.';
+        } else if (err.message.includes('400')) {
+          errorMessage = 'Los datos enviados no son válidos. Verifique la información ingresada.';
+        } else if (err.message.includes('500')) {
+          errorMessage = 'Error interno del servidor. Intente nuevamente más tarde.';
+        } else {
+          errorMessage = `Error: ${err.message}`;
+        }
+      }
+      
+      Swal.fire({
+        title: 'Error al crear sucursal',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+    }
+  };
+
+  // Funciones de validación
+  const validateNombre = (nombre: string): boolean => {
+    // Solo letras, espacios y guiones
+    const nombreRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\-]+$/;
+    return nombreRegex.test(nombre.trim());
+  };
+
+  const validateDireccion = (direccion: string): boolean => {
+    // Letras, números, espacios, puntos, comas, guiones y caracteres de dirección comunes
+    const direccionRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\.,\-#°]+$/;
+    return direccionRegex.test(direccion.trim());
+  };
+
+  const validateTelefono = (telefono: string): boolean => {
+    // Solo números, espacios, guiones, paréntesis y el símbolo +
+    const telefonoRegex = /^[0-9\s\-\(\)\+]+$/;
+    return telefonoRegex.test(telefono.trim());
+  };
+
   // Función para guardar cambios
   const handleSaveChanges = async () => {
     if (!editFormData) return;
+
+    // Validar nombre
+    if (!editFormData.nombre.trim()) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'El nombre de la sucursal es obligatorio',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!validateNombre(editFormData.nombre)) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'El nombre de la sucursal solo puede contener letras, espacios y guiones',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    // Validar dirección
+    if (!editFormData.direccion.trim()) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'La dirección es obligatoria',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!validateDireccion(editFormData.direccion)) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'La dirección contiene caracteres no válidos. Solo se permiten letras, números, espacios, puntos, comas, guiones y #',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    // Validar teléfono
+    if (!editFormData.telefono.trim()) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'El teléfono es obligatorio',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!validateTelefono(editFormData.telefono)) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: 'El teléfono solo puede contener números, espacios, guiones, paréntesis y el símbolo +',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
 
     try {
       const response = await fetch(`${apiInventarioUrl}/api/sucursales/${editFormData.id}`, {
@@ -457,7 +709,10 @@ export default function SucursalesPage() {
         body: JSON.stringify(editFormData),
       });
 
-      if (!response.ok) throw new Error('Error al actualizar');
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Error al actualizar la sucursal: ${response.status} - ${errorData}`);
+      }
 
       // Update and sort the data
       setSucursalesData(prevData => 
@@ -475,9 +730,25 @@ export default function SucursalesPage() {
       });
     } catch (err) {
       console.error('Error al actualizar sucursal:', err);
+      
+      let errorMessage = 'No se pudo actualizar la sucursal';
+      if (err instanceof Error) {
+        if (err.message.includes('fetch')) {
+          errorMessage = 'Error de conexión con el servidor. Verifique su conexión a internet.';
+        } else if (err.message.includes('400')) {
+          errorMessage = 'Los datos enviados no son válidos. Verifique la información ingresada.';
+        } else if (err.message.includes('404')) {
+          errorMessage = 'La sucursal no fue encontrada. Puede que haya sido eliminada.';
+        } else if (err.message.includes('500')) {
+          errorMessage = 'Error interno del servidor. Intente nuevamente más tarde.';
+        } else {
+          errorMessage = `Error: ${err.message}`;
+        }
+      }
+      
       Swal.fire({
-        title: 'Error',
-        text: 'No se pudo actualizar la sucursal',
+        title: 'Error al actualizar sucursal',
+        text: errorMessage,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -505,7 +776,10 @@ export default function SucursalesPage() {
             },
           });
 
-          if (!response.ok) throw new Error('Error al eliminar');
+          if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`Error al eliminar la sucursal: ${response.status} - ${errorData}`);
+          }
 
           // Actualizar el estado eliminando la sucursal
           setSucursalesData(prevData => prevData.filter(item => item.id !== sucursal.id));
@@ -518,9 +792,25 @@ export default function SucursalesPage() {
           });
         } catch (err) {
           console.error('Error al eliminar sucursal:', err);
+          
+          let errorMessage = 'No se pudo eliminar la sucursal';
+          if (err instanceof Error) {
+            if (err.message.includes('fetch')) {
+              errorMessage = 'Error de conexión con el servidor. Verifique su conexión a internet.';
+            } else if (err.message.includes('404')) {
+              errorMessage = 'La sucursal no fue encontrada. Puede que ya haya sido eliminada.';
+            } else if (err.message.includes('409')) {
+              errorMessage = 'No se puede eliminar la sucursal porque tiene datos relacionados.';
+            } else if (err.message.includes('500')) {
+              errorMessage = 'Error interno del servidor. Intente nuevamente más tarde.';
+            } else {
+              errorMessage = `Error: ${err.message}`;
+            }
+          }
+          
           Swal.fire({
-            title: 'Error',
-            text: 'No se pudo eliminar la sucursal',
+            title: 'Error al eliminar sucursal',
+            text: errorMessage,
             icon: 'error',
             confirmButtonColor: '#ff7300'
           });
@@ -603,12 +893,15 @@ export default function SucursalesPage() {
             width: isMobile ? "100%" : "auto",
             marginTop: isMobile ? "1rem" : isSmall ? "1rem" : "0"
           }}>
-            <button style={{
-              ...editButtonStyle,
-              width: isMobile ? "100%" : "auto",
-              fontSize: isMobile ? "0.875rem" : "1rem",
-              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-            }}>
+            <button 
+              onClick={handleAdd}
+              style={{
+                ...editButtonStyle,
+                width: isMobile ? "100%" : "auto",
+                fontSize: isMobile ? "0.875rem" : "1rem",
+                padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
+              }}
+            >
               <Image
                 src={agregarImg.src}
                 alt="Agregar sucursal"
@@ -981,8 +1274,27 @@ export default function SucursalesPage() {
                 <input
                   type="text"
                   value={editFormData.nombre}
-                  onChange={(e) => setEditFormData({...editFormData, nombre: e.target.value})}
-                  style={inputStyle}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Permitir la entrada, pero mostrar error visual si es inválido
+                    setEditFormData({...editFormData, nombre: value});
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value && !validateNombre(value)) {
+                      Swal.fire({
+                        title: 'Formato inválido',
+                        text: 'El nombre solo puede contener letras, espacios y guiones',
+                        icon: 'warning',
+                        confirmButtonColor: '#ff7300'
+                      });
+                    }
+                  }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: editFormData.nombre && !validateNombre(editFormData.nombre) ? '#ef4444' : '#ccc'
+                  }}
+                  placeholder="Ingrese el nombre de la sucursal"
                 />
               </div>
 
@@ -991,8 +1303,26 @@ export default function SucursalesPage() {
                 <input
                   type="text"
                   value={editFormData.direccion}
-                  onChange={(e) => setEditFormData({...editFormData, direccion: e.target.value})}
-                  style={inputStyle}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setEditFormData({...editFormData, direccion: value});
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value && !validateDireccion(value)) {
+                      Swal.fire({
+                        title: 'Formato inválido',
+                        text: 'La dirección contiene caracteres no válidos',
+                        icon: 'warning',
+                        confirmButtonColor: '#ff7300'
+                      });
+                    }
+                  }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: editFormData.direccion && !validateDireccion(editFormData.direccion) ? '#ef4444' : '#ccc'
+                  }}
+                  placeholder="Ingrese la dirección"
                 />
               </div>
 
@@ -1001,8 +1331,26 @@ export default function SucursalesPage() {
                 <input
                   type="text"
                   value={editFormData.telefono}
-                  onChange={(e) => setEditFormData({...editFormData, telefono: e.target.value})}
-                  style={inputStyle}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setEditFormData({...editFormData, telefono: value});
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value && !validateTelefono(value)) {
+                      Swal.fire({
+                        title: 'Formato inválido',
+                        text: 'El teléfono solo puede contener números, espacios, guiones, paréntesis y +',
+                        icon: 'warning',
+                        confirmButtonColor: '#ff7300'
+                      });
+                    }
+                  }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: editFormData.telefono && !validateTelefono(editFormData.telefono) ? '#ef4444' : '#ccc'
+                  }}
+                  placeholder="Ingrese el número de teléfono"
                 />
               </div>
 
@@ -1054,6 +1402,173 @@ export default function SucursalesPage() {
                 style={modalButtonStyle}
               >
                 Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Agregar */}
+      {showAddModal && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <h2 style={modalTitleStyle}>Agregar Nueva Sucursal</h2>
+            
+            <div style={modalFormStyle}>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Nombre *</label>
+                <input
+                  type="text"
+                  value={addFormData.nombre}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setAddFormData({...addFormData, nombre: value});
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value && !validateNombre(value)) {
+                      Swal.fire({
+                        title: 'Formato inválido',
+                        text: 'El nombre solo puede contener letras, espacios y guiones',
+                        icon: 'warning',
+                        confirmButtonColor: '#ff7300'
+                      });
+                    }
+                  }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: addFormData.nombre && !validateNombre(addFormData.nombre) ? '#ef4444' : '#ccc'
+                  }}
+                  placeholder="Ingrese el nombre de la sucursal o bodega"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Dirección *</label>
+                <input
+                  type="text"
+                  value={addFormData.direccion}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setAddFormData({...addFormData, direccion: value});
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value && !validateDireccion(value)) {
+                      Swal.fire({
+                        title: 'Formato inválido',
+                        text: 'La dirección contiene caracteres no válidos',
+                        icon: 'warning',
+                        confirmButtonColor: '#ff7300'
+                      });
+                    }
+                  }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: addFormData.direccion && !validateDireccion(addFormData.direccion) ? '#ef4444' : '#ccc'
+                  }}
+                  placeholder="Ingrese la dirección completa"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Teléfono *</label>
+                <input
+                  type="text"
+                  value={addFormData.telefono}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setAddFormData({...addFormData, telefono: value});
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value && !validateTelefono(value)) {
+                      Swal.fire({
+                        title: 'Formato inválido',
+                        text: 'El teléfono solo puede contener números, espacios, guiones, paréntesis y +',
+                        icon: 'warning',
+                        confirmButtonColor: '#ff7300'
+                      });
+                    }
+                  }}
+                  style={{
+                    ...inputStyle,
+                    borderColor: addFormData.telefono && !validateTelefono(addFormData.telefono) ? '#ef4444' : '#ccc'
+                  }}
+                  placeholder="Ej: +56 9 1234 5678"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Ciudad *</label>
+                <select 
+                  value={addFormData.ciudad || ''}
+                  onChange={(e) => {
+                    setAddFormData({
+                      ...addFormData,
+                      ciudad: e.target.value,
+                      comuna: '' // Reset comuna when city changes
+                    });
+                  }}
+                  style={selectStyle}
+                >
+                  <option value="">Seleccionar ciudad</option>
+                  {CIUDADES.map(ciudad => (
+                    <option key={ciudad} value={ciudad}>{ciudad}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Comuna *</label>
+                <select 
+                  value={addFormData.comuna || ''}
+                  onChange={(e) => setAddFormData({...addFormData, comuna: e.target.value})}
+                  style={selectStyle}
+                  disabled={!addFormData.ciudad}
+                >
+                  <option value="">Seleccionar comuna</option>
+                  {addFormData.ciudad && COMUNAS_POR_CIUDAD[addFormData.ciudad]?.map(comuna => (
+                    <option key={comuna} value={comuna}>{comuna}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Tipo *</label>
+                <select 
+                  value={addFormData.tipo_id || 1}
+                  onChange={(e) => setAddFormData({...addFormData, tipo_id: parseInt(e.target.value)})}
+                  style={selectStyle}
+                >
+                  <option value={1}>Sucursal</option>
+                  <option value={2}>Bodega</option>
+                </select>
+              </div>
+
+              <div style={{
+                fontSize: '0.75rem',
+                color: '#6b7280',
+                fontStyle: 'italic',
+                marginTop: '0.5rem',
+                fontFamily: 'Roboto, sans-serif',
+              }}>
+                * Campos obligatorios
+              </div>
+            </div>
+
+            <div style={modalButtonsStyle}>
+              <button 
+                onClick={() => setShowAddModal(false)} 
+                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleCreateSucursal}
+                style={modalButtonStyle}
+              >
+                Crear Sucursal
               </button>
             </div>
           </div>
@@ -1332,6 +1847,7 @@ const modalTitleStyle: React.CSSProperties = {
   fontWeight: 'bold',
   marginBottom: '1.5rem',
   textAlign: 'center',
+  fontFamily: 'Montserrat, sans-serif',
 };
 
 const modalFormStyle: React.CSSProperties = {
@@ -1350,6 +1866,7 @@ const labelStyle: React.CSSProperties = {
   color: '#374151',
   fontSize: '0.875rem',
   fontWeight: '500',
+  fontFamily: 'Montserrat, sans-serif',
 };
 
 const selectStyle: React.CSSProperties = {
@@ -1358,6 +1875,7 @@ const selectStyle: React.CSSProperties = {
   border: '1px solid #d1d5db',
   fontSize: '0.875rem',
   width: '100%',
+  fontFamily: 'Roboto, sans-serif',
 };
 
 const modalButtonsStyle: React.CSSProperties = {
@@ -1376,4 +1894,5 @@ const modalButtonStyle: React.CSSProperties = {
   cursor: 'pointer',
   fontSize: '0.875rem',
   fontWeight: '500',
+  fontFamily: 'Montserrat, sans-serif',
 };

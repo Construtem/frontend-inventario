@@ -247,16 +247,6 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
         <FaTruck />
         <span>Despacho</span>
       </Link>
-
-      <Link
-        href="/admin/configuracion"
-        style={getMenuItemStyle('config', '/admin/configuracion')}
-        onMouseEnter={() => handleMouseEnter('config')}
-        onMouseLeave={handleMouseLeave}
-      >
-        <FaCog />
-        <span>Configuración</span>
-      </Link>
     </aside>
   );
 };
