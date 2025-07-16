@@ -27,7 +27,7 @@ const LoadingSpinner = () => (
 
 export default function AuthCallbackClient() {
   const router = useRouter();
-  const searchParams = useSearchParams(); // ✅ useSearchParams ahora está dentro de un Client Component
+  const searchParams = useSearchParams(); // useSearchParams ahora está dentro de un Client Component
   const frontLoginUrl = process.env.NEXT_PUBLIC_FRONT_LOGIN || 'https://login.tssw.cl';
   const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
