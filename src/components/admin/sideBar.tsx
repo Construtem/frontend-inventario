@@ -136,7 +136,7 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
         onMouseLeave={handleMouseLeave}
       >
         <FaCog />
-        <span>Gestión de Usuarios</span>
+        <span>Usuarios</span>
       </Link>
 
       <Link

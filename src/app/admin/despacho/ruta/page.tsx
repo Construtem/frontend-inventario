@@ -128,7 +128,7 @@ export default function RutaDespachoPage() {
         });
         
         // No lanzar error, simplemente devolver null para usar datos de ejemplo
-        console.log('🔄 Backend no disponible, se usarán datos de ejemplo');
+        console.log('🔄 Servidor no disponible, se usarán datos de ejemplo');
         return null;
       } else {
         console.error('❌ Error desconocido:', error);
@@ -168,16 +168,15 @@ export default function RutaDespachoPage() {
         } else {
           // Si no obtuvo datos del backend, usar datos de ejemplo
           console.log('🔄 Usando datos de ejemplo');
-          setError('Backend no disponible - usando datos de ejemplo');
+          setError('Servidor no disponible - usando datos de ejemplo');
           setDespachoInfo({
             id: despachoId,
-            cliente: "Cliente Ejemplo S.A.",
-            origen: "Av. Irarrázaval 2345, Ñuñoa, Santiago, Región Metropolitana, Chile",
-            destino: "Av. Providencia 5678, Providencia, Santiago, Chile",
+            cliente: "Universidad Tecnologica Metropolitana del Estado de Chile",
+            origen: "Dieciocho 161, 8330383 Santiago, Región Metropolitana",
+            destino: "Av. José Pedro Alessandri 1242, Ñuñoa, Región Metropolitana",
             estado: "En ruta",
-            distancia: "15.3 km",
-            duracion: "18 min",
-            precio: "$32.500 CLP"
+            distancia: "6.2 km",
+            duracion: "20 min",
           });
         }
       } catch (error) {
@@ -188,12 +187,11 @@ export default function RutaDespachoPage() {
         setDespachoInfo({
           id: despachoId,
           cliente: "Cliente Ejemplo S.A.",
-          origen: "Av. Irarrázaval 2345, Ñuñoa, Santiago, Región Metropolitana, Chile",
-          destino: "Av. Providencia 5678, Providencia, Santiago, Chile",
+          origen: "Dieciocho 161, 8330383 Santiago, Región Metropolitana",
+          destino: "Av. José Pedro Alessandri 1242, Ñuñoa, Región Metropolitana",
           estado: "En ruta",
           distancia: "15.3 km",
           duracion: "18 min",
-          precio: "$32.500 CLP"
         });
       } finally {
         setLoading(false);
@@ -237,7 +235,7 @@ export default function RutaDespachoPage() {
                   <li>La aplicación funciona correctamente para visualización</li>
                 </ul>
                 <p style={{ marginTop: "0.5rem" }}>
-                  <strong>Backend:</strong> {API_BASE_URL}
+                  <strong>Servidor:</strong> {API_BASE_URL}
                 </p>
               </div>
             </details>

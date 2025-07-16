@@ -122,7 +122,7 @@ const fetchSucursal = async (id: string): Promise<any> => {
 // Actualizar un producto por SKU
 const updateProduct = async (sku: string, productData: Partial<ProductData>): Promise<void> => {
   try {
-    const response = await fetch(`${apiInventarioUrl}/api/productos/${sku}`, {
+      const response = await fetch(`${apiInventarioUrl}/api/productos/${sku}`, {
       method: 'PUT',
       headers: getHeaders(),
       credentials: 'include',
