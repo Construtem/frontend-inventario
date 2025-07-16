@@ -28,15 +28,13 @@ interface Usuario {
   fechaRegistro?: string;
 }
 
-const ROLES = ['Administrador', 'Vendedor', 'Bodeguero', 'Usuario'];
+const ROLES = ['Administrador', 'Vendedor'];
 const ESTADOS = ['Activo', 'Inactivo', 'Suspendido'];
 
 // Mapeo de roles para el API
 const ROLES_MAP = [
   { id: 1, nombre: 'Administrador' },
-  { id: 2, nombre: 'Vendedor' },
-  { id: 3, nombre: 'Bodeguero' },
-  { id: 4, nombre: 'Usuario' }
+  { id: 2, nombre: 'Vendedor' }
 ];
 
 // Hook para manejar el tamaño de la ventana
@@ -92,7 +90,7 @@ export default function GestionUsuariosPage() {
   const [tempRol, setTempRol] = useState("");
   const [tempEstado, setTempEstado] = useState("");
 
-  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
   // =====================
   // 2. LLAMADA A LA API
   // =====================
@@ -118,6 +116,8 @@ export default function GestionUsuariosPage() {
         setLoading(true);
         setError(null);
         
+        console.log('Usando API URL:', apiInventarioUrl);
+        
         // Timeout manual con AbortController
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
@@ -132,16 +132,21 @@ export default function GestionUsuariosPage() {
         
         clearTimeout(timeoutId);
         
+        console.log('Response status:', response.status);
+        
         if (!response.ok) {
           throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
+        console.log('Datos recibidos:', data);
         
         // Validar que los datos tengan la estructura esperada
         if (Array.isArray(data)) {
+          console.log('Cantidad de usuarios:', data.length);
           setUsuariosData(sortUsuarios(data)); // Apply sorting here
         } else {
+          console.log('Los datos no son un array:', typeof data);
           setUsuariosData([]);
         }
         
@@ -176,6 +181,8 @@ export default function GestionUsuariosPage() {
         setLoading(true);
         setError(null);
         
+        console.log('Reintentando con API URL:', apiInventarioUrl);
+        
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
@@ -189,15 +196,20 @@ export default function GestionUsuariosPage() {
         
         clearTimeout(timeoutId);
         
+        console.log('Retry response status:', response.status);
+        
         if (!response.ok) {
           throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
+        console.log('Datos del retry:', data);
         
         if (Array.isArray(data)) {
+          console.log('Cantidad de usuarios en retry:', data.length);
           setUsuariosData(sortUsuarios(data)); // Apply sorting here
         } else {
+          console.log('Los datos del retry no son un array:', typeof data);
           setUsuariosData([]);
         }
         
@@ -224,7 +236,13 @@ export default function GestionUsuariosPage() {
 
   // Función de filtrado para usuarios
   const filteredData = useMemo(() => {
-    return sortUsuarios(usuariosData.filter(usuario => {
+    console.log('Calculando datos filtrados...');
+    console.log('usuariosData.length:', usuariosData.length);
+    console.log('searchTerm:', searchTerm);
+    console.log('selectedRol:', selectedRol);
+    console.log('selectedEstado:', selectedEstado);
+    
+    const result = sortUsuarios(usuariosData.filter(usuario => {
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = usuario.nombre.toLowerCase().includes(searchLower) ||
                            usuario.email.toLowerCase().includes(searchLower);
@@ -235,13 +253,26 @@ export default function GestionUsuariosPage() {
 
       return matchesSearch && matchesRol && matchesEstado;
     }));
+    
+    console.log('Datos filtrados length:', result.length);
+    return result;
   }, [usuariosData, searchTerm, selectedRol, selectedEstado]);
 
   // Calcular datos paginados
   const currentTableData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return filteredData.slice(startIndex, endIndex);
+    const result = filteredData.slice(startIndex, endIndex);
+    
+    console.log('Calculando datos de tabla...');
+    console.log('currentPage:', currentPage);
+    console.log('itemsPerPage:', itemsPerPage);
+    console.log('startIndex:', startIndex);
+    console.log('endIndex:', endIndex);
+    console.log('filteredData.length:', filteredData.length);
+    console.log('currentTableData.length:', result.length);
+    
+    return result;
   }, [filteredData, currentPage, itemsPerPage]);
 
   // Calcular total de páginas
@@ -400,14 +431,21 @@ export default function GestionUsuariosPage() {
   const [addFormData, setAddFormData] = useState({
     nombre: '',
     email: '',
-    telefono: '',
-    rol_id: 1,
-    estado: 'Activo'
+    rol_id: 1
   });
 
   // Función para manejar la edición
   const handleEdit = (usuario: Usuario) => {
-    setEditFormData(usuario);
+    // Asegurar que todos los campos tengan valores válidos para el formulario
+    const usuarioParaEditar = {
+      ...usuario,
+      nombre: usuario.nombre || '',
+      email: usuario.email || '',
+      telefono: usuario.telefono || '',
+      rol_id: usuario.rol_id || usuario.rol?.id || 1,
+      estado: usuario.estado || 'Activo'
+    };
+    setEditFormData(usuarioParaEditar);
     setShowEditModal(true);
   };
 
@@ -417,11 +455,9 @@ export default function GestionUsuariosPage() {
 
     try {
       const dataToSend = {
-        nombre: editFormData.nombre,
-        email: editFormData.email,
-        telefono: editFormData.telefono || '',
-        rol_id: editFormData.rol_id,
-        estado: editFormData.estado || 'Activo'
+        nombre: editFormData.nombre || '',
+        email: editFormData.email || '',
+        rol_id: editFormData.rol_id || editFormData.rol?.id || 1
       };
 
       const response = await fetch(`${apiInventarioUrl}/api/usuarios/${editFormData.id}`, {
@@ -439,10 +475,16 @@ export default function GestionUsuariosPage() {
 
       const updatedUsuario = await response.json();
 
+      // Asegurar que el usuario actualizado tenga el objeto rol completo
+      const usuarioConRol = {
+        ...updatedUsuario,
+        rol: ROLES_MAP.find(rol => rol.id === updatedUsuario.rol_id) || { id: updatedUsuario.rol_id, nombre: 'N/A' }
+      };
+
       // Update and sort the data
       setUsuariosData(prevData => 
         sortUsuarios(prevData.map(item => 
-          item.id === editFormData.id ? updatedUsuario : item
+          item.id === editFormData.id ? usuarioConRol : item
         ))
       );
 
@@ -502,9 +544,7 @@ export default function GestionUsuariosPage() {
       const dataToSend = {
         nombre: addFormData.nombre,
         email: addFormData.email,
-        telefono: addFormData.telefono || '',
-        rol_id: addFormData.rol_id,
-        estado: addFormData.estado
+        rol_id: addFormData.rol_id
       };
 
       const response = await fetch(`${apiInventarioUrl}/api/usuarios`, {
@@ -522,17 +562,21 @@ export default function GestionUsuariosPage() {
 
       const nuevoUsuario = await response.json();
 
+      // Asegurar que el nuevo usuario tenga el objeto rol completo
+      const usuarioConRol = {
+        ...nuevoUsuario,
+        rol: ROLES_MAP.find(rol => rol.id === nuevoUsuario.rol_id) || { id: nuevoUsuario.rol_id, nombre: 'N/A' }
+      };
+
       // Actualizar el estado agregando el nuevo usuario y ordenando
-      setUsuariosData(prevData => sortUsuarios([...prevData, nuevoUsuario]));
+      setUsuariosData(prevData => sortUsuarios([...prevData, usuarioConRol]));
 
       setShowAddModal(false);
       // Resetear formulario
       setAddFormData({
         nombre: '',
         email: '',
-        telefono: '',
-        rol_id: 1,
-        estado: 'Activo'
+        rol_id: 1
       });
       
       Swal.fire({
@@ -557,9 +601,7 @@ export default function GestionUsuariosPage() {
     setAddFormData({
       nombre: '',
       email: '',
-      telefono: '',
-      rol_id: 1,
-      estado: 'Activo'
+      rol_id: 1
     });
     setShowAddModal(true);
   };
@@ -611,19 +653,43 @@ export default function GestionUsuariosPage() {
 
               if (!response.ok) throw new Error('Error al eliminar');
 
-              // Actualizar el estado eliminando el usuario
-              setUsuariosData(prevData => prevData.filter(item => item.id !== usuario.id));
+              // Actualizar el estado eliminando solo el usuario específico
+              setUsuariosData(prevData => {
+                const newData = prevData.filter(item => item.id !== usuario.id);
+                console.log('Datos antes de eliminar:', prevData.length);
+                console.log('Datos después de eliminar:', newData.length);
+                console.log('Usuario eliminado ID:', usuario.id);
+                
+                // Verificar si necesitamos ajustar la página actual
+                const searchLower = searchTerm.toLowerCase();
+                const newFilteredData = newData.filter(user => {
+                  const matchesSearch = user.nombre.toLowerCase().includes(searchLower) ||
+                                       user.email.toLowerCase().includes(searchLower);
+                  const rolNombre = user.rol?.nombre || '';
+                  const matchesRol = selectedRol ? rolNombre === selectedRol : true;
+                  const matchesEstado = selectedEstado ? user.estado === selectedEstado : true;
+                  return matchesSearch && matchesRol && matchesEstado;
+                });
+                
+                const newTotalPages = Math.ceil(newFilteredData.length / itemsPerPage);
+                if (currentPage > newTotalPages && newTotalPages > 0) {
+                  setCurrentPage(newTotalPages);
+                }
+                
+                return newData;
+              });
 
               Swal.fire({
                 title: 'Eliminado',
-                text: `El usuario y todos sus datos han sido eliminados permanentemente`,
+                text: `El usuario "${usuario.nombre}" ha sido eliminado permanentemente`,
                 icon: 'success',
                 confirmButtonColor: '#ff7300'
               });
             } catch (err) {
+              console.error('Error al eliminar usuario:', err);
               Swal.fire({
                 title: 'Error',
-                text: `No se pudo eliminar el usuario`,
+                text: `No se pudo eliminar el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}`,
                 icon: 'error',
                 confirmButtonColor: '#ff7300'
               });
@@ -842,72 +908,60 @@ export default function GestionUsuariosPage() {
               <table style={tableStyle}>
                 <thead>
                   <tr>
-                    <th style={thStyle}>ID</th>
                     <th style={thStyle}>Nombre</th>
                     <th style={thStyle}>Email</th>
-                    <th style={thStyle}>Teléfono</th>
                     <th style={thStyle}>Rol</th>
-                    <th style={thStyle}>Estado</th>
-                    <th style={thStyle}>Fecha Registro</th>
                     <th style={thStyle}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {currentTableData.map((usuario, index) => (
-                    <tr key={usuario.id || `user-${index}`}>
-                      <td style={tdStyle}>{usuario.id || 'N/A'}</td>
-                      <td style={tdStyle}>{usuario.nombre}</td>
-                      <td style={tdStyle}>{usuario.email}</td>
-                      <td style={tdStyle}>{usuario.telefono || 'N/A'}</td>
-                      <td style={tdStyle}>{usuario.rol?.nombre || 'N/A'}</td>
-                      <td style={tdStyle}>
-                        <span style={{
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '4px',
-                          fontSize: '0.75rem',
-                          fontWeight: 'bold',
-                          backgroundColor: usuario.estado === 'Activo' ? '#10b981' : 
-                                          usuario.estado === 'Inactivo' ? '#6b7280' : '#6b7280',
-                          color: 'white'
-                        }}>
-                          {usuario.estado || 'Activo'}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>{usuario.fechaRegistro || 'N/A'}</td>
-                      <td style={tdStyle}>
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                          <button
-                            onClick={() => handleEdit(usuario)}
-                            style={{
-                              backgroundColor: '#3b82f6',
-                              color: 'white',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '4px',
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontSize: '0.75rem'
-                            }}
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => handleDelete(usuario)}
-                            style={{
-                              backgroundColor: '#ef4444',
-                              color: 'white',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '4px',
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontSize: '0.75rem'
-                            }}
-                          >
-                            Eliminar
-                          </button>
-                        </div>
+                  {currentTableData && currentTableData.length > 0 ? (
+                    currentTableData.map((usuario, index) => (
+                      <tr key={usuario.id || `user-${index}`}>
+                        <td style={tdStyle}>{usuario.nombre}</td>
+                        <td style={tdStyle}>{usuario.email}</td>
+                        <td style={tdStyle}>{usuario.rol?.nombre || 'N/A'}</td>
+                        <td style={tdStyle}>
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => handleEdit(usuario)}
+                              style={{
+                                backgroundColor: '#ff7300',
+                                color: 'white',
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '4px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem'
+                              }}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => handleDelete(usuario)}
+                              style={{
+                                backgroundColor: '#ef4444',
+                                color: 'white',
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '4px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem'
+                              }}
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} style={{...tdStyle, textAlign: 'center', padding: '2rem', color: '#666'}}>
+                        {usuariosData.length === 0 ? 'No hay usuarios disponibles' : 'No hay usuarios en esta página'}
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
 
@@ -1047,7 +1101,7 @@ export default function GestionUsuariosPage() {
                 <label style={labelStyle}>Nombre</label>
                 <input
                   type="text"
-                  value={editFormData.nombre}
+                  value={editFormData.nombre || ''}
                   onChange={(e) => setEditFormData({...editFormData, nombre: e.target.value})}
                   style={inputStyle}
                 />
@@ -1057,18 +1111,8 @@ export default function GestionUsuariosPage() {
                 <label style={labelStyle}>Email</label>
                 <input
                   type="email"
-                  value={editFormData.email}
+                  value={editFormData.email || ''}
                   onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
-                  style={inputStyle}
-                />
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Teléfono</label>
-                <input
-                  type="text"
-                  value={editFormData.telefono}
-                  onChange={(e) => setEditFormData({...editFormData, telefono: e.target.value})}
                   style={inputStyle}
                 />
               </div>
@@ -1076,25 +1120,12 @@ export default function GestionUsuariosPage() {
               <div style={selectGroupStyle}>
                 <label style={labelStyle}>Rol</label>
                 <select 
-                  value={editFormData.rol_id || 1}
+                  value={editFormData.rol_id || editFormData.rol?.id || 1}
                   onChange={(e) => setEditFormData({...editFormData, rol_id: parseInt(e.target.value)})}
                   style={selectStyle}
                 >
                   {ROLES_MAP.map(rol => (
                     <option key={rol.id} value={rol.id}>{rol.nombre}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Estado</label>
-                <select 
-                  value={editFormData.estado}
-                  onChange={(e) => setEditFormData({...editFormData, estado: e.target.value})}
-                  style={selectStyle}
-                >
-                  {ESTADOS.map(estado => (
-                    <option key={estado} value={estado}>{estado}</option>
                   ))}
                 </select>
               </div>
@@ -1153,17 +1184,6 @@ export default function GestionUsuariosPage() {
               </div>
 
               <div style={selectGroupStyle}>
-                <label style={labelStyle}>Teléfono</label>
-                <input
-                  type="text"
-                  value={addFormData.telefono}
-                  onChange={(e) => setAddFormData({...addFormData, telefono: e.target.value})}
-                  style={inputStyle}
-                  placeholder="Ej: +56 9 1234 5678"
-                />
-              </div>
-
-              <div style={selectGroupStyle}>
                 <label style={labelStyle}>Rol</label>
                 <select 
                   value={addFormData.rol_id}
@@ -1172,19 +1192,6 @@ export default function GestionUsuariosPage() {
                 >
                   {ROLES_MAP.map(rol => (
                     <option key={rol.id} value={rol.id}>{rol.nombre}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Estado</label>
-                <select 
-                  value={addFormData.estado}
-                  onChange={(e) => setAddFormData({...addFormData, estado: e.target.value})}
-                  style={selectStyle}
-                >
-                  {ESTADOS.map(estado => (
-                    <option key={estado} value={estado}>{estado}</option>
                   ))}
                 </select>
               </div>
@@ -1297,7 +1304,7 @@ const tableStyle: React.CSSProperties = {
   borderCollapse: "collapse",
   border: "none",
   backgroundColor: "#fff",
-  minWidth: "1400px",
+  minWidth: "800px",
   transition: "all 0.3s ease"
 };
 
@@ -1483,6 +1490,7 @@ const modalTitleStyle: React.CSSProperties = {
   fontWeight: 'bold',
   marginBottom: '1.5rem',
   textAlign: 'center',
+  fontFamily: 'Montserrat, sans-serif',
 };
 
 const modalFormStyle: React.CSSProperties = {

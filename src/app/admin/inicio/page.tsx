@@ -10,45 +10,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/a
 interface UsuarioAPI {
   email: string;
   nombre: string;
-  rol_id: number;
   rol: {
     id: number;
     nombre: string;
   };
 }
-
-// Estado de conectividad del servidor
-interface ServerStatus {
-  isOnline: boolean;
-  lastChecked: Date | null;
-}
-
-// Función para verificar si el servidor está operativo
-const checkServerStatus = async (): Promise<boolean> => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout de 5 segundos
-    
-    const response = await fetch(`${API_BASE_URL}/usuarios`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      signal: controller.signal,
-    });
-    
-    clearTimeout(timeoutId);
-    return response.ok;
-  } catch (error) {
-    // Manejo silencioso del error - no mostrar en consola para evitar spam
-    if (error instanceof Error && error.name === 'AbortError') {
-      console.warn('⏱️ Timeout al verificar servidor - posiblemente offline');
-    } else {
-      console.warn('🔌 Servidor no disponible - trabajando en modo offline');
-    }
-    return false;
-  }
-};
 
 // Función para obtener usuarios del endpoint
 const fetchUsuarios = async (): Promise<UsuarioAPI[]> => {
@@ -133,7 +99,6 @@ interface UserData {
 export default function InicioPage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [openCard, setOpenCard] = useState<number | null>(null);
-  const [serverStatus, setServerStatus] = useState<ServerStatus>({ isOnline: false, lastChecked: null });
   const [usuariosCount, setUsuariosCount] = useState<number>(0);
   const { isSmall, isMobile } = useWindowSize();
 
@@ -148,34 +113,22 @@ export default function InicioPage() {
         console.error("Error al parsear user en InicioPage:", err);
       }
     }
-  }, []);
 
-  // Verificar estado del servidor y cargar datos de usuarios
-  useEffect(() => {
-    const loadServerData = async () => {
+    // Cargar conteo de usuarios
+    const loadUsuariosCount = async () => {
       try {
-        console.log("🔍 Verificando estado del servidor...");
-        const isOnline = await checkServerStatus();
-        setServerStatus({ isOnline, lastChecked: new Date() });
-        
-        if (isOnline) {
-          console.log("✅ Servidor online - Cargando usuarios...");
-          const usuarios = await fetchUsuarios();
-          setUsuariosCount(usuarios.length);
-          console.log(`📊 Usuarios registrados: ${usuarios.length}`);
-        } else {
-          console.log("❌ Servidor offline - usando datos por defecto");
-          setUsuariosCount(0);
-        }
+        const usuarios = await fetchUsuarios();
+        setUsuariosCount(usuarios.length);
+        console.log("📊 Conteo de usuarios cargado:", usuarios.length);
       } catch (error) {
-        console.warn("⚠️ Error general al cargar datos del servidor");
-        setServerStatus({ isOnline: false, lastChecked: new Date() });
+        console.error("Error loading usuarios count:", error);
         setUsuariosCount(0);
       }
     };
 
-    loadServerData();
+    loadUsuariosCount();
   }, []);
+
 
   const handleCardClick = (cardId: number) => {
     setOpenCard(cardId);
@@ -183,23 +136,6 @@ export default function InicioPage() {
 
   const handleCloseModal = () => {
     setOpenCard(null);
-  };
-
-  const handleRefreshData = async () => {
-    console.log("🔄 Recargando datos del servidor...");
-    const isOnline = await checkServerStatus();
-    setServerStatus({ isOnline, lastChecked: new Date() });
-    
-    if (isOnline) {
-      try {
-        const usuarios = await fetchUsuarios();
-        setUsuariosCount(usuarios.length);
-        console.log("✅ Datos actualizados");
-      } catch (error) {
-        console.error("❌ Error recargando datos:", error);
-        setUsuariosCount(0);
-      }
-    }
   };
 
   const cardData: CardProps[] = [
@@ -271,7 +207,6 @@ export default function InicioPage() {
             card={cardData.find(c => c.id === openCard)!}
             onClose={handleCloseModal}
             isMobile={isMobile}
-            serverStatus={serverStatus}
           />
         )}
       </div>
@@ -373,10 +308,9 @@ interface CardModalProps {
   card: CardProps;
   onClose: () => void;
   isMobile?: boolean;
-  serverStatus: ServerStatus;
 }
 
-const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile, serverStatus }) => {
+const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [realUsuarios, setRealUsuarios] = useState<UsuarioAPI[]>([]);
   const [loading, setLoading] = useState(false);
@@ -384,7 +318,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile, serverSt
   // Cargar datos reales de usuarios cuando el modal se abre y es la card de usuarios
   useEffect(() => {
     const loadRealData = async () => {
-      if (!serverStatus.isOnline || card.subText !== 'Usuarios registrados') {
+      if (card.subText !== 'Usuarios registrados') {
         setRealUsuarios([]);
         return;
       }
@@ -403,21 +337,12 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile, serverSt
     };
 
     loadRealData();
-  }, [card.subText, serverStatus.isOnline]);
+  }, [card.subText]);
   
   // Función para generar datos según el tipo de card
   const getDataToShow = (): Record<string, string | number>[] => {
     // Si es la card de usuarios registrados y tenemos datos reales del servidor
     if (card.subText === 'Usuarios registrados') {
-      if (!serverStatus.isOnline) {
-        return [{
-          id: 1,
-          mensaje: 'No se ha cargado la información',
-          estado: 'Servidor desconectado',
-          descripcion: 'Los datos de usuarios no están disponibles'
-        }];
-      }
-      
       if (loading) {
         return [{
           id: 1,
@@ -428,21 +353,18 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile, serverSt
       }
 
       if (realUsuarios.length > 0) {
-        // Convertir los datos del API al formato de la tabla
+        // Convertir los datos del API al formato de la tabla (sin rol_id ni estado)
         return realUsuarios.map((usuario, index) => ({
           id: index + 1,
           email: usuario.email,
           nombre: usuario.nombre,
-          rol_id: usuario.rol_id,
-          rol: usuario.rol.nombre,
-          estado: 'Activo' // Asumimos que todos están activos
+          rol: usuario.rol.nombre
         }));
       }
 
       return [{
         id: 1,
         mensaje: 'No hay usuarios registrados',
-        estado: 'Base de datos vacía',
         descripcion: 'No se encontraron usuarios en el sistema'
       }];
     }
@@ -601,7 +523,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile, serverSt
   };
 
   const headerCellStyle: React.CSSProperties = {
-    padding: '12px 8px',
+    padding: '12px 12px',
     textAlign: 'left',
     fontWeight: 'bold',
     borderBottom: '2px solid #dee2e6',
@@ -636,7 +558,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile, serverSt
           />
           <div>
             <h2 style={modalTitleStyle}>{card.subText}</h2>
-            <p style={{ color: '#FF7300', fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>
+            <p style={{ padding: '12px 12px', color: '#FF7300', fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>
               Total: {card.mainText}
             </p>
           </div>

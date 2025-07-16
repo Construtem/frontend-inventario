@@ -17,7 +17,7 @@ import buscarImg from "@/styles/images/buscar.png";
 // =====================
 // 1.1 CONFIGURACIÓN DEL BACKEND
 // =====================
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
+const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
 // Headers comunes para las peticiones
 const getHeaders = () => ({
@@ -37,7 +37,7 @@ const fetchProducts = async (sucursalId?: string): Promise<ProductData[]> => {
       return [];
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/stock-sucursal?sucursal_id=${sucursalId}`, {
+    const response = await fetch(`${apiInventarioUrl}/api/stock-sucursal?sucursal_id=${sucursalId}`, {
       method: 'GET',
       headers: getHeaders(),
       credentials: 'include',
@@ -81,7 +81,7 @@ const fetchProducts = async (sucursalId?: string): Promise<ProductData[]> => {
 // Eliminar un producto por SKU
 const deleteProduct = async (sku: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/productos/${sku}`, {
+    const response = await fetch(`${apiInventarioUrl}/api/productos/${sku}`, {
       method: 'DELETE',
       headers: getHeaders(),
       credentials: 'include',
@@ -100,7 +100,7 @@ const deleteProduct = async (sku: string): Promise<void> => {
 // Obtener datos de una sucursal específica (incluye bodegas)
 const fetchSucursal = async (id: string): Promise<any> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/sucursales/${id}`, {
+    const response = await fetch(`${apiInventarioUrl}/api/sucursales/${id}`, {
       method: 'GET',
       headers: getHeaders(),
       credentials: 'include',
@@ -122,7 +122,7 @@ const fetchSucursal = async (id: string): Promise<any> => {
 // Actualizar un producto por SKU
 const updateProduct = async (sku: string, productData: Partial<ProductData>): Promise<void> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/productos/${sku}`, {
+      const response = await fetch(`${apiInventarioUrl}/api/productos/${sku}`, {
       method: 'PUT',
       headers: getHeaders(),
       credentials: 'include',
