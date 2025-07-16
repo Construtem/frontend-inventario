@@ -128,6 +128,16 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
         <FaHome />
         <span>Inicio</span>
       </Link>
+      
+      <Link
+        href="/admin/Gestion-usuarios"
+        style={getMenuItemStyle('gestion-usuarios', '/admin/Gestion-usuarios')}
+        onMouseEnter={() => handleMouseEnter('gestion-usuarios')}
+        onMouseLeave={handleMouseLeave}
+      >
+        <FaCog />
+        <span>Gestión de Usuarios</span>
+      </Link>
 
       <Link
         href="/admin/inventario"
@@ -157,7 +167,6 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
       }}>
         {[
           { name: 'Bodega general', path: '/admin/bodega/bodega-general' },
-          { name: 'Lista de bodegas', path: '/admin/bodega/lista-de-bodegas' },
         ].map((item) => (
           <Link
             key={item.name}

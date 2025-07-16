@@ -2,12 +2,64 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
+import Swal from 'sweetalert2';
 
 // Importaciones de imágenes
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import buscarImg from "@/styles/images/buscar.png";
+import logo1Img from "@/styles/images/logo1.png";
 
+
+// Interfaz para los datos de proveedores
+interface Proveedor {
+  id: number;
+  marca: string;
+  email: string;
+  telefono: string;
+  direccion: string;
+}
+
+// =====================
+// DEFINICIONES DE ESTILOS PARA SWEETALERT2
+// (Fuera de los componentes para reutilización y generación de CSS en línea)
+// =====================
+
+const estiloSwalTituloObj: React.CSSProperties = {
+  fontFamily: "'Montserrat', sans-serif",
+  fontSize: '1.5rem',
+  fontWeight: '600',
+  color: '#222'
+};
+
+const estiloSwalTextoObj: React.CSSProperties = {
+  fontFamily: "'Roboto', sans-serif",
+  fontSize: '1rem',
+  fontWeight: '400',
+  color: '#333'
+};
+
+// Combinación para el texto que necesita un margen superior
+const estiloSwalTextoConMargenObj: React.CSSProperties = {
+  ...estiloSwalTextoObj,
+  marginTop: '10px'
+};
+
+// Función auxiliar para convertir un objeto JS de estilos a una cadena CSS en línea
+function objToInlineCss(styleObj: React.CSSProperties): string {
+  return Object.entries(styleObj)
+    .map(([key, value]) => {
+      // Convierte camelCase a kebab-case (ej. 'fontSize' a 'font-size')
+      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      // Retorna la propiedad CSS en formato "clave: valor;"
+      return `${cssKey}: ${value};`;
+    })
+    .join(' '); // Une todas las propiedades con un espacio
+}
+
+// Genera las cadenas CSS que se usarán directamente en el HTML de SweetAlert2
+const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
+const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
@@ -44,64 +96,402 @@ function useWindowSize() {
 export default function GestionProveedoresPage() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [proveedoresData, setProveedoresData] = useState<Proveedor[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
-  // Datos de ejemplo para gestión de proveedores
-  const proveedoresData = useMemo(() => [
-    {
-      id: 1,
-      idProveedor: "PROV001",
-      nombre: "Tech Solutions S.A.",
-      correoElectronico: "contacto@techsolutions.com",
-      telefono: "+1-555-0123",
-      direccion: "Av. Principal 123, Ciudad Tech"
-    },
-    {
-      id: 2,
-      idProveedor: "PROV002",
-      nombre: "Periféricos SA",
-      correoElectronico: "ventas@perifericos.com",
-      telefono: "+1-555-0456",
-      direccion: "Calle Comercio 456, Zona Industrial"
-    },
-    {
-      id: 3,
-      idProveedor: "PROV003",
-      nombre: "Displays Corp",
-      correoElectronico: "info@displayscorp.com",
-      telefono: "+1-555-0789",
-      direccion: "Boulevard Digital 789, Centro Empresarial"
-    },
-    {
-      id: 4,
-      idProveedor: "PROV004",
-      nombre: "Gaming Gear",
-      correoElectronico: "soporte@gaminggear.com",
-      telefono: "+1-555-0321",
-      direccion: "Plaza Gaming 321, Distrito Tecnológico"
-    },
-    {
-      id: 5,
-      idProveedor: "PROV005",
-      nombre: "Office Solutions",
-      correoElectronico: "admin@officesol.com",
-      telefono: "+1-555-0654",
-      direccion: "Sector Oficinas 654, Complejo Corporativo"
+  // Estados para el modal de edición
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProveedor, setEditingProveedor] = useState<Proveedor | null>(null);
+  const [editFormData, setEditFormData] = useState<Proveedor | null>(null);
+  
+  // Estados para el modal de agregar
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addFormData, setAddFormData] = useState({
+    marca: '',
+    email: '',
+    telefono: '',
+    direccion: ''
+  });
+
+  // Efecto para cargar los datos
+  useEffect(() => {
+    const fetchProveedores = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(`${apiInventarioUrl}/api/proveedores`, { 
+          method: 'GET',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+
+        
+        if (Array.isArray(data)) {
+          setProveedoresData(data);
+        } else {
+
+          setProveedoresData([]);
+        }
+        
+      } catch (err) {
+
+        
+        let errorMessage = "Error desconocido al cargar datos";
+        if (err instanceof Error) {
+          if (err.name === 'AbortError') {
+            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+          } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+          } else {
+            errorMessage = err.message;
+          }
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProveedores();
+  }, []);
+
+  // Función para reintentar la carga de datos
+  const retryFetch = () => {
+    setError(null);
+    setLoading(true);
+    
+    const fetchProveedores = async () => {
+      try {
+        const response = await fetch(`${apiInventarioUrl}/api/proveedores`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (Array.isArray(data)) {
+          setProveedoresData(data);
+          setError(null);
+        } else {
+          throw new Error('Los datos recibidos no tienen el formato esperado');
+        }
+      } catch (err) {
+
+        setError(err instanceof Error ? err.message : 'Error al recargar los datos');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProveedores();
+  };
+
+  // Función para manejar el botón de filtros
+  const handleFiltros = () => {
+    // Mostrar modal de funcionalidad en mantenimiento
+    Swal.fire({
+      html: `
+        <div style="${swalTituloCssString}">
+          ¡<b>Funcionalidad en Mantenimiento</b>!
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          Esta funcionalidad estará nuevamente disponible próximamente.
+        </div>
+      `,
+      imageUrl: logo1Img.src,
+      imageWidth: 400,
+      imageHeight: 200,
+      imageAlt: "Funcionalidad en Mantenimiento",
+      confirmButtonText: 'ACEPTAR',
+      confirmButtonColor: '#ff7300',
+    });
+  };
+
+  // Función para agregar un nuevo proveedor
+  const handleAgregarProveedor = () => {
+    // Resetear el formulario
+    setAddFormData({
+      marca: '',
+      email: '',
+      telefono: '',
+      direccion: ''
+    });
+    setShowAddModal(true);
+  };
+
+  // Función para guardar el nuevo proveedor
+  const handleSaveNewProveedor = async () => {
+    // Validaciones
+    if (!addFormData.marca.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'La marca es requerida',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
     }
-  ], []);
+
+    if (!addFormData.email.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El email es requerido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!addFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Email inválido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!addFormData.telefono.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El teléfono es requerido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!addFormData.direccion.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'La dirección es requerida',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiInventarioUrl}/api/proveedores`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(addFormData),
+      });
+
+      if (!response.ok) throw new Error('Error al crear el proveedor');
+
+      const nuevoProveedor = await response.json();
+      setProveedoresData(prevData => [...prevData, nuevoProveedor]);
+
+      setShowAddModal(false);
+      
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: '¡Proveedor agregado exitosamente!',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+    } catch (error) {
+
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo agregar el proveedor',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+    }
+  };
+
+  // Función para editar un proveedor
+  const handleEditar = (proveedor: Proveedor) => {
+    setEditingProveedor(proveedor);
+    setEditFormData({ ...proveedor });
+    setShowEditModal(true);
+  };
+
+  // Función para guardar cambios del modal de edición
+  const handleSaveEditChanges = async () => {
+    if (!editFormData || !editingProveedor) return;
+
+    // Validaciones
+    if (!editFormData.marca.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'La marca es requerida',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!editFormData.email.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El email es requerido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!editFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Email inválido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!editFormData.telefono.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El teléfono es requerido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    if (!editFormData.direccion.trim()) {
+      Swal.fire({
+        title: 'Error',
+        text: 'La dirección es requerida',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiInventarioUrl}/api/proveedores/${editingProveedor.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editFormData),
+      });
+
+      if (!response.ok) throw new Error('Error al actualizar el proveedor');
+
+      const proveedorActualizado = await response.json();
+      setProveedoresData(prevData => 
+        prevData.map(p => 
+          p.id === editingProveedor.id ? proveedorActualizado : p
+        )
+      );
+
+      setShowEditModal(false);
+      setEditingProveedor(null);
+      setEditFormData(null);
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: '¡Proveedor actualizado exitosamente!',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+    } catch (error) {
+
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo actualizar el proveedor',
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+    }
+  };
+
+  // Función para eliminar un proveedor
+  const handleEliminar = async (proveedor: Proveedor) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: `¿Deseas eliminar el proveedor ${proveedor.marca}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+          const response = await fetch(`${apiInventarioUrl}/api/proveedores/${proveedor.id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) throw new Error('Error al eliminar el proveedor');
+
+        setProveedoresData(proveedoresData.filter(p => p.id !== proveedor.id));
+
+        await Swal.fire({
+          title: '¡Eliminado!',
+          text: 'El proveedor ha sido eliminado correctamente',
+          icon: 'success',
+          confirmButtonColor: '#ff7300'
+        });
+      } catch (error) {
+
+        await Swal.fire({
+          title: 'Error',
+          text: 'No se pudo eliminar el proveedor',
+          icon: 'error',
+          confirmButtonColor: '#ff7300'
+        });
+      }
+    }
+  };
 
   // Filtrar datos según búsqueda
   const filteredData = useMemo(() => {
-    return proveedoresData.filter(item => {
+    return proveedoresData
+      .sort((a, b) => (a?.id || 0) - (b?.id || 0)) // Ordenar por ID ascendente
+      .filter(item => {
       const searchLower = searchTerm.toLowerCase();
       return (
-        item.idProveedor.toLowerCase().includes(searchLower) ||
-        item.nombre.toLowerCase().includes(searchLower) ||
-        item.correoElectronico.toLowerCase().includes(searchLower) ||
-        item.telefono.toLowerCase().includes(searchLower) ||
-        item.direccion.toLowerCase().includes(searchLower)
+          (item?.id?.toString() || '').includes(searchLower) ||
+          (item?.marca?.toLowerCase() || '').includes(searchLower) ||
+          (item?.email?.toLowerCase() || '').includes(searchLower) ||
+          (item?.telefono?.toLowerCase() || '').includes(searchLower) ||
+          (item?.direccion?.toLowerCase() || '').includes(searchLower)
       );
     });
   }, [proveedoresData, searchTerm]);
@@ -262,7 +652,7 @@ export default function GestionProveedoresPage() {
             }}>
               <input
                 type="text"
-                placeholder="Buscar por ID, Nombre, Correo..."
+                placeholder="Buscar por ID, Marca, Email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
@@ -278,12 +668,15 @@ export default function GestionProveedoresPage() {
               </button>
             </div>
             
-            <button style={{
+            <button 
+              onClick={handleFiltros}
+              style={{
               ...filterButtonStyle,
               width: isMobile ? "100%" : "auto",
               fontSize: isMobile ? "0.875rem" : "1rem",
               padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-            }}>
+              }}
+            >
               <Image
                 src={filtrosImg.src}
                 alt="Filtros"
@@ -300,12 +693,15 @@ export default function GestionProveedoresPage() {
             width: isMobile ? "100%" : "auto",
             marginTop: isMobile ? "1rem" : isSmall ? "1rem" : "0"
           }}>
-            <button style={{
+            <button 
+              onClick={handleAgregarProveedor}
+              style={{
               ...editButtonStyle,
               width: isMobile ? "100%" : "auto",
               fontSize: isMobile ? "0.875rem" : "1rem",
               padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-            }}>
+              }}
+            >
               <Image
                 src={agregarImg.src}
                 alt="Agregar proveedor"
@@ -348,16 +744,144 @@ export default function GestionProveedoresPage() {
               {loading ? (
                 <tr>
                   <td colSpan={6} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px" }}>
                       <div style={{ 
-                        width: "20px", 
-                        height: "20px", 
-                        border: "2px solid #f3f3f3", 
-                        borderTop: "2px solid #ff7300", 
-                        borderRadius: "50%", 
-                        animation: "spin 1s linear infinite" 
-                      }}></div>
-                      Cargando proveedores...
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      padding: '3rem',
+                      backgroundColor: 'white',
+                      borderRadius: '10px',
+                      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                    }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        border: '4px solid #f3f4f6',
+                        borderTop: '4px solid #ff7300',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                        marginBottom: '1rem'
+                      }} />
+                      <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando proveedores...</div>
+                      <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
+                        Conectando con http://localhost:8080
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      padding: '3rem',
+                      backgroundColor: 'white',
+                      borderRadius: '10px',
+                      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                      maxWidth: '600px',
+                      margin: '0 auto'
+                    }}>
+                      <div style={{ 
+                        fontSize: '1.1rem', 
+                        color: '#ef4444',
+                        textAlign: 'center',
+                        marginBottom: '1.5rem'
+                      }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>❌ Error al cargar los proveedores</div>
+                        <div style={{ 
+                          fontSize: '0.9rem', 
+                          marginTop: '0.5rem',
+                          whiteSpace: 'pre-line',
+                          lineHeight: '1.5',
+                          color: '#666'
+                        }}>
+                          {error}
+                        </div>
+                      </div>
+                      
+                      <div style={{
+                        display: 'flex',
+                        gap: '1rem',
+                        flexDirection: isMobile ? 'column' : 'row',
+                        width: isMobile ? '100%' : 'auto'
+                      }}>
+                        <button
+                          onClick={retryFetch}
+                          style={{
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '1rem',
+                            fontFamily: 'Montserrat, sans-serif',
+                            fontWeight: 'semibold',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                            transition: 'all 0.3s ease',
+                            minWidth: '120px'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
+                        >
+                          🔄 Reintentar
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+
+                            Swal.fire({
+                              title: 'Diagnóstico',
+                              text: 'Información de diagnóstico enviada a la consola del navegador (F12)',
+                              icon: 'info',
+                              confirmButtonColor: '#ff7300'
+                            });
+                          }}
+                          style={{
+                            backgroundColor: '#6b7280',
+                            color: 'white',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '1rem',
+                            fontFamily: 'Montserrat, sans-serif',
+                            fontWeight: 'semibold',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                            transition: 'all 0.3s ease',
+                            minWidth: '120px'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
+                        >
+                          🔍 Diagnóstico
+                        </button>
+                      </div>
+                      
+                      <div style={{
+                        marginTop: '1.5rem',
+                        padding: '1rem',
+                        backgroundColor: '#f3f4f6',
+                        borderRadius: '8px',
+                        fontSize: '0.875rem',
+                        color: '#666',
+                        textAlign: 'left',
+                        width: '100%',
+                        boxSizing: 'border-box'
+                      }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>💡 Posibles soluciones:</div>
+                        <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
+                          <li>Verificar que el backend esté ejecutándose en el puerto 8080</li>
+                          <li>Comprobar que la URL de la API sea correcta</li>
+                          <li>Revisar la configuración de CORS en el backend</li>
+                          <li>Verificar la conexión a internet</li>
+                          <li>Intentar acceder directamente a: <a href="http://localhost:8080/api/proveedores" target="_blank" style={{ color: '#3b82f6' }}>http://localhost:8080/api/proveedores</a></li>
+                        </ul>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -368,30 +892,38 @@ export default function GestionProveedoresPage() {
                   </td>
                 </tr>
               ) : (
-                currentTableData.map((item) => (
-                  <tr key={item.id}>
-                    <td style={tdStyle}>{item.idProveedor}</td>
-                    <td style={tdStyle}>{item.nombre}</td>
-                    <td style={tdStyle}>{item.correoElectronico}</td>
-                    <td style={tdStyle}>{item.telefono}</td>
-                    <td style={tdStyle}>{item.direccion}</td>
+                currentTableData.map((item, index) => (
+                  <tr key={item?.id || `proveedor-${index}`}>
+                    <td style={tdStyle}>{item?.id || '-'}</td>
+                    <td style={tdStyle}>{item?.marca || '-'}</td>
+                    <td style={tdStyle}>{item?.email || '-'}</td>
+                    <td style={tdStyle}>{item?.telefono || '-'}</td>
+                    <td style={tdStyle}>{item?.direccion || '-'}</td>
                     <td style={tdStyle}>
                       <div style={{ display: "flex", justifyContent: "center", gap: "5px" }}>
-                        <button style={{
+                        <button 
+                          key={`edit-${item?.id || index}`}
+                          onClick={() => handleEditar(item)}
+                          style={{
                           ...modifyProductButtonStyle,
                           fontSize: '0.75rem',
                           padding: '0.25rem 0.5rem',
                           maxWidth: '60px'
-                        }}>
+                          }}
+                        >
                           EDITAR
                         </button>
-                        <button style={{
+                        <button 
+                          key={`delete-${item?.id || index}`}
+                          onClick={() => handleEliminar(item)}
+                          style={{
                           ...modifyProductButtonStyle,
                           backgroundColor: '#ef4444',
                           fontSize: '0.75rem',
                           padding: '0.25rem 0.5rem',
                           maxWidth: '60px'
-                        }}>
+                          }}
+                        >
                           ELIMINAR
                         </button>
                       </div>
@@ -435,6 +967,175 @@ export default function GestionProveedoresPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Edición */}
+      {showEditModal && editFormData && (
+        <div style={modalOverlayStyle}>
+          <div style={{...modalContentStyle, maxWidth: '500px', padding: '2rem'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={{...modalTitleStyle, margin: 0}}>Editar Proveedor</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+                  ID: <strong>{editFormData.id}</strong>
+                </div>
+                <button 
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingProveedor(null);
+                    setEditFormData(null);
+                  }}
+                  style={closeButtonStyle}
+                >
+                  &times;
+                </button>
+              </div>
+            </div>
+            
+            <div style={{...modalFormStyle, padding: '0 1rem'}}>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Marca</label>
+                <input
+                  type="text"
+                  value={editFormData.marca}
+                  onChange={(e) => setEditFormData({...editFormData, marca: e.target.value})}
+                  style={selectStyle}
+                  placeholder="Nombre de la marca"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Email</label>
+                <input
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                  style={selectStyle}
+                  placeholder="correo@ejemplo.com"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Teléfono</label>
+                <input
+                  type="tel"
+                  value={editFormData.telefono}
+                  onChange={(e) => setEditFormData({...editFormData, telefono: e.target.value})}
+                  style={selectStyle}
+                  placeholder="+56 9 1234 5678"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Dirección</label>
+                <input
+                  type="text"
+                  value={editFormData.direccion}
+                  onChange={(e) => setEditFormData({...editFormData, direccion: e.target.value})}
+                  style={selectStyle}
+                  placeholder="Dirección completa"
+                />
+              </div>
+            </div>
+
+            <div style={{...modalButtonsStyle, padding: '0 1rem'}}>
+              <button 
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingProveedor(null);
+                  setEditFormData(null);
+                }} 
+                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSaveEditChanges}
+                style={modalButtonStyle}
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Agregar Proveedor */}
+      {showAddModal && (
+        <div style={modalOverlayStyle}>
+          <div style={{...modalContentStyle, maxWidth: '500px', padding: '2rem'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={{...modalTitleStyle, margin: 0}}>Agregar Nuevo Proveedor</h2>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                style={closeButtonStyle}
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div style={{...modalFormStyle, padding: '0 1rem'}}>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Marca</label>
+                <input
+                  type="text"
+                  value={addFormData.marca}
+                  onChange={(e) => setAddFormData({...addFormData, marca: e.target.value})}
+                  style={selectStyle}
+                  placeholder="Nombre de la marca"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Email</label>
+                <input
+                  type="email"
+                  value={addFormData.email}
+                  onChange={(e) => setAddFormData({...addFormData, email: e.target.value})}
+                  style={selectStyle}
+                  placeholder="correo@ejemplo.com"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Teléfono</label>
+                <input
+                  type="tel"
+                  value={addFormData.telefono}
+                  onChange={(e) => setAddFormData({...addFormData, telefono: e.target.value})}
+                  style={selectStyle}
+                  placeholder="+56 9 1234 5678"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Dirección</label>
+                <input
+                  type="text"
+                  value={addFormData.direccion}
+                  onChange={(e) => setAddFormData({...addFormData, direccion: e.target.value})}
+                  style={selectStyle}
+                  placeholder="Dirección completa"
+                />
+              </div>
+            </div>
+
+            <div style={{...modalButtonsStyle, padding: '0 1rem'}}>
+              <button 
+                onClick={() => setShowAddModal(false)} 
+                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSaveNewProveedor}
+                style={modalButtonStyle}
+              >
+                Crear Proveedor
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -713,4 +1414,103 @@ const paginationButtonsWrapperStyle: React.CSSProperties = {
   gap: '5px',
   flexWrap: 'wrap',
   justifyContent: 'center'
+};
+
+// Estilos para el modal de edición
+const modalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000,
+};
+
+const modalContentStyle: React.CSSProperties = {
+  backgroundColor: 'white',
+  borderRadius: '12px',
+  width: '90%',
+  maxWidth: '500px',
+  maxHeight: '90vh',
+  overflow: 'auto',
+  position: 'relative',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+};
+
+const modalTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: '1.25rem',
+  fontWeight: 'bold',
+  color: '#111827',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const modalFormStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+};
+
+const selectGroupStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "0.5rem",
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: "0.9rem",
+  fontWeight: "500",
+  color: "#333",
+  fontFamily: "Montserrat, sans-serif",
+};
+
+const selectStyle: React.CSSProperties = {
+  padding: "0.5rem",
+  borderRadius: "4px",
+  border: "1px solid #ddd",
+  fontSize: "0.9rem",
+  color: "#333",
+  backgroundColor: "#fff",
+  cursor: "pointer",
+  outline: "none",
+  fontFamily: "Roboto, sans-serif",
+  transition: "border-color 0.2s ease",
+};
+
+const modalButtonsStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '1rem',
+  marginTop: '2rem',
+};
+
+const modalButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: 'white',
+  padding: '0.5rem 1rem',
+  borderRadius: '6px',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+};
+
+const closeButtonStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontSize: '1.5rem',
+  cursor: 'pointer',
+  padding: '0.5rem',
+  color: '#6b7280',
+  transition: 'color 0.2s ease',
+  borderRadius: '4px',
+  width: '2rem',
+  height: '2rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 };

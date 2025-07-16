@@ -3,6 +3,85 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
+// Configuración del API
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+
+// Interfaz para los datos de usuario del API
+interface UsuarioAPI {
+  email: string;
+  nombre: string;
+  rol_id: number;
+  rol: {
+    id: number;
+    nombre: string;
+  };
+}
+
+// Estado de conectividad del servidor
+interface ServerStatus {
+  isOnline: boolean;
+  lastChecked: Date | null;
+}
+
+// Función para verificar si el servidor está operativo
+const checkServerStatus = async (): Promise<boolean> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout de 5 segundos
+    
+    const response = await fetch(`${API_BASE_URL}/usuarios`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    // Manejo silencioso del error - no mostrar en consola para evitar spam
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('⏱️ Timeout al verificar servidor - posiblemente offline');
+    } else {
+      console.warn('🔌 Servidor no disponible - trabajando en modo offline');
+    }
+    return false;
+  }
+};
+
+// Función para obtener usuarios del endpoint
+const fetchUsuarios = async (): Promise<UsuarioAPI[]> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
+    
+    const response = await fetch(`${API_BASE_URL}/usuarios`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('⏱️ Timeout al cargar usuarios - operación cancelada');
+    } else {
+      console.warn('⚠️ Error al cargar usuarios - usando datos por defecto');
+    }
+    return [];
+  }
+};
+
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
   const [windowSize, setWindowSize] = useState({
@@ -54,6 +133,8 @@ interface UserData {
 export default function InicioPage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [openCard, setOpenCard] = useState<number | null>(null);
+  const [serverStatus, setServerStatus] = useState<ServerStatus>({ isOnline: false, lastChecked: null });
+  const [usuariosCount, setUsuariosCount] = useState<number>(0);
   const { isSmall, isMobile } = useWindowSize();
 
   useEffect(() => {
@@ -69,12 +150,56 @@ export default function InicioPage() {
     }
   }, []);
 
+  // Verificar estado del servidor y cargar datos de usuarios
+  useEffect(() => {
+    const loadServerData = async () => {
+      try {
+        console.log("🔍 Verificando estado del servidor...");
+        const isOnline = await checkServerStatus();
+        setServerStatus({ isOnline, lastChecked: new Date() });
+        
+        if (isOnline) {
+          console.log("✅ Servidor online - Cargando usuarios...");
+          const usuarios = await fetchUsuarios();
+          setUsuariosCount(usuarios.length);
+          console.log(`📊 Usuarios registrados: ${usuarios.length}`);
+        } else {
+          console.log("❌ Servidor offline - usando datos por defecto");
+          setUsuariosCount(0);
+        }
+      } catch (error) {
+        console.warn("⚠️ Error general al cargar datos del servidor");
+        setServerStatus({ isOnline: false, lastChecked: new Date() });
+        setUsuariosCount(0);
+      }
+    };
+
+    loadServerData();
+  }, []);
+
   const handleCardClick = (cardId: number) => {
     setOpenCard(cardId);
   };
 
   const handleCloseModal = () => {
     setOpenCard(null);
+  };
+
+  const handleRefreshData = async () => {
+    console.log("🔄 Recargando datos del servidor...");
+    const isOnline = await checkServerStatus();
+    setServerStatus({ isOnline, lastChecked: new Date() });
+    
+    if (isOnline) {
+      try {
+        const usuarios = await fetchUsuarios();
+        setUsuariosCount(usuarios.length);
+        console.log("✅ Datos actualizados");
+      } catch (error) {
+        console.error("❌ Error recargando datos:", error);
+        setUsuariosCount(0);
+      }
+    }
   };
 
   const cardData: CardProps[] = [
@@ -90,7 +215,7 @@ export default function InicioPage() {
     { id: 10, mainText: '100', subText: 'Existencia vendida', imagePath: '/images/inicio/existencias.png' },
     { id: 11, mainText: '5', subText: 'Sucursales', imagePath: '/images/inicio/sucursales.png' },
     { id: 12, mainText: '50', subText: 'Ventas', imagePath: '/images/inicio/ventas.png' },
-    { id: 13, mainText: '10', subText: 'Usuarios registrados', imagePath: '/images/inicio/usuarios_registrados.png' },
+    { id: 13, mainText: usuariosCount.toString(), subText: 'Usuarios registrados', imagePath: '/images/inicio/usuarios_registrados.png' },
   ];
 
   return (
@@ -146,6 +271,7 @@ export default function InicioPage() {
             card={cardData.find(c => c.id === openCard)!}
             onClose={handleCloseModal}
             isMobile={isMobile}
+            serverStatus={serverStatus}
           />
         )}
       </div>
@@ -247,13 +373,84 @@ interface CardModalProps {
   card: CardProps;
   onClose: () => void;
   isMobile?: boolean;
+  serverStatus: ServerStatus;
 }
 
-const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile, serverStatus }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [realUsuarios, setRealUsuarios] = useState<UsuarioAPI[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Cargar datos reales de usuarios cuando el modal se abre y es la card de usuarios
+  useEffect(() => {
+    const loadRealData = async () => {
+      if (!serverStatus.isOnline || card.subText !== 'Usuarios registrados') {
+        setRealUsuarios([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const usuarios = await fetchUsuarios();
+        setRealUsuarios(usuarios);
+        console.log("📊 Usuarios cargados en modal:", usuarios);
+      } catch (error) {
+        console.error("Error loading usuarios in modal:", error);
+        setRealUsuarios([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRealData();
+  }, [card.subText, serverStatus.isOnline]);
   
-  // Función para generar datos de ejemplo según el tipo de card
+  // Función para generar datos según el tipo de card
+  const getDataToShow = (): Record<string, string | number>[] => {
+    // Si es la card de usuarios registrados y tenemos datos reales del servidor
+    if (card.subText === 'Usuarios registrados') {
+      if (!serverStatus.isOnline) {
+        return [{
+          id: 1,
+          mensaje: 'No se ha cargado la información',
+          estado: 'Servidor desconectado',
+          descripcion: 'Los datos de usuarios no están disponibles'
+        }];
+      }
+      
+      if (loading) {
+        return [{
+          id: 1,
+          mensaje: 'Cargando información...',
+          estado: 'Conectando al servidor',
+          descripcion: 'Por favor espere mientras se cargan los usuarios'
+        }];
+      }
+
+      if (realUsuarios.length > 0) {
+        // Convertir los datos del API al formato de la tabla
+        return realUsuarios.map((usuario, index) => ({
+          id: index + 1,
+          email: usuario.email,
+          nombre: usuario.nombre,
+          rol_id: usuario.rol_id,
+          rol: usuario.rol.nombre,
+          estado: 'Activo' // Asumimos que todos están activos
+        }));
+      }
+
+      return [{
+        id: 1,
+        mensaje: 'No hay usuarios registrados',
+        estado: 'Base de datos vacía',
+        descripcion: 'No se encontraron usuarios en el sistema'
+      }];
+    }
+
+    // Para otras cards, usar datos estáticos o mostrar mensaje de no implementado
+    return generateSampleData(card.subText);
+  };
+  // Función para generar datos estáticos para cards no implementadas
   const generateSampleData = (cardSubText: string): Record<string, string | number>[] => {
     const dataMap: { [key: string]: Record<string, string | number>[] } = {
       'Clientes': [
@@ -308,10 +505,6 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
         { id: 1, numero: 'V-001', fecha: '2025-07-01', cliente: 'Juan Pérez', producto: 'Laptop HP', cantidad: 1, total: '$800' },
         { id: 2, numero: 'V-002', fecha: '2025-07-02', cliente: 'María García', producto: 'Mouse Logitech', cantidad: 2, total: '$50' },
       ],
-      'Usuarios registrados': [
-        { id: 1, nombre: 'Admin Principal', email: 'admin@empresa.com', rol: 'Administrador', estado: 'Activo', ultimo_acceso: '2025-07-04' },
-        { id: 2, nombre: 'Juan Operador', email: 'juan@empresa.com', rol: 'Operador', estado: 'Activo', ultimo_acceso: '2025-07-03' },
-      ],
     };
     
     return dataMap[cardSubText] || [
@@ -320,23 +513,15 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
     ];
   };
 
-  const sampleData = generateSampleData(card.subText);
-  const columns = sampleData.length > 0 ? Object.keys(sampleData[0]).filter(key => key !== 'id') : [];
+  const dataToShow = getDataToShow();
+  const columns = dataToShow.length > 0 ? Object.keys(dataToShow[0]).filter(key => key !== 'id') : [];
 
   // Filtrar datos basado en el término de búsqueda
-  const filteredData = sampleData.filter(row => 
-    Object.values(row).some(value => 
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredData = dataToShow.filter((row: any) => 
+    Object.values(row).some((value: any) => 
+      value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
-
-  const handleRowSelect = (id: number) => {
-    setSelectedRows(prev => 
-      prev.includes(id) 
-        ? prev.filter(rowId => rowId !== id)
-        : [...prev, id]
-    );
-  };
   
   const modalOverlayStyle: React.CSSProperties = {
     position: 'fixed',
@@ -492,19 +677,6 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
           <table style={tableStyle}>
             <thead>
               <tr style={headerRowStyle}>
-                <th style={headerCellStyle}>
-                  <input 
-                    type="checkbox" 
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedRows(filteredData.map(item => item.id as number));
-                      } else {
-                        setSelectedRows([]);
-                      }
-                    }}
-                    checked={selectedRows.length === filteredData.length && filteredData.length > 0}
-                  />
-                </th>
                 {columns.map((column) => (
                   <th key={column} style={headerCellStyle}>
                     {column.charAt(0).toUpperCase() + column.slice(1).replace(/_/g, ' ')}
@@ -513,21 +685,14 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((row) => (
+              {filteredData.map((row: any) => (
                 <tr 
                   key={row.id} 
                   style={{
                     ...dataRowStyle,
-                    backgroundColor: selectedRows.includes(row.id as number) ? '#e8f4fd' : 'white'
+                    backgroundColor: 'white'
                   }}
                 >
-                  <td style={dataCellStyle}>
-                    <input 
-                      type="checkbox"
-                      checked={selectedRows.includes(row.id as number)}
-                      onChange={() => handleRowSelect(row.id as number)}
-                    />
-                  </td>
                   {columns.map((column) => (
                     <td key={column} style={dataCellStyle}>
                       {row[column]}
@@ -542,7 +707,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
         {/* Información adicional */}
         <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
           <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>
-            Total de registros: {sampleData.length} | Mostrando: {filteredData.length} | Seleccionados: {selectedRows.length}
+            Total de registros: {dataToShow.length} | Mostrando: {filteredData.length}
           </p>
         </div>
       </div>
