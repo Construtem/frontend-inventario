@@ -251,6 +251,7 @@ interface CardModalProps {
 
 const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Función para generar datos de ejemplo según el tipo de card
   const generateSampleData = (cardSubText: string): Record<string, string | number>[] => {
@@ -322,35 +323,19 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   const sampleData = generateSampleData(card.subText);
   const columns = sampleData.length > 0 ? Object.keys(sampleData[0]).filter(key => key !== 'id') : [];
 
+  // Filtrar datos basado en el término de búsqueda
+  const filteredData = sampleData.filter(row => 
+    Object.values(row).some(value => 
+      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
+
   const handleRowSelect = (id: number) => {
     setSelectedRows(prev => 
       prev.includes(id) 
         ? prev.filter(rowId => rowId !== id)
         : [...prev, id]
     );
-  };
-
-  const handleAdd = () => {
-    alert(`Agregar nuevo elemento en ${card.subText}`);
-  };
-
-  const handleEdit = () => {
-    if (selectedRows.length === 0) {
-      alert('Selecciona al menos un elemento para editar');
-      return;
-    }
-    alert(`Editar elementos seleccionados: ${selectedRows.join(', ')}`);
-  };
-
-  const handleDelete = () => {
-    if (selectedRows.length === 0) {
-      alert('Selecciona al menos un elemento para eliminar');
-      return;
-    }
-    if (confirm(`¿Estás seguro de eliminar ${selectedRows.length} elemento(s)?`)) {
-      alert(`Eliminando elementos: ${selectedRows.join(', ')}`);
-      setSelectedRows([]);
-    }
   };
   
   const modalOverlayStyle: React.CSSProperties = {
@@ -413,7 +398,8 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
     maxHeight: '400px',
     overflowY: 'auto',
     border: '1px solid #e0e0e0',
-    borderRadius: '8px',
+    borderRadius: '20px',
+    overflow: 'hidden',
   };
 
   const tableStyle: React.CSSProperties = {
@@ -423,7 +409,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   };
 
   const headerRowStyle: React.CSSProperties = {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#5c5c5c',
     position: 'sticky',
     top: 0,
     zIndex: 1,
@@ -434,7 +420,8 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
     textAlign: 'left',
     fontWeight: 'bold',
     borderBottom: '2px solid #dee2e6',
-    color: '#333',
+    color: '#fff',
+    fontFamily: 'Montserrat, sans-serif',
   };
 
   const dataRowStyle: React.CSSProperties = {
@@ -470,25 +457,34 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
           </div>
         </div>
 
-        {/* Botones de acción */}
-        <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button style={actionButtonStyle} onClick={handleAdd}>
-            ➕ Agregar
-          </button>
-          <button 
-            style={{...actionButtonStyle, backgroundColor: selectedRows.length > 0 ? '#28a745' : '#ccc'}} 
-            onClick={handleEdit}
-            disabled={selectedRows.length === 0}
-          >
-            ✏️ Editar ({selectedRows.length})
-          </button>
-          <button 
-            style={{...actionButtonStyle, backgroundColor: selectedRows.length > 0 ? '#dc3545' : '#ccc'}} 
-            onClick={handleDelete}
-            disabled={selectedRows.length === 0}
-          >
-            🗑️ Eliminar ({selectedRows.length})
-          </button>
+        {/* Buscador */}
+        <div style={{ 
+          marginBottom: '1.5rem', 
+          display: 'flex', 
+          gap: '10px', 
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}>
+          <input
+            type="text"
+            placeholder={`Buscar en ${card.subText}...`}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              flex: 1,
+              minWidth: '200px',
+              padding: '10px 12px',
+              borderRadius: '20px',
+              border: '2px solid #e0e0e0',
+              fontSize: '0.9rem',
+              fontFamily: 'Roboto, sans-serif',
+              outline: 'none',
+              transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+              backgroundColor: '#fff',
+            }}
+            onFocus={(e) => e.target.style.borderColor = '#FF7300'}
+            onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+          />
         </div>
 
         {/* Tabla de datos */}
@@ -501,12 +497,12 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
                     type="checkbox" 
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelectedRows(sampleData.map(item => item.id as number));
+                        setSelectedRows(filteredData.map(item => item.id as number));
                       } else {
                         setSelectedRows([]);
                       }
                     }}
-                    checked={selectedRows.length === sampleData.length && sampleData.length > 0}
+                    checked={selectedRows.length === filteredData.length && filteredData.length > 0}
                   />
                 </th>
                 {columns.map((column) => (
@@ -517,7 +513,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
               </tr>
             </thead>
             <tbody>
-              {sampleData.map((row) => (
+              {filteredData.map((row) => (
                 <tr 
                   key={row.id} 
                   style={{
@@ -546,25 +542,12 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
         {/* Información adicional */}
         <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
           <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>
-            Total de registros: {sampleData.length} | Seleccionados: {selectedRows.length}
+            Total de registros: {sampleData.length} | Mostrando: {filteredData.length} | Seleccionados: {selectedRows.length}
           </p>
         </div>
       </div>
     </div>
   );
-};
-
-const actionButtonStyle: React.CSSProperties = {
-  backgroundColor: '#FF7300',
-  color: 'white',
-  border: 'none',
-  borderRadius: '8px',
-  padding: '10px 15px',
-  cursor: 'pointer',
-  fontSize: '0.9rem',
-  fontWeight: '500',
-  transition: 'background-color 0.2s ease',
-  fontFamily: 'Roboto, sans-serif',
 };
 
 // === Estilos Globales ===
