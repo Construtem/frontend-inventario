@@ -28,8 +28,8 @@ const LoadingSpinner = () => (
 export default function AuthCallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams(); // ✅ useSearchParams ahora está dentro de un Client Component
-  const frontLoginUrl = process.env.NEXT_PUBLIC_FRONT_LOGIN || 'http://localhost:3000/';
-  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
+  const frontLoginUrl = process.env.NEXT_PUBLIC_FRONT_LOGIN || 'https://login.tssw.cl';
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
   useEffect(() => {
     const firebaseToken = searchParams.get('token');

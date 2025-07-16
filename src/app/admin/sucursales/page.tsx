@@ -19,8 +19,8 @@ interface Sucursal {
   telefono: string;
   comuna?: string;
   ciudad?: string;
-  tipo?: string; // '1' for Bodega, '2' for Sucursal (frontend)
-  tipo_id?: number; // ID del tipo que viene del backend
+  tipo?: string;
+  tipo_id?: number; 
 }
 
 const CIUDADES = ['Santiago'];
@@ -137,6 +137,7 @@ export default function SucursalesPage() {
   const [tempComuna, setTempComuna] = useState("");
   const [tempTipo, setTempTipo] = useState("");
 
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
   // =====================
   // 2. LLAMADA A LA API
   // =====================
@@ -168,7 +169,7 @@ export default function SucursalesPage() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
         
-        const response = await fetch('http://localhost:8080/api/sucursales', {
+        const response = await fetch(`${apiInventarioUrl}/api/sucursales`, {
           method: 'GET',
           signal: controller.signal,
           headers: {
@@ -233,7 +234,7 @@ export default function SucursalesPage() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        const response = await fetch('http://localhost:8080/api/sucursales', {
+        const response = await fetch(`${apiInventarioUrl}/api/sucursales`, {
           method: 'GET',
           signal: controller.signal,
           headers: {
@@ -498,7 +499,7 @@ export default function SucursalesPage() {
 
 
 
-      const response = await fetch(`http://localhost:8080/api/sucursales/${editFormData.id}`, {
+      const response = await fetch(`${apiInventarioUrl}/api/sucursales/${editFormData.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -630,7 +631,7 @@ export default function SucursalesPage() {
 
 
 
-      const response = await fetch('http://localhost:8080/api/sucursales', {
+      const response = await fetch(`${apiInventarioUrl}/api/sucursales`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -730,7 +731,7 @@ export default function SucursalesPage() {
         }).then(async (finalResult) => {
           if (finalResult.isConfirmed) {
             try {
-              const response = await fetch(`http://localhost:8080/api/sucursales/${sucursal.id}`, {
+                const response = await fetch(`${apiInventarioUrl}/api/sucursales/${sucursal.id}`, {
                 method: 'DELETE',
                 headers: {
                   'Content-Type': 'application/json',
@@ -1080,7 +1081,7 @@ export default function SucursalesPage() {
                 width: '100%',
                 boxSizing: 'border-box'
               }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>💡 Posibles soluciones:</div>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Posibles soluciones:</div>
                 <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
                   <li>Verificar que el backend esté ejecutándose en el puerto 8080</li>
                   <li>Comprobar que la URL de la API sea correcta</li>
