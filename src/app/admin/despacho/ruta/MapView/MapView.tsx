@@ -12,6 +12,9 @@ interface MapViewProps {
     origen: string;
     destino: string;
     estado: string;
+    distancia?: string;
+    duracion?: string;
+    precio?: string;
   };
 }
 
@@ -21,10 +24,23 @@ const MapView: React.FC<MapViewProps> = React.memo(({ despachoInfo }) => {
     duration: string;
   } | undefined>();
 
+  // Inicializar con datos del backend si están disponibles
+  React.useEffect(() => {
+    if (despachoInfo.distancia && despachoInfo.duracion) {
+      setRouteDetails({
+        distance: despachoInfo.distancia,
+        duration: despachoInfo.duracion
+      });
+    }
+  }, [despachoInfo.distancia, despachoInfo.duracion]);
+
   // Memoizar el callback para evitar re-renders del GoogleMapComponent
   const handleDirectionsLoaded = useCallback((distance: string, duration: string) => {
-    setRouteDetails({ distance, duration });
-  }, []);
+    // Solo actualizar si no tenemos datos del backend
+    if (!despachoInfo.distancia || !despachoInfo.duracion) {
+      setRouteDetails({ distance, duration });
+    }
+  }, [despachoInfo.distancia, despachoInfo.duracion]);
 
   // Memoizar los estilos para evitar re-creación en cada render
   const containerStyle = useMemo(() => ({ 
@@ -42,10 +58,12 @@ const MapView: React.FC<MapViewProps> = React.memo(({ despachoInfo }) => {
   }), []);
 
   const titleStyle = useMemo(() => ({ 
-    fontSize: "1.3rem", 
-    fontWeight: 600, 
+    fontSize: "1.35rem", 
+    fontWeight: 700, 
     color: "#1f2937",
-    margin: 0
+    margin: 0,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    letterSpacing: '-0.025em'
   }), []);
 
   const badgeStyle = useMemo(() => ({
@@ -53,7 +71,9 @@ const MapView: React.FC<MapViewProps> = React.memo(({ despachoInfo }) => {
     color: "#6b7280",
     backgroundColor: "#f3f4f6",
     padding: "0.5rem 1rem",
-    borderRadius: "6px"
+    borderRadius: "6px",
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    fontWeight: "500"
   }), []);
 
   const noteStyle = useMemo(() => ({ 
@@ -61,9 +81,12 @@ const MapView: React.FC<MapViewProps> = React.memo(({ despachoInfo }) => {
     padding: "0.75rem",
     backgroundColor: "#f9fafb",
     borderRadius: "6px",
-    fontSize: "0.875rem",
+    fontSize: "0.9rem",
     color: "#6b7280",
-    borderLeft: "4px solid #3b82f6"
+    borderLeft: "4px solid #3b82f6",
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    fontWeight: "500",
+    lineHeight: "1.5"
   }), []);
 
   return (

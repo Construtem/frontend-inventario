@@ -9,6 +9,9 @@ interface RouteInfoProps {
     origen: string;
     destino: string;
     estado: string;
+    distancia?: string;
+    duracion?: string;
+    precio?: string;
   };
   routeDetails?: {
     distance: string;
@@ -32,6 +35,11 @@ const RouteInfo: React.FC<RouteInfoProps> = React.memo(({ despachoInfo, routeDet
     }
   };
 
+  // Usar datos del backend si están disponibles, sino usar routeDetails de Google Maps
+  const displayDistance = despachoInfo.distancia || routeDetails?.distance;
+  const displayDuration = despachoInfo.duracion || routeDetails?.duration;
+  const hasRouteData = displayDistance && displayDuration;
+
   return (
     <div style={{ 
       background: "#fff", 
@@ -41,10 +49,12 @@ const RouteInfo: React.FC<RouteInfoProps> = React.memo(({ despachoInfo, routeDet
       boxShadow: "0 2px 8px rgba(0,0,0,0.1)" 
     }}>
       <h3 style={{ 
-        fontSize: "1.2rem", 
-        fontWeight: 600, 
+        fontSize: "1.25rem", 
+        fontWeight: 700, 
         marginBottom: "1.5rem",
-        color: "#1f2937"
+        color: "#1f2937",
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        letterSpacing: '-0.025em'
       }}>
         Información del Despacho
       </h3>
@@ -53,15 +63,31 @@ const RouteInfo: React.FC<RouteInfoProps> = React.memo(({ despachoInfo, routeDet
         display: "grid", 
         gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", 
         gap: "1rem",
-        marginBottom: routeDetails ? "1.5rem" : "0"
+        marginBottom: hasRouteData ? "1.5rem" : "0"
       }}>
         <div style={{ padding: "0.5rem 0" }}>
-          <span style={{ fontWeight: 600, color: "#374151" }}>Cliente:</span>
-          <div style={{ marginTop: "0.25rem", color: "#6b7280" }}>{despachoInfo.cliente}</div>
+          <span style={{ 
+            fontWeight: 700, 
+            color: "#111827",
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            fontSize: "1rem"
+          }}>Cliente:</span>
+          <div style={{ 
+            marginTop: "0.25rem", 
+            color: "#374151",
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            fontSize: "0.95rem",
+            fontWeight: "500"
+          }}>{despachoInfo.cliente}</div>
         </div>
         
         <div style={{ padding: "0.5rem 0" }}>
-          <span style={{ fontWeight: 600, color: "#374151" }}>Estado:</span>
+          <span style={{ 
+            fontWeight: 700, 
+            color: "#111827",
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            fontSize: "1rem"
+          }}>Estado:</span>
           <div style={{ 
             marginTop: "0.25rem", 
             display: "inline-block",
@@ -70,24 +96,47 @@ const RouteInfo: React.FC<RouteInfoProps> = React.memo(({ despachoInfo, routeDet
             backgroundColor: getEstadoColor(despachoInfo.estado) + "20",
             color: getEstadoColor(despachoInfo.estado),
             fontSize: "0.875rem",
-            fontWeight: 500
+            fontWeight: 600,
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
           }}>
             {despachoInfo.estado}
           </div>
         </div>
         
         <div style={{ padding: "0.5rem 0" }}>
-          <span style={{ fontWeight: 600, color: "#374151" }}>Origen:</span>
-          <div style={{ marginTop: "0.25rem", color: "#6b7280" }}>{despachoInfo.origen}</div>
+          <span style={{ 
+            fontWeight: 700, 
+            color: "#111827",
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            fontSize: "1rem"
+          }}>Origen:</span>
+          <div style={{ 
+            marginTop: "0.25rem", 
+            color: "#374151",
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            fontSize: "0.95rem",
+            fontWeight: "500"
+          }}>{despachoInfo.origen}</div>
         </div>
         
         <div style={{ padding: "0.5rem 0" }}>
-          <span style={{ fontWeight: 600, color: "#374151" }}>Destino:</span>
-          <div style={{ marginTop: "0.25rem", color: "#6b7280" }}>{despachoInfo.destino}</div>
+          <span style={{ 
+            fontWeight: 700, 
+            color: "#111827",
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            fontSize: "1rem"
+          }}>Destino:</span>
+          <div style={{ 
+            marginTop: "0.25rem", 
+            color: "#374151",
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            fontSize: "0.95rem",
+            fontWeight: "500"
+          }}>{despachoInfo.destino}</div>
         </div>
       </div>
 
-      {routeDetails && (
+      {hasRouteData && (
         <div style={{
           borderTop: "1px solid #e5e7eb",
           paddingTop: "1.5rem",
@@ -107,8 +156,25 @@ const RouteInfo: React.FC<RouteInfoProps> = React.memo(({ despachoInfo, routeDet
               marginRight: "0.75rem"
             }}>📏</div>
             <div>
-              <div style={{ fontWeight: 600, color: "#374151" }}>Distancia</div>
-              <div style={{ color: "#6b7280", fontSize: "0.875rem" }}>{routeDetails.distance}</div>
+              <div style={{ 
+                fontWeight: 700, 
+                color: "#111827",
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                fontSize: "1rem"
+              }}>Distancia</div>
+              <div style={{ 
+                color: "#374151", 
+                fontSize: "0.925rem",
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                fontWeight: "500"
+              }}>
+                {displayDistance}
+                {despachoInfo.distancia && (
+                  <span style={{ fontSize: "0.75rem", color: "#9ca3af", marginLeft: "0.5rem" }}>
+                    (desde backend)
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           
@@ -124,8 +190,25 @@ const RouteInfo: React.FC<RouteInfoProps> = React.memo(({ despachoInfo, routeDet
               marginRight: "0.75rem"
             }}>⏱️</div>
             <div>
-              <div style={{ fontWeight: 600, color: "#374151" }}>Tiempo estimado</div>
-              <div style={{ color: "#6b7280", fontSize: "0.875rem" }}>{routeDetails.duration}</div>
+              <div style={{ 
+                fontWeight: 700, 
+                color: "#111827",
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                fontSize: "1rem"
+              }}>Tiempo estimado</div>
+              <div style={{ 
+                color: "#374151", 
+                fontSize: "0.925rem",
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                fontWeight: "500"
+              }}>
+                {displayDuration}
+                {despachoInfo.duracion && (
+                  <span style={{ fontSize: "0.75rem", color: "#9ca3af", marginLeft: "0.5rem" }}>
+                    (desde backend)
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
