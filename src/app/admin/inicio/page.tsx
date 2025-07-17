@@ -223,9 +223,9 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick, isMo
     padding: isMobile ? '12px' : '15px',
     width: isMobile ? '100%' : 'calc(25% - 1.5rem)',
     height: isMobile ? '100px' : '120px',
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    display: 'grid',
+    gridTemplateColumns: '1fr 80px', // 2 columnas: texto e ícono
+    gap: '10px',
     alignItems: 'center',
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
     color: 'white',
@@ -248,9 +248,8 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick, isMo
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    flexGrow: 1,
+    alignItems: 'flex-start',
     minWidth: 0,
-    marginRight: isMobile ? '8px' : '10px',
   };
 
   const mainTextStyle: React.CSSProperties = {
@@ -274,10 +273,10 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick, isMo
     opacity: isHovered ? 1 : 0.5,
     transform: isHovered ? 'scale(1.1)' : 'scale(1)',
     transition: 'transform 0.3s ease-out, opacity 0.3s ease-out',
-    marginLeft: isMobile ? '10px' : '15px',
     flexShrink: 0,
     width: isMobile ? '65px' : '75px',
     height: isMobile ? '65px' : '75px',
+    justifySelf: 'center',
   };
 
   return (
@@ -379,6 +378,18 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
         { id: 1, nombre: 'Juan Pérez', email: 'juan@email.com', telefono: '123-456-7890', empresa: 'Tech Corp' },
         { id: 2, nombre: 'María García', email: 'maria@email.com', telefono: '098-765-4321', empresa: 'Design LLC' },
         { id: 3, nombre: 'Carlos López', email: 'carlos@email.com', telefono: '555-123-4567', empresa: 'Solutions Inc' },
+        { id: 4, nombre: 'Juan Pérez', email: 'juan@email.com', telefono: '123-456-7890', empresa: 'Tech Corp' },
+        { id: 5, nombre: 'María García', email: 'maria@email.com', telefono: '098-765-4321', empresa: 'Design LLC' },
+        { id: 6, nombre: 'Carlos López', email: 'carlos@email.com', telefono: '555-123-4567', empresa: 'Solutions Inc' },
+        { id: 7, nombre: 'Juan Pérez', email: 'juan@email.com', telefono: '123-456-7890', empresa: 'Tech Corp' },
+        { id: 8, nombre: 'María García', email: 'maria@email.com', telefono: '098-765-4321', empresa: 'Design LLC' },
+        { id: 9, nombre: 'Carlos López', email: 'carlos@email.com', telefono: '555-123-4567', empresa: 'Solutions Inc' },
+        { id: 10, nombre: 'Juan Pérez', email: 'juan@email.com', telefono: '123-456-7890', empresa: 'Tech Corp' },
+        { id: 20, nombre: 'María García', email: 'maria@email.com', telefono: '098-765-4321', empresa: 'Design LLC' },
+        { id: 30, nombre: 'Carlos López', email: 'carlos@email.com', telefono: '555-123-4567', empresa: 'Solutions Inc' },
+        { id: 100, nombre: 'Juan Pérez', email: 'juan@email.com', telefono: '123-456-7890', empresa: 'Tech Corp' },
+        { id: 200, nombre: 'María García', email: 'maria@email.com', telefono: '098-765-4321', empresa: 'Design LLC' },
+        { id: 300, nombre: 'Carlos López', email: 'carlos@email.com', telefono: '555-123-4567', empresa: 'Solutions Inc' },
       ],
       'Proveedores': [
         { id: 1, nombre: 'Suministros ABC', contacto: 'Ana Torres', telefono: '111-222-3333', categoria: 'Materiales' },
@@ -462,10 +473,11 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
     backgroundColor: 'white',
     borderRadius: '20px',
     padding: isMobile ? '1rem' : '2rem',
-    minWidth: isMobile ? '95vw' : '800px',
-    maxWidth: '95vw',
-    maxHeight: '90vh',
-    overflow: 'auto',
+    width: isMobile ? '95vw' : '80vw',
+    maxWidth: '900px',
+    maxHeight: '80vh',
+    display: 'flex',
+    flexDirection: 'column',
     boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
     position: 'relative',
   };
@@ -485,11 +497,12 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   const modalHeaderStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'flex-start',
     marginBottom: isMobile ? '1rem' : '2rem',
     borderBottom: '1px solid #e0e0e0',
     paddingBottom: isMobile ? '0.5rem' : '1rem',
-    flexDirection: isMobile ? 'column' : 'row',
-    textAlign: isMobile ? 'center' : 'left',
+    flexDirection: 'row',
+    gap: '1rem',
   };
 
   const modalTitleStyle: React.CSSProperties = {
@@ -497,22 +510,25 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
     fontWeight: 'bold',
     color: '#222222',
     fontFamily: 'Montserrat, sans-serif',
-    marginLeft: isMobile ? 0 : '1rem',
-    marginTop: isMobile ? '0.5rem' : 0,
+    margin: 0,
   };
 
   const tableContainerStyle: React.CSSProperties = {
-    maxHeight: '400px',
+    height: '400px',
     overflowY: 'auto',
+    overflowX: 'auto',
     border: '1px solid #e0e0e0',
     borderRadius: '20px',
-    overflow: 'hidden',
+    backgroundColor: '#fff',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    flex: 1,
   };
 
   const tableStyle: React.CSSProperties = {
     width: '100%',
     borderCollapse: 'collapse',
     fontSize: '0.9rem',
+    minWidth: '600px', // Asegurar un ancho mínimo para scroll horizontal
   };
 
   const headerRowStyle: React.CSSProperties = {
@@ -523,12 +539,14 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   };
 
   const headerCellStyle: React.CSSProperties = {
-    padding: '12px 12px',
+    padding: '12px 16px',
     textAlign: 'left',
     fontWeight: 'bold',
     borderBottom: '2px solid #dee2e6',
     color: '#fff',
     fontFamily: 'Montserrat, sans-serif',
+    whiteSpace: 'nowrap', // Evitar que el texto se rompa
+    minWidth: '120px', // Ancho mínimo para las columnas
   };
 
   const dataRowStyle: React.CSSProperties = {
@@ -538,8 +556,12 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   };
 
   const dataCellStyle: React.CSSProperties = {
-    padding: '10px 8px',
+    padding: '12px 16px',
     borderBottom: '1px solid #e9ecef',
+    whiteSpace: 'nowrap', // Evitar que el texto se rompa
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    maxWidth: '200px', // Ancho máximo para las celdas
   };
 
   return (
@@ -556,12 +578,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
             width={60}
             height={60}
           />
-          <div>
-            <h2 style={modalTitleStyle}>{card.subText}</h2>
-            <p style={{ padding: '12px 12px', color: '#FF7300', fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>
-              Total: {card.mainText}
-            </p>
-          </div>
+          <h2 style={modalTitleStyle}>{card.subText}</h2>
         </div>
 
         {/* Buscador */}
@@ -570,7 +587,8 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
           display: 'flex', 
           gap: '10px', 
           alignItems: 'center',
-          flexWrap: 'wrap'
+          flexWrap: 'wrap',
+          flexShrink: 0
         }}>
           <input
             type="text"
@@ -627,7 +645,13 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
         </div>
 
         {/* Información adicional */}
-        <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+        <div style={{ 
+          marginTop: '1rem', 
+          padding: '1rem', 
+          backgroundColor: '#f8f9fa', 
+          borderRadius: '8px',
+          flexShrink: 0
+        }}>
           <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>
             Total de registros: {dataToShow.length} | Mostrando: {filteredData.length}
           </p>
