@@ -244,10 +244,11 @@ export default function GestionUsuariosPage() {
     
     const result = sortUsuarios(usuariosData.filter(usuario => {
       const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = usuario.nombre.toLowerCase().includes(searchLower) ||
-                           usuario.email.toLowerCase().includes(searchLower);
-
       const rolNombre = usuario.rol?.nombre || '';
+      const matchesSearch = usuario.nombre.toLowerCase().includes(searchLower) ||
+                           usuario.email.toLowerCase().includes(searchLower) ||
+                           rolNombre.toLowerCase().includes(searchLower);
+
       const matchesRol = selectedRol ? rolNombre === selectedRol : true;
       const matchesEstado = selectedEstado ? usuario.estado === selectedEstado : true;
 
@@ -751,7 +752,7 @@ export default function GestionUsuariosPage() {
             }}>
               <input
                 type="text"
-                placeholder="Buscar por Nombre o Email..."
+                placeholder="Buscar por Nombre, Email o Rol..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}

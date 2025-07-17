@@ -11,6 +11,7 @@ import {
   FaChevronDown,
   FaChevronUp,
   FaTruck,
+  FaUsers,
 } from 'react-icons/fa';
 
 interface SidebarProps {
@@ -135,7 +136,7 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
         onMouseEnter={() => handleMouseEnter('gestion-usuarios')}
         onMouseLeave={handleMouseLeave}
       >
-        <FaCog />
+        <FaUsers />
         <span>Usuarios</span>
       </Link>
 
