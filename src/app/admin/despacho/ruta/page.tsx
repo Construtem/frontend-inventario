@@ -209,7 +209,7 @@ export default function RutaDespachoPage() {
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-        <div style={headerStyle}>
+        <div style={headerContainerStyle}>
           <button 
             onClick={() => router.push('/admin/despacho')}
             style={backButtonStyle}
@@ -218,6 +218,16 @@ export default function RutaDespachoPage() {
             <FaArrowLeft />
             Volver
           </button>
+
+          {/* Para que no webee el caleb xd */}
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
+            marginTop: "0.5rem", // <<--- Aquí es donde logras bajar el resto
+            marginBottom: "2rem",
+          }}></div>
+
           <h1 style={titleStyle}>
             Ruta de Despacho {despachoId ? `#${despachoId}` : ""}
           </h1>
@@ -299,10 +309,10 @@ const titleStyle: React.CSSProperties = {
   letterSpacing: '-0.025em',
 };
 
-const headerStyle: React.CSSProperties = {
+const headerContainerStyle: React.CSSProperties = {
   display: "flex",
-  alignItems: "center",
-  gap: "1rem",
+  flexDirection: "column",
+  gap: "0.75rem",
   marginBottom: "2rem",
 };
 
@@ -321,6 +331,7 @@ const backButtonStyle: React.CSSProperties = {
   fontFamily: "Montserrat, sans-serif",
   transition: "all 0.2s ease",
   boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+  alignSelf: "flex-start",
 };
 
 const loadingContainerStyle: React.CSSProperties = {

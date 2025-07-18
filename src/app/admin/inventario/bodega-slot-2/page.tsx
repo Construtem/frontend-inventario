@@ -1789,10 +1789,9 @@ export default function SucursalSlot1Page() {
       }}>
         <div style={{
           display: "flex",
-          alignItems: "center",
-          gap: "1rem",
-          marginBottom: "1.5rem",
-          flexWrap: isMobile ? "wrap" : "nowrap"
+          flexDirection: "column",
+          gap: "0.75rem",
+          marginBottom: "2rem",
         }}>
           <button 
             onClick={() => router.push('/admin/inventario')}
@@ -1811,12 +1810,22 @@ export default function SucursalSlot1Page() {
               fontFamily: "Montserrat, sans-serif",
               transition: "all 0.2s ease",
               boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+              alignSelf: "flex-start",
             }}
             title="Volver al Inventario Principal"
           >
             <FaArrowLeft />
             Volver
           </button>
+          
+          {/* Contenido que quieres bajar */}
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
+            marginTop: "0.5rem", // <<--- Aquí es donde logras bajar el resto
+            marginBottom: "2rem",
+          }}></div>
           <h1 style={{
             ...titleStyle,
             fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",

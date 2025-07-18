@@ -71,7 +71,57 @@ function useWindowSize() {
 
 // Add sorting function outside the component
 const sortUsuarios = (data: Usuario[]) => {
-  return [...data].sort((a, b) => (a.id || 0) - (b.id || 0));
+  return [...data].sort((a, b) => {
+    // Si hay id numérico, usar ese; sino usar email para ordenar
+    if (a.id && b.id) {
+      return a.id - b.id;
+    }
+    return (a.email || '').localeCompare(b.email || '');
+  });
+};
+
+// =====================
+// 3. FUNCIONES DE VALIDACIÓN
+// =====================
+
+// Validar nombre: solo letras y espacios
+const validateNombre = (nombre: string): { isValid: boolean; error?: string } => {
+  if (!nombre.trim()) {
+    return { isValid: false, error: 'El nombre es requerido' };
+  }
+  
+  const nameRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
+  if (!nameRegex.test(nombre)) {
+    return { isValid: false, error: 'El nombre solo puede contener letras y espacios' };
+  }
+  
+  if (nombre.length < 2) {
+    return { isValid: false, error: 'El nombre debe tener al menos 2 caracteres' };
+  }
+  
+  if (nombre.length > 50) {
+    return { isValid: false, error: 'El nombre no puede tener más de 50 caracteres' };
+  }
+  
+  return { isValid: true };
+};
+
+// Validar email: formato válido sin caracteres especiales raros
+const validateEmail = (email: string): { isValid: boolean; error?: string } => {
+  if (!email.trim()) {
+    return { isValid: false, error: 'El email es requerido' };
+  }
+  
+  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) {
+    return { isValid: false, error: 'Por favor ingrese un email válido' };
+  }
+  
+  if (email.length > 100) {
+    return { isValid: false, error: 'El email no puede tener más de 100 caracteres' };
+  }
+  
+  return { isValid: true };
 };
 
 export default function GestionUsuariosPage() {
@@ -426,6 +476,7 @@ export default function GestionUsuariosPage() {
   // Estados para el modal de edición
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState<Usuario | null>(null);
+  const [originalEmail, setOriginalEmail] = useState<string>(''); // Para guardar el email original
 
   // Estados para el modal de agregar
   const [showAddModal, setShowAddModal] = useState(false);
@@ -446,6 +497,9 @@ export default function GestionUsuariosPage() {
       rol_id: usuario.rol_id || usuario.rol?.id || 1,
       estado: usuario.estado || 'Activo'
     };
+    
+    // Guardar el email original para usarlo como identificador
+    setOriginalEmail(usuario.email || '');
     setEditFormData(usuarioParaEditar);
     setShowEditModal(true);
   };
@@ -454,14 +508,47 @@ export default function GestionUsuariosPage() {
   const handleSaveChanges = async () => {
     if (!editFormData) return;
 
+    // Validar nombre
+    const nombreValidation = validateNombre(editFormData.nombre);
+    if (!nombreValidation.isValid) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: nombreValidation.error,
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    // Validar email
+    const emailValidation = validateEmail(editFormData.email);
+    if (!emailValidation.isValid) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: emailValidation.error,
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
     try {
       const dataToSend = {
-        nombre: editFormData.nombre || '',
-        email: editFormData.email || '',
+        nombre: editFormData.nombre.trim(),
+        email: editFormData.email.trim().toLowerCase(),
         rol_id: editFormData.rol_id || editFormData.rol?.id || 1
       };
 
-      const response = await fetch(`${apiInventarioUrl}/api/usuarios/${editFormData.id}`, {
+      console.log('Enviando datos al servidor:', dataToSend);
+      
+      // Usar el email original o el ID como identificador (NO el email editado)
+      const identifier = editFormData.id || originalEmail;
+      console.log('Identificador para editar:', identifier);
+      console.log('Email original:', originalEmail);
+      console.log('Email editado:', editFormData.email);
+      console.log('URL del endpoint:', `http://localhost:8080/api/usuarios/${identifier}`);
+
+      const response = await fetch(`http://localhost:8080/api/usuarios/${identifier}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -469,12 +556,16 @@ export default function GestionUsuariosPage() {
         body: JSON.stringify(dataToSend),
       });
 
+      console.log('Respuesta del servidor:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Error response:', errorText);
         throw new Error(`Error al actualizar: ${response.status} - ${errorText}`);
       }
 
       const updatedUsuario = await response.json();
+      console.log('Usuario actualizado recibido:', updatedUsuario);
 
       // Asegurar que el usuario actualizado tenga el objeto rol completo
       const usuarioConRol = {
@@ -482,14 +573,19 @@ export default function GestionUsuariosPage() {
         rol: ROLES_MAP.find(rol => rol.id === updatedUsuario.rol_id) || { id: updatedUsuario.rol_id, nombre: 'N/A' }
       };
 
-      // Update and sort the data
-      setUsuariosData(prevData => 
-        sortUsuarios(prevData.map(item => 
-          item.id === editFormData.id ? usuarioConRol : item
-        ))
-      );
+      // Actualizar los datos manteniendo el orden y la información completa
+      setUsuariosData(prevData => {
+        const newData = prevData.map(item => {
+          // Comparar por id si existe, sino por email original
+          const itemIdentifier = item.id || item.email;
+          const editIdentifier = editFormData.id || originalEmail;
+          return itemIdentifier === editIdentifier ? usuarioConRol : item;
+        });
+        return sortUsuarios(newData);
+      });
 
       setShowEditModal(false);
+      setOriginalEmail(''); // Limpiar el email original
       Swal.fire({
         title: 'Éxito',
         text: 'Usuario actualizado correctamente',
@@ -497,6 +593,7 @@ export default function GestionUsuariosPage() {
         confirmButtonColor: '#ff7300'
       });
     } catch (err) {
+      console.error('Error completo:', err);
       Swal.fire({
         title: 'Error',
         text: `No se pudo actualizar el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}`,
@@ -508,33 +605,24 @@ export default function GestionUsuariosPage() {
 
   // Función para guardar nuevo usuario
   const handleSaveNewUsuario = async () => {
-    // Validaciones
-    if (!addFormData.nombre.trim()) {
+    // Validar nombre
+    const nombreValidation = validateNombre(addFormData.nombre);
+    if (!nombreValidation.isValid) {
       Swal.fire({
-        title: 'Error',
-        text: 'El nombre es requerido',
+        title: 'Error de validación',
+        text: nombreValidation.error,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
       return;
     }
 
-    if (!addFormData.email.trim()) {
+    // Validar email
+    const emailValidation = validateEmail(addFormData.email);
+    if (!emailValidation.isValid) {
       Swal.fire({
-        title: 'Error',
-        text: 'El email es requerido',
-        icon: 'error',
-        confirmButtonColor: '#ff7300'
-      });
-      return;
-    }
-
-    // Validación básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(addFormData.email)) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor ingrese un email válido',
+        title: 'Error de validación',
+        text: emailValidation.error,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -543,12 +631,14 @@ export default function GestionUsuariosPage() {
 
     try {
       const dataToSend = {
-        nombre: addFormData.nombre,
-        email: addFormData.email,
+        nombre: addFormData.nombre.trim(),
+        email: addFormData.email.trim().toLowerCase(),
         rol_id: addFormData.rol_id
       };
 
-      const response = await fetch(`${apiInventarioUrl}/api/usuarios`, {
+      console.log('Creando nuevo usuario:', dataToSend);
+
+      const response = await fetch(`http://localhost:8080/api/usuarios`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -556,12 +646,16 @@ export default function GestionUsuariosPage() {
         body: JSON.stringify(dataToSend),
       });
 
+      console.log('Respuesta del servidor:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Error al crear el usuario: ${response.status} - ${errorText}`);
+        console.error('Error response:', errorText);
+        throw new Error(`Error al crear usuario: ${response.status} - ${errorText}`);
       }
 
       const nuevoUsuario = await response.json();
+      console.log('Usuario creado:', nuevoUsuario);
 
       // Asegurar que el nuevo usuario tenga el objeto rol completo
       const usuarioConRol = {
@@ -587,6 +681,7 @@ export default function GestionUsuariosPage() {
         confirmButtonColor: '#ff7300'
       });
     } catch (err) {
+      console.error('Error completo:', err);
       Swal.fire({
         title: 'Error',
         text: `No se pudo crear el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}`,
@@ -645,37 +740,36 @@ export default function GestionUsuariosPage() {
         }).then(async (finalResult) => {
           if (finalResult.isConfirmed) {
             try {
-              const response = await fetch(`${apiInventarioUrl}/api/usuarios/${usuario.id}`, {
+              // Usar email como identificador si no hay id numérico
+              const identifier = usuario.id || usuario.email;
+              console.log('Eliminando usuario con identificador:', identifier);
+              console.log('URL del endpoint:', `http://localhost:8080/api/usuarios/${identifier}`);
+
+              const response = await fetch(`http://localhost:8080/api/usuarios/${identifier}`, {
                 method: 'DELETE',
                 headers: {
                   'Content-Type': 'application/json',
                 },
               });
 
-              if (!response.ok) throw new Error('Error al eliminar');
+              console.log('Respuesta del servidor:', response.status, response.statusText);
 
-              // Actualizar el estado eliminando solo el usuario específico
+              if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                throw new Error(`Error al eliminar: ${response.status} - ${errorText}`);
+              }
+
+              // Actualizar el estado eliminando SOLO el usuario específico
               setUsuariosData(prevData => {
-                const newData = prevData.filter(item => item.id !== usuario.id);
                 console.log('Datos antes de eliminar:', prevData.length);
-                console.log('Datos después de eliminar:', newData.length);
-                console.log('Usuario eliminado ID:', usuario.id);
+                console.log('Usuario a eliminar:', usuario.nombre, 'con identificador:', identifier);
                 
-                // Verificar si necesitamos ajustar la página actual
-                const searchLower = searchTerm.toLowerCase();
-                const newFilteredData = newData.filter(user => {
-                  const matchesSearch = user.nombre.toLowerCase().includes(searchLower) ||
-                                       user.email.toLowerCase().includes(searchLower);
-                  const rolNombre = user.rol?.nombre || '';
-                  const matchesRol = selectedRol ? rolNombre === selectedRol : true;
-                  const matchesEstado = selectedEstado ? user.estado === selectedEstado : true;
-                  return matchesSearch && matchesRol && matchesEstado;
+                const newData = prevData.filter(item => {
+                  const itemIdentifier = item.id || item.email;
+                  return itemIdentifier !== identifier;
                 });
-                
-                const newTotalPages = Math.ceil(newFilteredData.length / itemsPerPage);
-                if (currentPage > newTotalPages && newTotalPages > 0) {
-                  setCurrentPage(newTotalPages);
-                }
+                console.log('Datos después de eliminar:', newData.length);
                 
                 return newData;
               });
@@ -918,7 +1012,7 @@ export default function GestionUsuariosPage() {
                 <tbody>
                   {currentTableData && currentTableData.length > 0 ? (
                     currentTableData.map((usuario, index) => (
-                      <tr key={usuario.id || `user-${index}`}>
+                      <tr key={usuario.id || usuario.email || `user-${index}`}>
                         <td style={tdStyle}>{usuario.nombre}</td>
                         <td style={tdStyle}>{usuario.email}</td>
                         <td style={tdStyle}>{usuario.rol?.nombre || 'N/A'}</td>
@@ -1103,8 +1197,16 @@ export default function GestionUsuariosPage() {
                 <input
                   type="text"
                   value={editFormData.nombre || ''}
-                  onChange={(e) => setEditFormData({...editFormData, nombre: e.target.value})}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    // Solo permitir letras, espacios y caracteres acentuados
+                    if (valor === '' || /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]*$/.test(valor)) {
+                      setEditFormData({...editFormData, nombre: valor});
+                    }
+                  }}
                   style={inputStyle}
+                  placeholder="Ej: Juan Pérez"
+                  maxLength={50}
                 />
               </div>
 
@@ -1113,8 +1215,16 @@ export default function GestionUsuariosPage() {
                 <input
                   type="email"
                   value={editFormData.email || ''}
-                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    // Solo permitir caracteres válidos para email
+                    if (valor === '' || /^[a-zA-Z0-9._@-]*$/.test(valor)) {
+                      setEditFormData({...editFormData, email: valor});
+                    }
+                  }}
                   style={inputStyle}
+                  placeholder="Ej: juan@empresa.com"
+                  maxLength={100}
                 />
               </div>
 
@@ -1167,9 +1277,16 @@ export default function GestionUsuariosPage() {
                 <input
                   type="text"
                   value={addFormData.nombre}
-                  onChange={(e) => setAddFormData({...addFormData, nombre: e.target.value})}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    // Solo permitir letras, espacios y caracteres acentuados
+                    if (valor === '' || /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]*$/.test(valor)) {
+                      setAddFormData({...addFormData, nombre: valor});
+                    }
+                  }}
                   style={inputStyle}
                   placeholder="Ej: Juan Pérez"
+                  maxLength={50}
                 />
               </div>
 
@@ -1178,9 +1295,16 @@ export default function GestionUsuariosPage() {
                 <input
                   type="email"
                   value={addFormData.email}
-                  onChange={(e) => setAddFormData({...addFormData, email: e.target.value})}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    // Solo permitir caracteres válidos para email
+                    if (valor === '' || /^[a-zA-Z0-9._@-]*$/.test(valor)) {
+                      setAddFormData({...addFormData, email: valor});
+                    }
+                  }}
                   style={inputStyle}
                   placeholder="Ej: juan@empresa.com"
+                  maxLength={100}
                 />
               </div>
 

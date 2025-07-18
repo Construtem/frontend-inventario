@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { FaSearch, FaFilter, FaTimes } from "react-icons/fa";
+import { FaSearch, FaFilter, FaTimes, FaBars } from "react-icons/fa";
 
 // =====================
 // 1. INTERFACES DE DATOS
@@ -108,10 +108,27 @@ export default function DespachoPage() {
   const [tempSucursal, setTempSucursal] = useState("");
   const [tempEstado, setTempEstado] = useState("");
   
+  // Estado para responsive
+  const [isMobile, setIsMobile] = useState(false);
+  
   const itemsPerPage = 15;
 
   // URL de la API
   const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || "https://api-inventario.tssw.cl";
+
+  // =====================
+  // 3. HOOK PARA RESPONSIVE
+  // =====================
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // =====================
   // 3. DATOS DE EJEMPLO (MOCK DATA)
@@ -549,21 +566,10 @@ export default function DespachoPage() {
             {/* Botón de filtros */}
             <button 
               style={{
-                backgroundColor: '#5c5c5c',
-                color: 'white',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: '600',
-                fontFamily: 'Montserrat, sans-serif',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                transition: 'background-color 0.2s ease',
-                whiteSpace: 'nowrap'
+                ...filterButtonStyle,
+                width: isMobile ? "100%" : "auto",
+                fontSize: isMobile ? "0.875rem" : "1rem",
+                padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
               }}
               onClick={() => {
                 setTempSucursal(sucursal);
@@ -571,7 +577,7 @@ export default function DespachoPage() {
                 setShowFilterModal(true);
               }}
             >
-              <FaFilter />
+              <FaBars style={{ fontSize: '1rem' }} />
               Filtros
               {hasActiveFilters && (
                 <span style={{
@@ -1288,4 +1294,23 @@ const filterCloseButtonStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+};
+
+// =====================
+// 9. ESTILOS DEL BOTÓN DE FILTROS
+// =====================
+
+const filterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#5c5c5c',
+  color: 'white',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontFamily: 'Montserrat, sans-serif',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  transition: 'background-color 0.2s ease',
+  whiteSpace: 'nowrap'
 };
