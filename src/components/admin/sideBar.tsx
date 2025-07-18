@@ -7,7 +7,6 @@ import {
   FaHome,
   FaBoxes,
   FaStore,
-  FaCog,
   FaChevronDown,
   FaChevronUp,
   FaTruck,

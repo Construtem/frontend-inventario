@@ -1534,7 +1534,7 @@ export default function SucursalesPage() {
 
               <div style={selectGroupStyle}>
                 <label style={labelStyle}>
-                  Nombre {addFormData.tipo === '1' && <span style={{fontSize: '0.8rem', color: '#666'}}>(se agregará "Bodega" al inicio automáticamente)</span>}
+                  Nombre {addFormData.tipo === '1' && <span style={{fontSize: '0.8rem', color: '#666'}}>(se agregará &quot;Bodega&quot; al inicio automáticamente)</span>}
                 </label>
                 <input
                   type="text"

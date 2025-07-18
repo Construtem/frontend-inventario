@@ -28,7 +28,7 @@ interface Usuario {
   fechaRegistro?: string;
 }
 
-const ROLES = ['Administrador', 'Vendedor'];
+// const ROLES = ['Administrador', 'Vendedor'];  //comenté esto ya que no se usa y el linter se picó
 const ESTADOS = ['Activo', 'Inactivo', 'Suspendido'];
 
 // Mapeo de roles para el API

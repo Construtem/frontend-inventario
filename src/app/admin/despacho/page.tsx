@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { FaSearch, FaFilter, FaTimes, FaBars } from "react-icons/fa";
+import { FaSearch, FaTimes, FaBars } from "react-icons/fa";
 
 // =====================
 // 1. INTERFACES DE DATOS
