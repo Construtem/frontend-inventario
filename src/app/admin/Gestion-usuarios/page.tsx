@@ -584,7 +584,11 @@ export default function GestionUsuariosPage() {
         title: 'Éxito',
         text: 'Usuario creado correctamente',
         icon: 'success',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton : true,
+
       });
     } catch (err) {
       Swal.fire({
@@ -684,7 +688,10 @@ export default function GestionUsuariosPage() {
                 title: 'Eliminado',
                 text: `El usuario "${usuario.nombre}" ha sido eliminado permanentemente`,
                 icon: 'success',
-                confirmButtonColor: '#ff7300'
+                confirmButtonColor: '#ff7300',
+                timer: 5000, 
+                timerProgressBar: true,
+                showCloseButton: true
               });
             } catch (err) {
               console.error('Error al eliminar usuario:', err);
@@ -1028,7 +1035,7 @@ export default function GestionUsuariosPage() {
       {showFilterModal && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'left', verticalAlign: 'top' }}>
               <h2 style={modalTitleStyle}>Filtrar Usuarios</h2>
               <button onClick={() => setShowFilterModal(false)} style={closeButtonStyle}>
                 ×
@@ -1046,20 +1053,6 @@ export default function GestionUsuariosPage() {
                   <option value="">Todos los roles</option>
                   {ROLES_MAP.map(rol => (
                     <option key={rol.id} value={rol.nombre}>{rol.nombre}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Estado</label>
-                <select 
-                  value={tempEstado}
-                  onChange={(e) => setTempEstado(e.target.value)}
-                  style={selectStyle}
-                >
-                  <option value="">Todos los estados</option>
-                  {ESTADOS.map(estado => (
-                    <option key={estado} value={estado}>{estado}</option>
                   ))}
                 </select>
               </div>
@@ -1154,7 +1147,7 @@ export default function GestionUsuariosPage() {
       {showAddModal && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <h2 style={modalTitleStyle}>Agregar Usuario</h2>
               <button onClick={() => setShowAddModal(false)} style={closeButtonStyle}>
                 ×
@@ -1489,8 +1482,10 @@ const modalTitleStyle: React.CSSProperties = {
   color: '#374151',
   fontSize: '1.5rem',
   fontWeight: 'bold',
-  marginBottom: '1.5rem',
-  textAlign: 'center',
+  marginBottom: '3rem',
+  marginTop: '0',
+  verticalAlign: 'top',
+  textAlign: 'left',
   fontFamily: 'Montserrat, sans-serif',
 };
 
@@ -1543,13 +1538,14 @@ const closeButtonStyle: React.CSSProperties = {
   border: 'none',
   fontSize: '1.5rem',
   cursor: 'pointer',
-  padding: '0.5rem',
   color: '#6b7280',
   transition: 'color 0.2s ease',
   borderRadius: '4px',
-  width: '2rem',
-  height: '2rem',
+  width: '1.5rem',
+  height: '1.5rem',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  padding: '0',
+  margin: '0'
 };

@@ -903,6 +903,9 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
       icon: 'success',
       confirmButtonText: 'ACEPTAR',
       confirmButtonColor: '#ff7300',
+      showCloseButton: true,
+      timer: 3000,
+      timerProgressBar: true,
     });
   };
 
@@ -925,6 +928,9 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
       icon: 'info',
       confirmButtonText: 'ACEPTAR',
       confirmButtonColor: '#ff7300',
+      timer: 5000,
+      timerProgressBar: true,
+      showCloseButton: true
     });
   };
 
@@ -1066,8 +1072,13 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
       <div style={{...modalContentStyle, maxWidth: '650px', padding: '2rem'}}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
           <h2 style={{...modalTitleStyle, margin: 0}}>Editar Producto</h2>
-          <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
-            SKU: <strong>{formData.sku}</strong>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+              SKU: <strong>{formData.sku}</strong>
+            </div>
+            <button onClick={onClose} style={closeButtonStyle}>
+              ×
+            </button>
           </div>
         </div>
         
@@ -1090,7 +1101,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
               onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
               style={{...selectStyle, height: '80px', resize: 'vertical'}}
               placeholder="Descripción del producto"
+              maxLength={50}
             />
+            <p style={writtenCharactersStyle}>{formData.descripcion.length}/50 caracteres escritos</p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -2544,3 +2557,9 @@ const modalButtonStyle: React.CSSProperties = {
   fontWeight: '500',
 };
 
+const writtenCharactersStyle: React.CSSProperties = {
+  fontSize: '0.8rem',
+  textAlign: 'right',
+  color: '#000',
+  fontFamily: 'Montserrat, sans-serif',
+};
