@@ -7,7 +7,8 @@ import React, { useRef, useState, useMemo, useEffect } from "react";
 import Papa from 'papaparse';
 import Swal from 'sweetalert2';
 import Image from "next/image";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { FaArrowLeft } from "react-icons/fa";
 
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
@@ -1215,6 +1216,7 @@ function useWindowSize() {
 export default function SucursalSlot1Page() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const sucursalId = searchParams.get('id');
   const [sucursalNombre, setSucursalNombre] = useState<string>('Sucursal Slot 1');
 
@@ -1785,11 +1787,42 @@ export default function SucursalSlot1Page() {
       <div style={{
         ...cardStyle
       }}>
-        <h1 style={{
-          ...titleStyle,
-          fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
-          marginBottom: "1.5rem"
-        }}>Inventario de Productos ({sucursalNombre})</h1>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "1rem",
+          marginBottom: "1.5rem",
+          flexWrap: isMobile ? "wrap" : "nowrap"
+        }}>
+          <button 
+            onClick={() => router.push('/admin/inventario')}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              backgroundColor: "#ff7300",
+              color: "white",
+              border: "none",
+              padding: "0.75rem 1.5rem",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "0.875rem",
+              fontWeight: "600",
+              fontFamily: "Montserrat, sans-serif",
+              transition: "all 0.2s ease",
+              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+            }}
+            title="Volver al Inventario Principal"
+          >
+            <FaArrowLeft />
+            Volver
+          </button>
+          <h1 style={{
+            ...titleStyle,
+            fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
+            margin: "0"
+          }}>Inventario de Productos ({sucursalNombre})</h1>
+        </div>
         
         <div style={{
           ...toolbarStyle,
