@@ -1,13 +1,18 @@
-//parche para accionar workflow ci
-// export default function InventarioPage() {
-//   return <div>Inventario</div>;
-// }
-
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+
+interface Sucursal {
+  id: number;
+  nombre: string;
+  tipo: string;
+  telefono: string;
+  direccion: string;
+  comuna: string;
+  tipo_id?: number; // Agregar tipo_id que viene del backend
+}
 
 interface CardProps {
   id: number;
@@ -30,6 +35,10 @@ export default function InventarioPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
   const [openCard, setOpenCard] = useState<number | null>(null);
+  const [sucursales, setSucursales] = useState<Sucursal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -38,62 +47,165 @@ export default function InventarioPage() {
         const parsedUser = JSON.parse(storedUser) as UserData;
         setUser(parsedUser);
       } catch (err) {
-        console.error("Error al parsear user en InicioPage:", err);
       }
     }
   }, []);
 
-  // Datos de ejemplo para 3 sucursales y 3 bodegas
-  const cardData: CardProps[] = [
-    {
-      id: 1,
-      mainText: "Sucursal Centro",
-      subText: "Av. Principal 123",
-      imagePath: "/images/inicio/sucursales.png",
-      extraInfo: "Gerente: Ana López | Tel: 123-456-7890",
-      route: "/admin/inventario/sucursal-1"
-    },
-    {
-      id: 2,
-      mainText: "Sucursal Norte",
-      subText: "Calle Norte 456",
-      imagePath: "/images/inicio/sucursales.png",
-      extraInfo: "Gerente: Carlos Méndez | Tel: 098-765-4321",
-      route: "/admin/inventario/sucursal-2"
-    },
-    {
-      id: 3,
-      mainText: "Sucursal Sur",
-      subText: "Av. Sur 789",
-      imagePath: "/images/inicio/sucursales.png",
-      extraInfo: "Gerente: Laura Jiménez | Tel: 555-123-4567",
-      route: "/admin/inventario/sucursal-3"
-    },
-    {
-      id: 4,
-      mainText: "Bodega Central",
-      subText: "Zona Norte",
-      imagePath: "/images/inicio/bodegas.png",
-      extraInfo: "Capacidad: 1000 m² | Responsable: Pedro Ramírez",
-      route: "/admin/inventario/bodega-1"
-    },
-    {
-      id: 5,
-      mainText: "Bodega Este",
-      subText: "Zona Este",
-      imagePath: "/images/inicio/bodegas.png",
-      extraInfo: "Capacidad: 500 m² | Responsable: Miguel Santos",
-      route: "/admin/inventario/bodega-2"
-    },
-    {
-      id: 6,
-      mainText: "Bodega Sur",
-      subText: "Zona Sur",
-      imagePath: "/images/inicio/bodegas.png",
-      extraInfo: "Capacidad: 750 m² | Responsable: Laura Jiménez",
-      route: "/admin/inventario/bodega-3"
-    },
-  ];
+  // Efecto para cargar las sucursales
+  useEffect(() => {
+    const fetchSucursales = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(`${apiInventarioUrl}/api/sucursales`, {
+          method: 'GET',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+
+        
+        if (Array.isArray(data)) {
+          setSucursales(data);
+        } else {
+
+          setSucursales([]);
+        }
+        
+      } catch (err) {
+
+        
+        let errorMessage = "Error desconocido al cargar datos";
+        if (err instanceof Error) {
+          if (err.name === 'AbortError') {
+            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+          } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+          } else {
+            errorMessage = err.message;
+          }
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSucursales();
+  }, []);
+
+  // Función para reintentar la carga de datos
+  const retryFetch = () => {
+    setError(null);
+    setLoading(true);
+    
+    const fetchSucursales = async () => {
+      try {
+            const response = await fetch(`${apiInventarioUrl}/api/sucursales`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (Array.isArray(data)) {
+          setSucursales(data);
+          setError(null);
+        } else {
+          throw new Error('Los datos recibidos no tienen el formato esperado');
+        }
+      } catch (err) {
+
+        setError(err instanceof Error ? err.message : 'Error al recargar los datos');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSucursales();
+  };
+
+  const cardData: CardProps[] = useMemo(() => {
+    if (sucursales.length === 0) return [];
+
+
+
+    const sucursalesOnly = sucursales
+      .filter(item => {
+        const tipoValue = item.tipo_id || item.tipo;
+        const esSucursal = tipoValue === 2 || tipoValue === '2' || 
+                          (!item.nombre?.toLowerCase()?.includes('bodega') && !tipoValue);
+        return esSucursal;
+      })
+      .sort((a, b) => (a?.id || 0) - (b?.id || 0));
+    
+    const bodegasOnly = sucursales
+      .filter(item => {
+        const tipoValue = item.tipo_id || item.tipo;
+        const esBodega = tipoValue === 1 || tipoValue === '1' || 
+                        (item.nombre?.toLowerCase()?.includes('bodega') && !tipoValue);
+        return esBodega;
+      })
+      .sort((a, b) => (a?.id || 0) - (b?.id || 0));
+
+    const cards: CardProps[] = [];
+
+
+    sucursalesOnly.slice(0, 3).forEach((sucursal, index) => {
+      const slot = index + 1;
+      const card = {
+        id: Number(sucursal.id) || 0,
+        mainText: String(sucursal.nombre || `Sucursal ${sucursal.id}`),
+        subText: `Slot ${slot}`,
+        imagePath: "/images/inicio/sucursales.png",
+        extraInfo: `${String(sucursal.direccion || 'Dirección no especificada')}, ${String(sucursal.comuna || 'Comuna no especificada')} | Tel: ${String(sucursal.telefono || 'No especificado')}`,
+        route: `/admin/inventario/sucursal-slot-${slot}?id=${sucursal.id}`
+      };
+      cards.push(card);
+    });
+
+    // Asignar slots a bodegas (máximo 3)
+    bodegasOnly.slice(0, 3).forEach((bodega, index) => {
+      const slot = index + 1;
+      const card = {
+        id: Number(bodega.id) || 0,
+        mainText: String(bodega.nombre || `Bodega ${bodega.id}`),
+        subText: `Slot ${slot}`,
+        imagePath: "/images/inicio/bodegas.png",
+        extraInfo: `${String(bodega.direccion || 'Dirección no especificada')}, ${String(bodega.comuna || 'Comuna no especificada')} | Tel: ${String(bodega.telefono || 'No especificado')}`,
+        route: `/admin/inventario/bodega-slot-${slot}?id=${bodega.id}`
+      };
+
+      cards.push(card);
+    });
+
+
+    return cards;
+  }, [sucursales]);
+
+
+  
 
   const handleCardClick = (cardId: number) => {
     const card = cardData.find(c => c.id === cardId);
@@ -106,18 +218,69 @@ export default function InventarioPage() {
     setOpenCard(null);
   };
 
-  return (
-    <div style={containerStyle}>
-      <div style={cardStyle}>
-        <h1 style={titleStyle}>Sucursales y Bodegas</h1>
-        <h3 style={textStyle}>
-          Bienvenido,{" "}
-          <span style={{ fontWeight: "bold" }}>
-            {user ? user.name : "Invitado"}
-          </span>
-          .
-        </h3>
-        <div style={subtleLineStyle}></div>
+  // Renderizar contenido principal
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div style={loadingContainerStyle}>
+          <div style={loadingSpinnerStyle} />
+          <div style={loadingTextStyle}>Cargando sucursales...</div>
+          <div style={loadingSubTextStyle}>
+            Conectando con http://localhost:8080
+          </div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div style={errorContainerStyle}>
+          <div style={errorTitleStyle}>Error al cargar las sucursales</div>
+          <div style={errorMessageStyle}>{error}</div>
+          
+          <div style={errorButtonsStyle}>
+            <button onClick={retryFetch} style={retryButtonStyle}>
+              Reintentar
+            </button>
+            
+            <button
+              onClick={() => {
+
+              }}
+              style={diagnosticButtonStyle}
+            >
+              Diagnóstico
+            </button>
+          </div>
+          
+          <div style={helpContainerStyle}>
+            <div style={helpTitleStyle}>💡 Posibles soluciones:</div>
+            <ul style={helpListStyle}>
+              <li>Verificar que el backend esté ejecutándose en el puerto 8080</li>
+              <li>Comprobar que la URL de la API sea correcta</li>
+              <li>Revisar la configuración de CORS en el backend</li>
+              <li>Verificar la conexión a internet</li>
+              <li>Intentar acceder directamente a: <a href={`${apiInventarioUrl}/api/sucursales`} target="_blank" style={{ color: '#3b82f6' }}>{apiInventarioUrl}/api/sucursales</a></li>
+            </ul>
+          </div>
+        </div>
+      );
+    }
+
+    if (sucursales.length === 0) {
+      return (
+        <div style={emptyStateStyle}>
+          <div style={emptyIconStyle}>🏢</div>
+          <div style={emptyTitleStyle}>No hay sucursales disponibles</div>
+          <div style={emptySubtitleStyle}>
+            Agregue sucursales desde la sección de gestión para verlas aquí
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <>
         <div style={cardGridStyle}>
           {cardData.map((card) => (
             <Card key={card.id} {...card} onClick={() => handleCardClick(card.id)} />
@@ -129,6 +292,22 @@ export default function InventarioPage() {
             onClose={handleCloseModal}
           />
         )}
+      </>
+    );
+  };
+
+  return (
+    <div style={containerStyle}>
+      <div style={cardStyle}>
+        <h1 style={titleStyle}>Inventario de Sucursales y Bodegas</h1>
+        <h3 style={textStyle}>
+          Seleccione la sucursal o bodega para ver el inventario{" "}
+          <span style={{ fontWeight: "bold" }}>
+            {user ? user.name : "Invitado"}
+          </span>
+        </h3>
+        <div style={subtleLineStyle}></div>
+        {renderContent()}
       </div>
     </div>
   );
@@ -191,11 +370,16 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, extraInfo, on
   };
 
   const extraInfoStyle: React.CSSProperties = {
-    fontSize: '0.9rem',
+    fontSize: '0.8rem',
     color: '#f5f5f5',
     opacity: 0.8,
     marginTop: '2px',
     fontWeight: 400,
+    lineHeight: '1.2',
+    overflow: 'hidden',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
   };
 
   const imageStyle: React.CSSProperties = {
@@ -229,7 +413,7 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, extraInfo, on
   );
 };
 
-// Modal adaptado para mostrar detalles de la sucursal o bodega seleccionada
+// Modal adaptado para mostrar detalles de la sucursal seleccionada
 interface CardModalProps {
   card: CardProps;
   onClose: () => void;
@@ -290,6 +474,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose }) => {
     color: '#444',
     margin: '0.5rem 0',
     textAlign: 'center',
+    lineHeight: '1.4',
   };
 
   return (
@@ -368,4 +553,170 @@ const subtleLineStyle: React.CSSProperties = {
   opacity: 0.7,
   margin: '20px 0',
   borderRadius: '20px',
+};
+
+// Estilos para estados de carga
+const loadingContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: '4rem 2rem',
+  backgroundColor: 'white',
+  borderRadius: '12px',
+  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+  textAlign: 'center',
+};
+
+const loadingSpinnerStyle: React.CSSProperties = {
+  width: '50px',
+  height: '50px',
+  border: '4px solid #f3f4f6',
+  borderTop: '4px solid #ff7300',
+  borderRadius: '50%',
+  animation: 'spin 1s linear infinite',
+  marginBottom: '1.5rem',
+};
+
+const loadingTextStyle: React.CSSProperties = {
+  fontSize: '1.2rem',
+  color: '#666',
+  fontFamily: 'Montserrat, sans-serif',
+  fontWeight: 'semibold',
+  marginBottom: '0.5rem',
+};
+
+const loadingSubTextStyle: React.CSSProperties = {
+  fontSize: '0.9rem',
+  color: '#999',
+  fontFamily: 'Roboto, sans-serif',
+};
+
+// Estilos para estado de error
+const errorContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: '3rem 2rem',
+  backgroundColor: 'white',
+  borderRadius: '12px',
+  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+  maxWidth: '600px',
+  margin: '0 auto',
+  textAlign: 'center',
+};
+
+const errorTitleStyle: React.CSSProperties = {
+  fontSize: '1.2rem',
+  color: '#ef4444',
+  fontFamily: 'Montserrat, sans-serif',
+  fontWeight: 'bold',
+  marginBottom: '1rem',
+};
+
+const errorMessageStyle: React.CSSProperties = {
+  fontSize: '0.9rem',
+  color: '#666',
+  fontFamily: 'Roboto, sans-serif',
+  lineHeight: '1.5',
+  whiteSpace: 'pre-line',
+  marginBottom: '2rem',
+};
+
+const errorButtonsStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '1rem',
+  marginBottom: '2rem',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+};
+
+const retryButtonStyle: React.CSSProperties = {
+  backgroundColor: '#10b981',
+  color: 'white',
+  padding: '0.75rem 1.5rem',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '1rem',
+  fontFamily: 'Montserrat, sans-serif',
+  fontWeight: 'semibold',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  transition: 'all 0.3s ease',
+  minWidth: '120px',
+};
+
+const diagnosticButtonStyle: React.CSSProperties = {
+  backgroundColor: '#6b7280',
+  color: 'white',
+  padding: '0.75rem 1.5rem',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '1rem',
+  fontFamily: 'Montserrat, sans-serif',
+  fontWeight: 'semibold',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  transition: 'all 0.3s ease',
+  minWidth: '120px',
+};
+
+const helpContainerStyle: React.CSSProperties = {
+  padding: '1.5rem',
+  backgroundColor: '#f3f4f6',
+  borderRadius: '8px',
+  width: '100%',
+  boxSizing: 'border-box',
+  textAlign: 'left',
+};
+
+const helpTitleStyle: React.CSSProperties = {
+  fontWeight: 'bold',
+  marginBottom: '1rem',
+  color: '#374151',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const helpListStyle: React.CSSProperties = {
+  margin: 0,
+  paddingLeft: '1.2rem',
+  fontSize: '0.875rem',
+  color: '#666',
+  fontFamily: 'Roboto, sans-serif',
+  lineHeight: '1.6',
+};
+
+// Estilos para estado vacío
+const emptyStateStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: '4rem 2rem',
+  backgroundColor: 'white',
+  borderRadius: '12px',
+  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+  textAlign: 'center',
+};
+
+const emptyIconStyle: React.CSSProperties = {
+  fontSize: '4rem',
+  marginBottom: '1rem',
+  opacity: 0.6,
+};
+
+const emptyTitleStyle: React.CSSProperties = {
+  fontSize: '1.5rem',
+  color: '#374151',
+  fontFamily: 'Montserrat, sans-serif',
+  fontWeight: 'bold',
+  marginBottom: '0.5rem',
+};
+
+const emptySubtitleStyle: React.CSSProperties = {
+  fontSize: '1rem',
+  color: '#6b7280',
+  fontFamily: 'Roboto, sans-serif',
+  lineHeight: '1.5',
 };

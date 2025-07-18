@@ -22,14 +22,23 @@ interface RouteInfoProps {
 const RouteInfo: React.FC<RouteInfoProps> = React.memo(({ despachoInfo, routeDetails }) => {
   const getEstadoColor = (estado: string) => {
     switch (estado.toLowerCase()) {
-      case 'en ruta':
-        return '#22c55e'; // Verde
-      case 'pendiente':
-        return '#f59e0b'; // Amarillo
-      case 'entregado':
-        return '#3b82f6'; // Azul
+      case 'aprobada':
+      case 'aprobado':
+        return '#16a34a'; // Verde
+      case 'rechazada':
+      case 'rechazado':
+      case 'cancelada':
       case 'cancelado':
         return '#ef4444'; // Rojo
+      case 'enviada':
+      case 'enviado':
+        return '#2563eb'; // Azul
+      case 'pendiente':
+        return '#f59e0b'; // Amarillo
+      case 'en ruta':
+        return '#22c55e'; // Verde
+      case 'entregado':
+        return '#3b82f6'; // Azul
       default:
         return '#6b7280'; // Gris
     }
@@ -38,7 +47,6 @@ const RouteInfo: React.FC<RouteInfoProps> = React.memo(({ despachoInfo, routeDet
   // Usar datos del backend si están disponibles, sino usar routeDetails de Google Maps
   const displayDistance = despachoInfo.distancia || routeDetails?.distance;
   const displayDuration = despachoInfo.duracion || routeDetails?.duration;
-  const displayPrice = despachoInfo.precio;
   const hasRouteData = displayDistance && displayDuration;
 
   return (
@@ -142,7 +150,7 @@ const RouteInfo: React.FC<RouteInfoProps> = React.memo(({ despachoInfo, routeDet
           borderTop: "1px solid #e5e7eb",
           paddingTop: "1.5rem",
           display: "grid",
-          gridTemplateColumns: displayPrice ? "repeat(auto-fit, minmax(180px, 1fr))" : "repeat(auto-fit, minmax(200px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           gap: "1rem"
         }}>
           <div style={{ 
@@ -212,41 +220,6 @@ const RouteInfo: React.FC<RouteInfoProps> = React.memo(({ despachoInfo, routeDet
               </div>
             </div>
           </div>
-
-          {displayPrice && (
-            <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              padding: "0.75rem",
-              backgroundColor: "#f0fdf4",
-              borderRadius: "8px",
-              border: "1px solid #bbf7d0"
-            }}>
-              <div style={{ 
-                fontSize: "1.5rem",
-                marginRight: "0.75rem"
-              }}>💰</div>
-              <div>
-                <div style={{ 
-                  fontWeight: 700, 
-                  color: "#111827",
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                  fontSize: "1rem"
-                }}>Precio del despacho</div>
-                <div style={{ 
-                  color: "#16a34a", 
-                  fontSize: "0.925rem",
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                  fontWeight: "600"
-                }}>
-                  {displayPrice}
-                  <span style={{ fontSize: "0.75rem", color: "#9ca3af", marginLeft: "0.5rem" }}>
-                    (calculado por backend)
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

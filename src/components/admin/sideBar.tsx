@@ -7,10 +7,10 @@ import {
   FaHome,
   FaBoxes,
   FaStore,
-  FaCog,
   FaChevronDown,
   FaChevronUp,
   FaTruck,
+  FaUsers,
 } from 'react-icons/fa';
 
 interface SidebarProps {
@@ -128,6 +128,16 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
         <FaHome />
         <span>Inicio</span>
       </Link>
+      
+      <Link
+        href="/admin/Gestion-usuarios"
+        style={getMenuItemStyle('gestion-usuarios', '/admin/Gestion-usuarios')}
+        onMouseEnter={() => handleMouseEnter('gestion-usuarios')}
+        onMouseLeave={handleMouseLeave}
+      >
+        <FaUsers />
+        <span>Usuarios</span>
+      </Link>
 
       <Link
         href="/admin/inventario"
@@ -157,7 +167,6 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
       }}>
         {[
           { name: 'Bodega general', path: '/admin/bodega/bodega-general' },
-          { name: 'Lista de bodegas', path: '/admin/bodega/lista-de-bodegas' },
         ].map((item) => (
           <Link
             key={item.name}
@@ -246,16 +255,6 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
       >
         <FaTruck />
         <span>Despacho</span>
-      </Link>
-
-      <Link
-        href="/admin/configuracion"
-        style={getMenuItemStyle('config', '/admin/configuracion')}
-        onMouseEnter={() => handleMouseEnter('config')}
-        onMouseLeave={handleMouseLeave}
-      >
-        <FaCog />
-        <span>Configuración</span>
       </Link>
     </aside>
   );

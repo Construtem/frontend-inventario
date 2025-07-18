@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { FaSearch } from "react-icons/fa";
+import React, { useEffect, useState, useMemo } from "react";
+import { FaSearch, FaTimes, FaBars } from "react-icons/fa";
 
 // =====================
 // 1. INTERFACES DE DATOS
@@ -63,6 +63,7 @@ interface DespachoBackend {
   destino: number;
   fecha_despacho: string;
   valor_despacho: number;
+  estado: string;
   cantidad_items: number;
   total_kg: number;
   cotizacion?: {
@@ -101,10 +102,33 @@ export default function DespachoPage() {
   const [selectedDespachoId, setSelectedDespachoId] = useState<number | null>(null);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loadingProductos, setLoadingProductos] = useState(false);
+  
+  // Estados para el modal de filtros
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [tempSucursal, setTempSucursal] = useState("");
+  const [tempEstado, setTempEstado] = useState("");
+  
+  // Estado para responsive
+  const [isMobile, setIsMobile] = useState(false);
+  
   const itemsPerPage = 15;
 
   // URL de la API
   const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || "https://api-inventario.tssw.cl";
+
+  // =====================
+  // 3. HOOK PARA RESPONSIVE
+  // =====================
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // =====================
   // 3. DATOS DE EJEMPLO (MOCK DATA)
@@ -185,7 +209,7 @@ export default function DespachoPage() {
           destino: d.destino_dir_cliente?.direccion || "Dirección desconocida",
           fechaDespacho: d.fecha_despacho,
           valorDespacho: Number(d.valor_despacho || 0),
-          estado: d.cotizacion?.estado || "pendiente",
+          estado: d.estado || "pendiente",
           camion: d.camion?.patente || "Camión no asignado",
           cantidadItems: d.cantidad_items || 0,
           totalKg: d.total_kg || 0,
@@ -364,18 +388,41 @@ export default function DespachoPage() {
     setProductos([]);
   };
 
+  // =====================
+  // 8. FUNCIONES PARA FILTROS
+  // =====================
+  const handleApplyFilters = () => {
+    setSucursal(tempSucursal);
+    setEstado(tempEstado);
+    setCurrentPage(1);
+    setShowFilterModal(false);
+  };
+
+  const handleClearFilters = () => {
+    setTempSucursal("");
+    setTempEstado("");
+    setSucursal("");
+    setEstado("");
+    setCurrentPage(1);
+    setShowFilterModal(false);
+  };
+
+  const hasActiveFilters = Boolean(sucursal || estado);
+
   // Filtrar despachos basado en los filtros activos
-  const filteredDespachos = despachos.filter((d) => {
-    const matchesSearch = search === "" || 
-      `${d.cliente} ${d.origen} ${d.destino} ${d.camion} ${d.estado}`
-        .toLowerCase()
-        .includes(search.toLowerCase());
-    
-    const matchesSucursal = sucursal === "" || d.origen === sucursal;
-    const matchesEstado = estado === "" || d.estado === estado;
-    
-    return matchesSearch && matchesSucursal && matchesEstado;
-  });
+  const filteredDespachos = useMemo(() => {
+    return despachos.filter((d) => {
+      const matchesSearch = search === "" || 
+        `${d.cliente} ${d.origen} ${d.destino} ${d.camion} ${d.estado}`
+          .toLowerCase()
+          .includes(search.toLowerCase());
+      
+      const matchesSucursal = sucursal === "" || d.origen === sucursal;
+      const matchesEstado = estado === "" || d.estado === estado;
+      
+      return matchesSearch && matchesSucursal && matchesEstado;
+    });
+  }, [despachos, search, sucursal, estado]);
 
   // Funciones de paginación
   const handleNextPage = () => {
@@ -442,10 +489,13 @@ export default function DespachoPage() {
   };
 
   // Calcular datos paginados y total de páginas
-  const currentTableData = filteredDespachos.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const currentTableData = useMemo(() => {
+    return filteredDespachos.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredDespachos, currentPage, itemsPerPage]);
+  
   const totalPages = Math.ceil(filteredDespachos.length / itemsPerPage);
 
   // =====================
@@ -456,53 +506,128 @@ export default function DespachoPage() {
       <div style={cardStyle}>
         <h1 style={titleStyle}>Gestión de Despachos</h1>
 
-        {/* Filtros */}
-        <div style={filterRowStyle}>
-          <input
-            type="text"
-            placeholder="Buscar despachos..."
-            style={selectStyle}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        {/* Barra de herramientas moderna */}
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1.5rem",
+          gap: "1rem",
+          flexWrap: "wrap"
+        }}>
+          {/* Grupo de controles izquierdo */}
+          <div style={{
+            display: "flex",
+            gap: "1rem",
+            alignItems: "center",
+            flex: "1"
+          }}>
+            {/* Búsqueda */}
+            <div style={{
+              position: 'relative',
+              minWidth: '300px',
+              maxWidth: '400px',
+              flex: '1'
+            }}>
+              <input
+                type="text"
+                placeholder="Buscar despachos..."
+                style={{
+                  width: '100%',
+                  padding: "0.75rem 3rem 0.75rem 1rem",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "8px",
+                  fontSize: "0.875rem",
+                  fontFamily: "Roboto, sans-serif",
+                  outline: "none",
+                  transition: "border-color 0.2s ease",
+                  boxSizing: "border-box"
+                }}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <button 
+                style={{
+                  position: 'absolute',
+                  right: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  fontSize: '1rem'
+                }}
+              >
+                <FaSearch />
+              </button>
+            </div>
 
-          <select
-            style={selectStyle}
-            value={sucursal}
-            onChange={(e) => setSucursal(e.target.value)}
-          >
-            <option value="">Todas las Sucursales</option>
-            <option value="Bodega Central">Bodega Central</option>
-            <option value="Bodega Norte">Bodega Norte</option>
-            <option value="Bodega Sur">Bodega Sur</option>
-            <option value="Sucursal Centro">Sucursal Centro</option>
-            <option value="Sucursal La Florida">Sucursal La Florida</option>
-            <option value="Sucursal Maipú">Sucursal Maipú</option>
-          </select>
+            {/* Botón de filtros */}
+            <button 
+              style={{
+                ...filterButtonStyle,
+                width: isMobile ? "100%" : "auto",
+                fontSize: isMobile ? "0.875rem" : "1rem",
+                padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
+              }}
+              onClick={() => {
+                setTempSucursal(sucursal);
+                setTempEstado(estado);
+                setShowFilterModal(true);
+              }}
+            >
+              <FaBars style={{ fontSize: '1rem' }} />
+              Filtros
+              {hasActiveFilters && (
+                <span style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '1.25rem',
+                  height: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  marginLeft: '0.25rem'
+                }}>
+                  {[sucursal, estado].filter(Boolean).length}
+                </span>
+              )}
+            </button>
 
-          <select
-            style={selectStyle}
-            value={estado}
-            onChange={(e) => setEstado(e.target.value)}
-          >
-            <option value="">Todos los Estados</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="enviada">Enviada</option>
-            <option value="aprobada">Aprobada</option>
-            <option value="cancelada">Cancelada</option>
-            <option value="rechazada">Rechazada</option>
-          </select>
-
-          <button 
-            style={searchButtonStyle}
-            onClick={() => {
-              // Aquí puedes agregar lógica adicional si es necesaria
-              console.log("Filtros aplicados:", { sucursal, estado, search });
-            }}
-          >
-            <FaSearch />
-            Buscar
-          </button>
+            {/* Botón limpiar filtros */}
+            {hasActiveFilters && (
+              <button 
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  fontFamily: 'Montserrat, sans-serif',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  transition: 'background-color 0.2s ease',
+                  whiteSpace: 'nowrap'
+                }}
+                onClick={() => {
+                  setSucursal("");
+                  setEstado("");
+                  setCurrentPage(1);
+                }}
+              >
+                <FaTimes />
+                Limpiar
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Mostrar errores y estado offline */}
@@ -599,9 +724,11 @@ export default function DespachoPage() {
                     <td style={{
                       ...tdStyle,
                       fontWeight: "600",
-                      color: d.estado === "aprobado" ? "#16a34a" : 
-                             d.estado === "enviado" ? "#2563eb" :
-                             d.estado === "cancelado" ? "#dc2626" : "#f59e0b"
+                      color: d.estado === "aprobado" || d.estado === "aprobada" ? "#16a34a" : 
+                             d.estado === "rechazado" || d.estado === "rechazada" ? "#ef4444" :
+                             d.estado === "cancelado" || d.estado === "cancelada" ? "#ef4444" :
+                             d.estado === "enviado" || d.estado === "enviada" ? "#2563eb" :
+                             d.estado === "pendiente" ? "#f59e0b" : "#6b7280"
                     }}>
                       {d.estado.charAt(0).toUpperCase() + d.estado.slice(1)}
                     </td>
@@ -648,13 +775,13 @@ export default function DespachoPage() {
                       </a>
                     </td>
                     <td style={tdStyle}>
-                      <span
+                      <button
                         onClick={() => handleDelete(d.id)}
-                        style={deleteIconStyle}
+                        style={deleteButtonStyle}
                         title="Eliminar despacho"
                       >
-                        🗑️
-                      </span>
+                        Eliminar
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -772,6 +899,73 @@ export default function DespachoPage() {
             </div>
           </div>
         )}
+
+      {/* Modal de Filtros */}
+      {showFilterModal && (
+        <div style={filterModalOverlayStyle}>
+          <div style={filterModalContentStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={filterModalTitleStyle}>Filtros</h2>
+              <button 
+                onClick={() => setShowFilterModal(false)}
+                style={filterCloseButtonStyle}
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div style={filterModalFormStyle}>
+              <div style={filterSelectGroupStyle}>
+                <label style={filterLabelStyle}>Sucursal</label>
+                <select 
+                  value={tempSucursal}
+                  onChange={(e) => setTempSucursal(e.target.value)}
+                  style={filterSelectStyle}
+                >
+                  <option value="">Todas las Sucursales</option>
+                  <option value="Bodega Central">Bodega Central</option>
+                  <option value="Bodega Norte">Bodega Norte</option>
+                  <option value="Bodega Sur">Bodega Sur</option>
+                  <option value="Sucursal Centro">Sucursal Centro</option>
+                  <option value="Sucursal La Florida">Sucursal La Florida</option>
+                  <option value="Sucursal Maipú">Sucursal Maipú</option>
+                </select>
+              </div>
+
+              <div style={filterSelectGroupStyle}>
+                <label style={filterLabelStyle}>Estado</label>
+                <select 
+                  value={tempEstado}
+                  onChange={(e) => setTempEstado(e.target.value)}
+                  style={filterSelectStyle}
+                >
+                  <option value="">Todos los Estados</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="enviada">Enviada</option>
+                  <option value="aprobada">Aprobada</option>
+                  <option value="cancelada">Cancelada</option>
+                  <option value="rechazada">Rechazada</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={filterModalButtonsStyle}>
+              <button 
+                onClick={handleClearFilters} 
+                style={{...filterModalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Limpiar filtros
+              </button>
+              <button 
+                onClick={handleApplyFilters}
+                style={filterModalButtonStyle}
+              >
+                Aplicar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -801,39 +995,6 @@ const titleStyle: React.CSSProperties = {
   fontWeight: "bold",
   fontFamily: "Montserrat, sans-serif",
   marginBottom: "2rem",
-};
-
-const filterRowStyle: React.CSSProperties = {
-  display: "flex",
-  gap: "1rem",
-  flexWrap: "wrap",
-  alignItems: "center",
-  marginBottom: "2rem",
-};
-
-const selectStyle: React.CSSProperties = {
-  padding: "0.6rem 1rem",
-  borderRadius: "10px",
-  border: "1px solid #ccc",
-  fontSize: "1rem",
-  flex: "1 1 200px",
-  fontFamily: "Roboto, sans-serif",
-};
-
-const searchButtonStyle: React.CSSProperties = {
-  backgroundColor: "#ff7300",
-  color: "#fff",
-  padding: "0.6rem 1.2rem",
-  borderRadius: "10px",
-  border: "none",
-  cursor: "pointer",
-  fontWeight: "600",
-  fontSize: "1rem",
-  display: "flex",
-  alignItems: "center",
-  gap: "0.5rem",
-  transition: "background-color 0.3s ease",
-  fontFamily: "Roboto, sans-serif",
 };
 
 const tableWrapperStyle: React.CSSProperties = {
@@ -867,11 +1028,17 @@ const tdStyle: React.CSSProperties = {
   fontFamily: "Roboto, sans-serif",
 };
 
-const deleteIconStyle: React.CSSProperties = {
+const deleteButtonStyle: React.CSSProperties = {
+  backgroundColor: "#ef4444",
+  color: "#ffffff",
+  border: "none",
+  padding: "0.5rem 1rem",
+  borderRadius: "8px",
   cursor: "pointer",
-  fontSize: "1.2rem",
-  color: "#ef4444",
-  transition: "color 0.3s ease",
+  fontSize: "0.875rem",
+  fontWeight: "600",
+  fontFamily: "Roboto, sans-serif",
+  transition: "background-color 0.3s ease",
 };
 
 const paginationContainerStyle: React.CSSProperties = {
@@ -1024,4 +1191,126 @@ const loadingStyle: React.CSSProperties = {
   fontSize: '1.2rem',
   color: '#666666',
   fontFamily: 'Roboto, sans-serif',
+};
+
+// =====================
+// 8. ESTILOS DEL MODAL DE FILTROS
+// =====================
+
+const filterModalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000,
+};
+
+const filterModalContentStyle: React.CSSProperties = {
+  backgroundColor: 'white',
+  padding: '2rem',
+  borderRadius: '12px',
+  width: '90%',
+  maxWidth: '500px',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+  maxHeight: '90vh',
+  overflow: 'hidden',
+};
+
+const filterModalTitleStyle: React.CSSProperties = {
+  color: '#374151',
+  fontSize: '1.5rem',
+  fontWeight: 'bold',
+  marginBottom: '1.5rem',
+  textAlign: 'center',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const filterModalFormStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+};
+
+const filterSelectGroupStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.5rem',
+};
+
+const filterLabelStyle: React.CSSProperties = {
+  color: '#374151',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  fontFamily: 'Roboto, sans-serif',
+};
+
+const filterSelectStyle: React.CSSProperties = {
+  padding: '0.5rem',
+  borderRadius: '6px',
+  border: '1px solid #d1d5db',
+  fontSize: '0.875rem',
+  width: '100%',
+  fontFamily: 'Roboto, sans-serif',
+  outline: 'none',
+  transition: 'border-color 0.2s ease',
+};
+
+const filterModalButtonsStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '1rem',
+  marginTop: '2rem',
+};
+
+const filterModalButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: 'white',
+  padding: '0.5rem 1rem',
+  borderRadius: '6px',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  fontFamily: 'Montserrat, sans-serif',
+  transition: 'background-color 0.2s ease',
+};
+
+const filterCloseButtonStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontSize: '1.5rem',
+  cursor: 'pointer',
+  padding: '0.5rem',
+  color: '#6b7280',
+  transition: 'color 0.2s ease',
+  borderRadius: '4px',
+  width: '2rem',
+  height: '2rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+// =====================
+// 9. ESTILOS DEL BOTÓN DE FILTROS
+// =====================
+
+const filterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#5c5c5c',
+  color: 'white',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontFamily: 'Montserrat, sans-serif',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  transition: 'background-color 0.2s ease',
+  whiteSpace: 'nowrap'
 };

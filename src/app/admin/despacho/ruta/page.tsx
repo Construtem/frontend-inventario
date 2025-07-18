@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
+import { FaArrowLeft } from "react-icons/fa";
 import { MapView } from "./MapView";
 
 // Configuración del API
@@ -27,6 +28,7 @@ interface DespachoBackend {
   destino: number;
   fecha_despacho: string;
   valor_despacho: number;
+  estado: string;
   cantidad_items: number;
   total_kg: number;
   distancia_calculada?: string;
@@ -57,6 +59,7 @@ interface DespachoBackend {
 
 export default function RutaDespachoPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const despachoId = searchParams.get('despachoId');
   const [despachoInfo, setDespachoInfo] = useState<DespachoInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,9 +68,9 @@ export default function RutaDespachoPage() {
   // Función para obtener despacho específico
   const fetchDespachoById = async (id: string): Promise<DespachoInfo | null> => {
     try {
-      console.log('📡 Intentando obtener despachos desde:', `${API_BASE_URL}/api/despachos-distancia`);
+      console.log('📡 Intentando obtener despachos desde:', `${API_BASE_URL}/api/despachos`);
       
-      const response = await axios.get(`${API_BASE_URL}/api/despachos-distancia`, {
+      const response = await axios.get(`${API_BASE_URL}/api/despachos`, {
         timeout: 10000, // 10 segundos de timeout
         headers: {
           'Accept': 'application/json',
@@ -94,6 +97,8 @@ export default function RutaDespachoPage() {
       }
 
       console.log('✅ Despacho encontrado:', despacho);
+      console.log('🔍 Estado del despacho:', despacho.estado);
+      console.log('🔍 Estado de la cotización:', despacho.cotizacion?.estado);
 
       // Formatear direcciones
       const origenDir = despacho.origen_sucursal 
@@ -109,7 +114,7 @@ export default function RutaDespachoPage() {
         cliente: despacho.cotizacion?.cliente?.nombre || 'Cliente no especificado',
         origen: origenDir,
         destino: destinoDir,
-        estado: despacho.cotizacion?.estado || 'Estado no especificado',
+        estado: despacho.estado || 'pendiente',
         distancia: despacho.distancia_calculada,
         duracion: despacho.tiempo_estimado,
         precio: despacho.precio_calculado
@@ -128,7 +133,7 @@ export default function RutaDespachoPage() {
         });
         
         // No lanzar error, simplemente devolver null para usar datos de ejemplo
-        console.log('🔄 Backend no disponible, se usarán datos de ejemplo');
+        console.log('🔄 Servidor no disponible, se usarán datos de ejemplo');
         return null;
       } else {
         console.error('❌ Error desconocido:', error);
@@ -168,16 +173,15 @@ export default function RutaDespachoPage() {
         } else {
           // Si no obtuvo datos del backend, usar datos de ejemplo
           console.log('🔄 Usando datos de ejemplo');
-          setError('Backend no disponible - usando datos de ejemplo');
+          setError('Servidor no disponible - usando datos de ejemplo');
           setDespachoInfo({
             id: despachoId,
-            cliente: "Cliente Ejemplo S.A.",
-            origen: "Av. Irarrázaval 2345, Ñuñoa, Santiago, Región Metropolitana, Chile",
-            destino: "Av. Providencia 5678, Providencia, Santiago, Chile",
+            cliente: "Universidad Tecnologica Metropolitana del Estado de Chile",
+            origen: "Dieciocho 161, 8330383 Santiago, Región Metropolitana",
+            destino: "Av. José Pedro Alessandri 1242, Ñuñoa, Región Metropolitana",
             estado: "En ruta",
-            distancia: "15.3 km",
-            duracion: "18 min",
-            precio: "$32.500 CLP"
+            distancia: "6.2 km",
+            duracion: "20 min",
           });
         }
       } catch (error) {
@@ -188,12 +192,11 @@ export default function RutaDespachoPage() {
         setDespachoInfo({
           id: despachoId,
           cliente: "Cliente Ejemplo S.A.",
-          origen: "Av. Irarrázaval 2345, Ñuñoa, Santiago, Región Metropolitana, Chile",
-          destino: "Av. Providencia 5678, Providencia, Santiago, Chile",
+          origen: "Dieciocho 161, 8330383 Santiago, Región Metropolitana",
+          destino: "Av. José Pedro Alessandri 1242, Ñuñoa, Región Metropolitana",
           estado: "En ruta",
           distancia: "15.3 km",
           duracion: "18 min",
-          precio: "$32.500 CLP"
         });
       } finally {
         setLoading(false);
@@ -206,9 +209,29 @@ export default function RutaDespachoPage() {
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-        <h1 style={titleStyle}>
-          Ruta de Despacho {despachoId ? `#${despachoId}` : ""}
-        </h1>
+        <div style={headerContainerStyle}>
+          <button 
+            onClick={() => router.push('/admin/despacho')}
+            style={backButtonStyle}
+            title="Volver a Despachos"
+          >
+            <FaArrowLeft />
+            Volver
+          </button>
+
+          {/* Para que no webee el caleb xd */}
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
+            marginTop: "0.5rem", // <<--- Aquí es donde logras bajar el resto
+            marginBottom: "2rem",
+          }}></div>
+
+          <h1 style={titleStyle}>
+            Ruta de Despacho {despachoId ? `#${despachoId}` : ""}
+          </h1>
+        </div>
         
         {loading ? (
           <div style={loadingContainerStyle}>
@@ -237,7 +260,7 @@ export default function RutaDespachoPage() {
                   <li>La aplicación funciona correctamente para visualización</li>
                 </ul>
                 <p style={{ marginTop: "0.5rem" }}>
-                  <strong>Backend:</strong> {API_BASE_URL}
+                  <strong>Servidor:</strong> {API_BASE_URL}
                 </p>
               </div>
             </details>
@@ -281,9 +304,34 @@ const titleStyle: React.CSSProperties = {
   color: '#1f2937',
   fontSize: "2rem",
   fontWeight: "700",
-  marginBottom: "2rem",
+  margin: "0",
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   letterSpacing: '-0.025em',
+};
+
+const headerContainerStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "0.75rem",
+  marginBottom: "2rem",
+};
+
+const backButtonStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "0.5rem",
+  backgroundColor: "#ff7300",
+  color: "white",
+  border: "none",
+  padding: "0.75rem 1.5rem",
+  borderRadius: "8px",
+  cursor: "pointer",
+  fontSize: "0.875rem",
+  fontWeight: "600",
+  fontFamily: "Montserrat, sans-serif",
+  transition: "all 0.2s ease",
+  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+  alignSelf: "flex-start",
 };
 
 const loadingContainerStyle: React.CSSProperties = {

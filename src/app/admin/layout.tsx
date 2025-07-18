@@ -19,7 +19,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         uid: '123456',
         nombre: 'Usuario Ficticio',
         correo: 'prueba@utem.cl',
-        rol: 'Vendedor',
+        rol: 'Administrador',
       }
 
       localStorage.setItem('user', JSON.stringify(mockUser))
