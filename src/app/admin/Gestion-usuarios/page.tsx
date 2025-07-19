@@ -34,7 +34,8 @@ const ESTADOS = ['Activo', 'Inactivo', 'Suspendido'];
 // Mapeo de roles para el API
 const ROLES_MAP = [
   { id: 1, nombre: 'Administrador' },
-  { id: 2, nombre: 'Vendedor' }
+  { id: 2, nombre: 'Vendedor' },
+  { id: 3, nombre: 'Superadmin' }
 ];
 
 // Hook para manejar el tamaño de la ventana
