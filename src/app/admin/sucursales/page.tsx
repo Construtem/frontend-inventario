@@ -23,6 +23,10 @@ interface Sucursal {
   tipo_id?: number; 
 }
 
+const maxPorTipo = 3;
+const totalBodegas = 3; // Cambia por el conteo real
+const totalSucursales = 3; // Cambia por el conteo real
+
 const CIUDADES = ['Santiago'];
 
 const COMUNAS_POR_CIUDAD: { [key: string]: string[] } = {
@@ -81,6 +85,47 @@ const COMUNAS_POR_CIUDAD: { [key: string]: string[] } = {
     'Vitacura'
   ]
 };
+
+// ===================== SWEET ALERT2 ESTILOS =====================
+
+// Función auxiliar para convertir un objeto JS de estilos a una cadena CSS en línea
+function objToInlineCss(styleObj: React.CSSProperties): string {
+  return Object.entries(styleObj)
+    .map(([key, value]) => {
+      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      return `${cssKey}: ${value};`;
+    })
+    .join(' ');
+}
+
+// DEFINICIONES DE ESTILOS PARA SWEETALERT2
+
+const estiloSwalTituloObj: React.CSSProperties = {
+  fontFamily: "'Montserrat', sans-serif",
+  fontSize: '1.5rem',
+  fontWeight: '600',
+  color: '#222'
+};
+
+const estiloSwalTextoObj: React.CSSProperties = {
+  fontFamily: "'Roboto', sans-serif",
+  fontSize: '1rem',
+  fontWeight: '400',
+  color: '#333'
+};
+
+const estiloSwalTextoConMargenObj: React.CSSProperties = {
+  ...estiloSwalTextoObj,
+  marginTop: '10px'
+};
+
+
+const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
+const swalTextoCssString = objToInlineCss(estiloSwalTextoObj);
+const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
+
+
+
 
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
@@ -204,7 +249,7 @@ export default function SucursalesPage() {
           if (err.name === 'AbortError') {
             errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
           } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
-            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+            errorMessage = '•No se pudo conectar al servidor.\n• Verifique su conexión a internet o contacte al administrador del sistema.';
           } else {
             errorMessage = err.message;
           }
@@ -218,6 +263,7 @@ export default function SucursalesPage() {
 
     fetchSucursales();
   }, []);
+
 
   // Función para reintentar la carga de datos
   const retryFetch = () => {
@@ -266,7 +312,7 @@ export default function SucursalesPage() {
           if (err.name === 'AbortError') {
             errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
           } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
-            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+            errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet o contacte al administrador del sistema.';
           } else {
             errorMessage = err.message;
           }
@@ -435,8 +481,14 @@ export default function SucursalesPage() {
     
     if (!filtersApplied) {
       Swal.fire({
-        title: 'Sin filtros',
-        text: 'No has seleccionado ningún filtro',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Sin filtros</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No has seleccionado ningún filtro
+          </div>
+        `,
         icon: 'info',
         confirmButtonColor: '#ff7300'
       });
@@ -451,11 +503,15 @@ export default function SucursalesPage() {
     
     // Mostrar mensaje de éxito con los filtros aplicados
     Swal.fire({
-      title: 'Filtros aplicados',
       html: `
-        ${tempCiudad ? `<p>Ciudad: ${tempCiudad}</p>` : ''}
-        ${tempComuna ? `<p>Comuna: ${tempComuna}</p>` : ''}
-        ${tempTipo ? `<p>Tipo: ${tempTipo}</p>` : ''}
+        <div style="${swalTituloCssString}">
+          ¡<b>Filtros aplicados</b>!
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          ${tempCiudad ? `<p>Ciudad: ${tempCiudad}</p>` : ''}
+          ${tempComuna ? `<p>Comuna: ${tempComuna}</p>` : ''}
+          ${tempTipo ? `<p>Tipo: ${tempTipo}</p>` : ''}
+        </div>
       `,
       icon: 'success',
       confirmButtonColor: '#ff7300'
@@ -524,16 +580,28 @@ export default function SucursalesPage() {
 
       setShowEditModal(false);
       Swal.fire({
-        title: 'Éxito',
-        text: 'Sucursal actualizada correctamente',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Éxito</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Sucursal actualizada correctamente
+          </div>
+        `,
         icon: 'success',
         confirmButtonColor: '#ff7300'
       });
     } catch (err) {
 
       Swal.fire({
-        title: 'Error',
-        text: `No se pudo actualizar la sucursal: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No se pudo actualizar la sucursal: ${err instanceof Error ? err.message : 'Error desconocido'}
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -547,8 +615,14 @@ export default function SucursalesPage() {
     // Validar límites antes de crear
     if (addFormData.tipo === '2' && sucursales >= 3) {
       Swal.fire({
-        title: 'Límite alcanzado',
-        text: 'Ya tienes el máximo de 3 sucursales permitidas.',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Límite alcanzado</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Ya tienes el máximo de 3 sucursales permitidas.
+          </div>
+        `,
         icon: 'warning',
         confirmButtonColor: '#ff7300'
       });
@@ -557,8 +631,14 @@ export default function SucursalesPage() {
     
     if (addFormData.tipo === '1' && bodegas >= 3) {
       Swal.fire({
-        title: 'Límite alcanzado',
-        text: 'Ya tienes el máximo de 3 bodegas permitidas.',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Límite alcanzado</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Ya tienes el máximo de 3 bodegas permitidas.
+          </div>
+        `,
         icon: 'warning',
         confirmButtonColor: '#ff7300'
       });
@@ -568,8 +648,14 @@ export default function SucursalesPage() {
     // Validaciones
     if (!addFormData.nombre.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El nombre es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El nombre es requerido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -578,8 +664,14 @@ export default function SucursalesPage() {
 
     if (!addFormData.direccion.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'La dirección es requerida',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            La dirección es requerida
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -588,8 +680,14 @@ export default function SucursalesPage() {
 
     if (!addFormData.telefono.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El teléfono es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El teléfono es requerido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -598,8 +696,14 @@ export default function SucursalesPage() {
 
     if (!addFormData.ciudad) {
       Swal.fire({
-        title: 'Error',
-        text: 'La ciudad es requerida',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            La ciudad es requerida
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -608,8 +712,14 @@ export default function SucursalesPage() {
 
     if (!addFormData.comuna) {
       Swal.fire({
-        title: 'Error',
-        text: 'La comuna es requerida',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            La comuna es requerida
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -652,16 +762,28 @@ export default function SucursalesPage() {
 
       setShowAddModal(false);
       Swal.fire({
-        title: 'Éxito',
-        text: 'Sucursal creada correctamente',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Éxito</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Sucursal creada correctamente
+          </div>
+        `,
         icon: 'success',
         confirmButtonColor: '#ff7300'
       });
     } catch (err) {
 
       Swal.fire({
-        title: 'Error',
-        text: `No se pudo crear la sucursal: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No se pudo crear la sucursal: ${err instanceof Error ? err.message : 'Error desconocido'}
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -689,80 +811,79 @@ export default function SucursalesPage() {
     return { sucursales, bodegas };
   }, [sucursalesData]);
 
-  // Modificar handleDelete para usar la misma lógica
   const handleDelete = (sucursal: Sucursal) => {
-    const tipoValue = sucursal.tipo_id || sucursal.tipo;
-    const tipo = (tipoValue === 1 || tipoValue === '1' || 
-                  sucursal.nombre?.toLowerCase()?.includes('bodega')) ? 'bodega' : 'sucursal';
-    
-    Swal.fire({
-      title: '¿Estás seguro?',
-      text: `¿Deseas eliminar la ${tipo} "${sucursal.nombre}"?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Sí, continuar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // Segunda confirmación con advertencia de productos
+  const tipoValue = sucursal.tipo_id || sucursal.tipo;
+  const tipo = (tipoValue === 1 || tipoValue === '1' ||
+    sucursal.nombre?.toLowerCase()?.includes('bodega')) ? 'bodega' : 'sucursal';
+
+  Swal.fire({
+
+    html: `
+      <div style="${swalTituloCssString}">
+        ¡<b>ATENCIÓN: Eliminación Permanente</b>!
+      </div>
+      <div style="${swalTextoConMargenCssString}">
+        ¿Estás seguro de eliminar la ${tipo} <b>${sucursal.nombre}</b>?
+      </div>
+      <div style="${swalTextoConMargenCssString}">
+        Esta acción eliminará permanentemente la ${tipo} y todos sus productos asociados.
+      </div>
+    `,
+    icon: 'error',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'SÍ, ELIMINAR PERMANENTEMENTE',
+    cancelButtonText: 'No, cancelar',
+    reverseButtons: true,
+    focusCancel: true,
+    showCloseButton: true
+  }).then(async (finalResult) => {
+    if (finalResult.isConfirmed) {
+      try {
+        const response = await fetch(`${apiInventarioUrl}/api/sucursales/${sucursal.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) throw new Error('Error al eliminar');
+
+        // Actualizar el estado eliminando la sucursal
+        setSucursalesData(prevData => prevData.filter(item => item.id !== sucursal.id));
+
         Swal.fire({
-          title: 'ATENCIÓN: Eliminación Permanente',
+          title: 'Eliminado',
           html: `
-            <div style="text-align: left; margin: 1rem 0;">
-              <p><strong>Al eliminar esta ${tipo}:</strong></p>
-              <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                <li>Todos los productos asociados se eliminarán <strong>PERMANENTEMENTE</strong></li>
-                <li>Esta acción <strong>NO SE PUEDE DESHACER</strong></li>
-                <li>Se perderán todos los datos relacionados</li>
-              </ul>
-              <p style="color: #ef4444; font-weight: bold;">¿Estás completamente seguro de que deseas continuar?</p>
+            <div style="${swalTituloCssString}">
+              ¡<b>Eliminado</b>!
+            </div>
+            <div style="${swalTextoConMargenCssString}">
+              La ${tipo} y todos sus productos asociados han sido eliminados permanentemente
+            </div>
+          `,
+          icon: 'success',
+          confirmButtonColor: '#ff7300'
+        });
+      } catch (err) {
+        Swal.fire({
+          title: 'Error',
+          html: `
+            <div style="${swalTituloCssString}">
+              ¡<b>Error</b>!
+            </div>
+            <div style="${swalTextoConMargenCssString}">
+              No se pudo eliminar la ${tipo}
             </div>
           `,
           icon: 'error',
-          showCancelButton: true,
-          confirmButtonColor: '#ef4444',
-          cancelButtonColor: '#6b7280',
-          confirmButtonText: 'SÍ, ELIMINAR PERMANENTEMENTE',
-          cancelButtonText: 'No, cancelar',
-          reverseButtons: true,
-          focusCancel: true
-        }).then(async (finalResult) => {
-          if (finalResult.isConfirmed) {
-            try {
-                const response = await fetch(`${apiInventarioUrl}/api/sucursales/${sucursal.id}`, {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              });
-
-              if (!response.ok) throw new Error('Error al eliminar');
-
-              // Actualizar el estado eliminando la sucursal
-              setSucursalesData(prevData => prevData.filter(item => item.id !== sucursal.id));
-
-              Swal.fire({
-                title: 'Eliminado',
-                text: `La ${tipo} y todos sus productos asociados han sido eliminados permanentemente`,
-                icon: 'success',
-                confirmButtonColor: '#ff7300'
-              });
-            } catch (err) {
-
-              Swal.fire({
-                title: 'Error',
-                text: `No se pudo eliminar la ${tipo}`,
-                icon: 'error',
-                confirmButtonColor: '#ff7300'
-              });
-            }
-          }
+          confirmButtonColor: '#ff7300'
         });
       }
-    });
-  };
+    }
+  });
+};
 
   // Función para manejar agregar sucursal
   const handleAddSucursal = () => {
@@ -771,8 +892,14 @@ export default function SucursalesPage() {
     // Verificar si se puede agregar algo
     if (sucursales >= 3 && bodegas >= 3) {
       Swal.fire({
-        title: 'Límite alcanzado',
-        text: 'Ya tienes el máximo permitido de 3 sucursales y 3 bodegas.',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Límite alcanzado</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Ya tienes el máximo permitido de 3 sucursales y 3 bodegas.
+          </div>
+        `,
         icon: 'warning',
         confirmButtonColor: '#ff7300'
       });
@@ -809,8 +936,14 @@ export default function SucursalesPage() {
     setTempTipo('');
     setCurrentPage(1);
     Swal.fire({
-      title: 'Filtros reiniciados',
-      text: 'Se han eliminado todos los filtros',
+      html: `
+        <div style="${swalTituloCssString}">
+          ¡<b>Filtros reiniciados</b>!
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          Se han eliminado todos los filtros
+        </div>
+      `,
       icon: 'info',
       confirmButtonColor: '#ff7300'
     });
@@ -984,7 +1117,7 @@ export default function SucursalesPage() {
               }} />
               <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando sucursales...</div>
               <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
-                Conectando con http://localhost:8080
+                Conectando con el servidor...
               </div>
             </div>
           ) : error ? (
@@ -1006,9 +1139,9 @@ export default function SucursalesPage() {
                 textAlign: 'center',
                 marginBottom: '1.5rem'
               }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>❌ Error al cargar las sucursales</div>
+                <div style={{ fontWeight: 'bold', marginBottom: '1rem', fontFamily: 'Montserrat, sans-serif', fontSize: '1.5rem' }}>Error al cargar las sucursales</div>
                 <div style={{ 
-                  fontSize: '0.9rem', 
+                  fontSize: '1rem', 
                   marginTop: '0.5rem',
                   whiteSpace: 'pre-line',
                   lineHeight: '1.5',
@@ -1024,10 +1157,11 @@ export default function SucursalesPage() {
                 flexDirection: isMobile ? 'column' : 'row',
                 width: isMobile ? '100%' : 'auto'
               }}>
+                
                 <button
                   onClick={retryFetch}
                   style={{
-                    backgroundColor: '#10b981',
+                    backgroundColor: '#ef4444',
                     color: 'white',
                     padding: '0.75rem 1.5rem',
                     borderRadius: '8px',
@@ -1035,60 +1169,13 @@ export default function SucursalesPage() {
                     cursor: 'pointer',
                     fontSize: '1rem',
                     fontFamily: 'Montserrat, sans-serif',
-                    fontWeight: 'semibold',
+                    fontWeight: 'bold',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-                    transition: 'all 0.3s ease',
                     minWidth: '120px'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#059669'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
                 >
-                  🔄 Reintentar
+                  Reintentar
                 </button>
-                
-                <button
-                  onClick={() => {
-                  }}
-                  style={{
-                    backgroundColor: '#6b7280',
-                    color: 'white',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '8px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '1rem',
-                    fontFamily: 'Montserrat, sans-serif',
-                    fontWeight: 'semibold',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-                    transition: 'all 0.3s ease',
-                    minWidth: '120px'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
-                >
-                  🔍 Diagnóstico
-                </button>
-              </div>
-              
-              <div style={{
-                marginTop: '1.5rem',
-                padding: '1rem',
-                backgroundColor: '#f3f4f6',
-                borderRadius: '8px',
-                fontSize: '0.875rem',
-                color: '#666',
-                textAlign: 'left',
-                width: '100%',
-                boxSizing: 'border-box'
-              }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Posibles soluciones:</div>
-                <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
-                  <li>Verificar que el backend esté ejecutándose en el puerto 8080</li>
-                  <li>Comprobar que la URL de la API sea correcta</li>
-                  <li>Revisar la configuración de CORS en el backend</li>
-                  <li>Verificar la conexión a internet</li>
-                  <li>Intentar acceder directamente a: <a href="http://localhost:8080/api/sucursales" target="_blank" style={{ color: '#3b82f6' }}>http://localhost:8080/api/sucursales</a></li>
-                </ul>
               </div>
             </div>
           ) : (
@@ -1221,6 +1308,475 @@ export default function SucursalesPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Filtros */}
+      {showFilterModal && (
+        <div style={modalOverlayStyle}>
+          <div style={{...modalContentStyle, padding: '2rem'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={{...modalTitleStyle, margin: 0}}>Filtros</h2>
+              <button 
+                onClick={() => setShowFilterModal(false)}
+                style={closeButtonStyle}
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div style={modalFormStyle}>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Ciudad</label>
+                <select 
+                  value={tempCiudad} 
+                  onChange={(e) => {
+                    setTempCiudad(e.target.value);
+                    setTempComuna(''); // Reset comuna temporal when city changes
+                  }}
+                  style={selectStyle}
+                >
+                  <option value="">Todas las ciudades</option>
+                  {CIUDADES.map(ciudad => (
+                    <option key={ciudad} value={ciudad}>{ciudad}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Comuna</label>
+                <select 
+                  value={tempComuna} 
+                  onChange={(e) => setTempComuna(e.target.value)}
+                  style={selectStyle}
+                  disabled={!tempCiudad}
+                >
+                  <option value="">Todas las comunas</option>
+                  {tempCiudad && COMUNAS_POR_CIUDAD[tempCiudad]?.map(comuna => (
+                    <option key={comuna} value={comuna}>{comuna}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Tipo</label>
+                <select 
+                  value={tempTipo} 
+                  onChange={(e) => setTempTipo(e.target.value)}
+                  style={selectStyle}
+                >
+                  <option value="">Todos los tipos</option>
+                  <option value="sucursal">Sucursal</option>
+                  <option value="bodega">Bodega</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={modalButtonsStyle}>
+              <button 
+                onClick={() => {
+                  // Limpiar tanto los estados temporales como los reales
+                  setTempCiudad('');
+                  setTempComuna('');
+                  setTempTipo('');
+                  setSelectedCiudad('');
+                  setSelectedComuna('');
+                  setSelectedTipo('');
+                  setShowFilterModal(false);
+                  Swal.fire({
+                    html: `
+                      <div style="${swalTituloCssString}">
+                        ¡<b>Filtros reiniciados</b>!
+                      </div>
+                      <div style="${swalTextoConMargenCssString}">
+                        Se han eliminado todos los filtros
+                      </div>
+                    `,
+                    icon: 'info',
+                    confirmButtonColor: '#ff7300'
+                  });
+                }} 
+                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Limpiar filtros
+              </button>
+              <button 
+                onClick={handleApplyFilters}
+                style={modalButtonStyle}
+              >
+                Aplicar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edición */}
+{showEditModal && editFormData && (
+  <div style={modalOverlayStyle}>
+    <div style={{ ...modalContentStyle, padding: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+        <h2 style={{ ...modalTitleStyle, margin: 0 }}>Editar Sucursal</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+            ID: <strong>{editFormData.id}</strong>
+          </div>
+          <button
+            onClick={() => setShowEditModal(false)}
+            style={closeButtonStyle}
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+
+      <div style={modalFormStyle}>
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Nombre</label>
+          <input
+            type="text"
+            value={editFormData.nombre || ''}
+            onChange={(e) => {
+              const filteredValue = filterTextInput(e.target.value);
+              const validation = validateTextInput(filteredValue);
+
+              if (!validation.isValid) {
+                Swal.fire({
+                  title: 'Caracteres no permitidos',
+                  html: `
+                    <div style="${swalTituloCssString}">
+                      ¡<b>Error</b>!
+                    </div>
+                    <div style="${swalTextoConMargenCssString}">
+                      ${validation.message}
+                    </div>
+                  `,
+
+                  icon: 'warning',
+                  confirmButtonColor: '#ff7300',
+                  timer: 3000,
+                  timerProgressBar: true
+                });
+              }
+
+              setEditFormData({ ...editFormData, nombre: filteredValue });
+            }}
+            style={inputStyle}
+            placeholder="Ej: Sucursal Central"
+          />
+        </div>
+
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Dirección</label>
+          <input
+            type="text"
+            value={editFormData.direccion || ''}
+            onChange={(e) => {
+              const filteredValue = filterTextInput(e.target.value);
+              const validation = validateTextInput(filteredValue);
+
+              if (!validation.isValid) {
+                Swal.fire({
+                  title: 'Caracteres no permitidos',
+                  html: `
+                    <div style="${swalTituloCssString}">
+                      ¡<b>Error</b>!
+                    </div>
+                    <div style="${swalTextoConMargenCssString}">
+                      ${validation.message}
+                    </div>
+                  `,
+                  icon: 'warning',
+                  confirmButtonColor: '#ff7300',
+                  timer: 3000,
+                  timerProgressBar: true
+                });
+              }
+
+              setEditFormData({ ...editFormData, direccion: filteredValue });
+            }}
+            style={inputStyle}
+            placeholder="Ej: Av. Siempre Viva 123"
+          />
+        </div>
+
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Teléfono</label>
+          <input
+            type="text"
+            value={editFormData.telefono || ''}
+            onChange={(e) => {
+              const filteredValue = filterPhoneInput(e.target.value);
+              const validation = validatePhoneInput(filteredValue);
+
+              if (!validation.isValid) {
+                Swal.fire({
+                  html: `
+                    <div style="${swalTituloCssString}">
+                      ¡<b>Error</b>!
+                    </div>
+                    <div style="${swalTextoConMargenCssString}">
+                      ${validation.message}
+                    </div>
+                  `,
+                  icon: 'warning',
+                  confirmButtonColor: '#ff7300',
+                  timer: 3000,
+                  timerProgressBar: true
+                });
+              }
+
+              setEditFormData({ ...editFormData, telefono: filteredValue });
+            }}
+            style={inputStyle}
+            placeholder="Ej: +56912345678"
+          />
+        </div>
+
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Ciudad</label>
+          <select
+            value={editFormData.ciudad || ''}
+            onChange={(e) => {
+              setEditFormData({
+                ...editFormData,
+                ciudad: e.target.value,
+                comuna: ''
+              });
+            }}
+            style={selectStyle}
+          >
+            <option value="">Seleccionar ciudad</option>
+            {CIUDADES.map(ciudad => (
+              <option key={ciudad} value={ciudad}>{ciudad}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Comuna</label>
+          <select
+            value={editFormData.comuna || ''}
+            onChange={(e) => setEditFormData({ ...editFormData, comuna: e.target.value })}
+            style={selectStyle}
+            disabled={!editFormData.ciudad}
+          >
+            <option value="">Seleccionar comuna</option>
+            {editFormData.ciudad && COMUNAS_POR_CIUDAD[editFormData.ciudad]?.map(comuna => (
+              <option key={comuna} value={comuna}>{comuna}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Tipo de Sucursal</label>
+          <select
+            value={editFormData.tipo || ''}
+            onChange={(e) => {
+              setEditFormData({ ...editFormData, tipo: e.target.value });
+            }}
+            style={selectStyle}
+            disabled={
+              (editFormData.tipo === 'Bodega' && totalBodegas >= maxPorTipo) ||
+              (editFormData.tipo === 'Sucursal' && totalSucursales >= maxPorTipo)
+            }
+          >
+            <option value="">Seleccionar tipo</option>
+            <option value="Bodega" disabled={totalBodegas >= maxPorTipo}>Bodega</option>
+            <option value="Sucursal" disabled={totalSucursales >= maxPorTipo}>Sucursal</option>
+          </select>
+        </div>
+      </div>
+
+      <div style={modalButtonsStyle}>
+        <button
+          onClick={() => setShowEditModal(false)}
+          style={{ ...modalButtonStyle, backgroundColor: '#6b7280' }}
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={() => {
+            if (!editFormData.tipo) {
+              Swal.fire({
+                html: `
+                  <div style="${swalTituloCssString}">
+                    ¡<b>Tipo de sucursal obligatorio</b>!
+                  </div>
+                  <div style="${swalTextoConMargenCssString}">
+                    Debes seleccionar Bodega o Sucursal
+                  </div>
+                `,
+                icon: 'warning',
+                confirmButtonColor: '#ff7300',
+              });
+              return;
+            }
+            handleSaveChanges();
+          }}
+          style={modalButtonStyle}
+        >
+          Guardar Cambios
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+      {/* Modal de Agregar Sucursal */}
+      {showAddModal && (
+        <div style={modalOverlayStyle}>
+          <div style={{...modalContentStyle, padding: '2rem'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={{...modalTitleStyle, margin: 0}}>Agregar Nueva Sucursal</h2>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                style={closeButtonStyle}
+              >
+                &times;
+              </button>
+            </div>
+            
+            {/* Mostrar información de límites */}
+            <div style={{
+              backgroundColor: '#f3f4f6',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              fontSize: '0.875rem',
+              color: '#374151'
+            }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Estado actual:</div>
+              <div>• Sucursales: {countByType.sucursales}/3</div>
+              <div>• Bodegas: {countByType.bodegas}/3</div>
+              {countByType.sucursales >= 3 && (
+                <div style={{ color: '#ef4444', marginTop: '0.5rem' }}>
+                  Límite de sucursales alcanzado
+                </div>
+              )}
+              {countByType.bodegas >= 3 && (
+                <div style={{ color: '#ef4444', marginTop: '0.5rem' }}>
+                  Límite de bodegas alcanzado
+                </div>
+              )}
+            </div>
+            
+            <div style={modalFormStyle}>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Tipo</label>
+                <select 
+                  value={addFormData.tipo}
+                  onChange={(e) => {
+                    setAddFormData({...addFormData, tipo: e.target.value});
+                  }}
+                  style={selectStyle}
+                >
+                  <option 
+                    value="2" 
+                    disabled={countByType.sucursales >= 3}
+                  >
+                    Sucursal {countByType.sucursales >= 3 ? '(Límite alcanzado)' : `(${countByType.sucursales}/3)`}
+                  </option>
+                  <option 
+                    value="1" 
+                    disabled={countByType.bodegas >= 3}
+                  >
+                    Bodega {countByType.bodegas >= 3 ? '(Límite alcanzado)' : `(${countByType.bodegas}/3)`}
+                  </option>
+                </select>
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>
+                  Nombre {addFormData.tipo === '1' && <span style={{fontSize: '0.8rem', color: '#666'}}>(se agregará &quot;Bodega&quot; al inicio automáticamente)</span>}
+                </label>
+                <input
+                  type="text"
+                  value={addFormData.nombre}
+                  onChange={(e) => setAddFormData({...addFormData, nombre: e.target.value})}
+                  style={inputStyle}
+                  placeholder={addFormData.tipo === '1' ? 'Ej: Central' : 'Ej: Sucursal Centro'}
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Dirección</label>
+                <input
+                  type="text"
+                  value={addFormData.direccion}
+                  onChange={(e) => setAddFormData({...addFormData, direccion: e.target.value})}
+                  style={inputStyle}
+                  placeholder="Ej: Av. Principal 123"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Teléfono</label>
+                <input
+                  type="text"
+                  value={addFormData.telefono}
+                  onChange={(e) => setAddFormData({...addFormData, telefono: e.target.value})}
+                  style={inputStyle}
+                  placeholder="Ej: +56 9 1234 5678"
+                />
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Ciudad</label>
+                <select 
+                  value={addFormData.ciudad}
+                  onChange={(e) => {
+                    setAddFormData({
+                      ...addFormData,
+                      ciudad: e.target.value,
+                      comuna: '' // Reset comuna when city changes
+                    });
+                  }}
+                  style={selectStyle}
+                >
+                  <option value="">Seleccionar ciudad</option>
+                  {CIUDADES.map(ciudad => (
+                    <option key={ciudad} value={ciudad}>{ciudad}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Comuna</label>
+                <select 
+                  value={addFormData.comuna}
+                  onChange={(e) => setAddFormData({...addFormData, comuna: e.target.value})}
+                  style={selectStyle}
+                  disabled={!addFormData.ciudad}
+                >
+                  <option value="">Seleccionar comuna</option>
+                  {addFormData.ciudad && COMUNAS_POR_CIUDAD[addFormData.ciudad]?.map(comuna => (
+                    <option key={comuna} value={comuna}>{comuna}</option>
+                  ))}
+                </select>
+                {!addFormData.ciudad && (
+                  <span style={{fontSize: '0.8rem', color: '#666', marginTop: '0.25rem'}}>
+                    Primero selecciona una ciudad
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div style={modalButtonsStyle}>
+              <button 
+                onClick={() => setShowAddModal(false)} 
+                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSaveNewSucursal}
+                style={modalButtonStyle}
+              >
+                Crear Sucursal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1464,4 +2020,141 @@ const paginationDotsStyle: React.CSSProperties = {
 const paginationButtonActiveStyle: React.CSSProperties = {
   backgroundColor: '#5c5c5c',
   color: '#fff',
+};
+
+const modalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000,
+};
+
+const modalContentStyle: React.CSSProperties = {
+  backgroundColor: 'white',
+  padding: '2rem',
+  borderRadius: '12px',
+  width: '90%',
+  maxWidth: '500px',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+};
+
+const modalTitleStyle: React.CSSProperties = {
+  color: '#374151',
+  fontSize: '1.5rem',
+  fontWeight: 'bold',
+  marginBottom: '1.5rem',
+  textAlign: 'center',
+};
+
+const modalFormStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+};
+
+const selectGroupStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.5rem',
+};
+
+const labelStyle: React.CSSProperties = {
+  color: '#374151',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+};
+
+const selectStyle: React.CSSProperties = {
+  padding: '0.5rem',
+  borderRadius: '6px',
+  border: '1px solid #d1d5db',
+  fontSize: '0.875rem',
+  width: '100%',
+};
+
+const modalButtonsStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '1rem',
+  marginTop: '2rem',
+};
+
+const modalButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: 'white',
+  padding: '0.5rem 1rem',
+  borderRadius: '6px',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+};
+
+const closeButtonStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontSize: '1.5rem',
+  cursor: 'pointer',
+  padding: '0.5rem',
+  color: '#6b7280',
+  transition: 'color 0.2s ease',
+  borderRadius: '4px',
+  width: '2rem',
+  height: '2rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+// =====================
+// 2. FUNCIONES DE VALIDACIÓN
+// =====================
+
+// Función para validar nombre y dirección (sin caracteres especiales)
+const validateTextInput = (value: string): { isValid: boolean; message: string } => {
+  // Caracteres prohibidos: ; % $ @ # & * ( ) [ ] { } | \ / ? < > " ' ` ~ ! ^ = 
+  const forbiddenChars = /[;%$@#&*()[\]{}|\\/?<>"'`~!^=]/;
+  
+  if (forbiddenChars.test(value)) {
+    const foundChars = value.match(forbiddenChars);
+    return {
+      isValid: false,
+      message: `Caracteres no permitidos encontrados: ${foundChars?.join(', ')}`
+    };
+  }
+  
+  return { isValid: true, message: '' };
+};
+
+// Función para validar teléfono (solo números, espacios, guiones y +)
+const validatePhoneInput = (value: string): { isValid: boolean; message: string } => {
+  // Solo permitir números, espacios, guiones y el símbolo +
+  const validChars = /^[0-9\s\-+]*$/;
+  
+  if (!validChars.test(value)) {
+    return {
+      isValid: false,
+      message: 'Solo se permiten números, espacios, guiones (-) y el símbolo +'
+    };
+  }
+  
+  return { isValid: true, message: '' };
+};
+
+// Función para filtrar caracteres en tiempo real
+const filterTextInput = (value: string): string => {
+  // Remover caracteres prohibidos automáticamente
+  return value.replace(/[;%$@#&*()[\]{}|\\/?<>"'`~!^=]/g, '');
+};
+
+// Función para filtrar teléfono en tiempo real
+const filterPhoneInput = (value: string): string => {
+  // Solo mantener números, espacios, guiones y +
+  return value.replace(/[^0-9\s\-+]/g, '');
 };

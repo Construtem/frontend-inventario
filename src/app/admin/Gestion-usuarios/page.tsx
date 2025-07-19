@@ -69,6 +69,45 @@ function useWindowSize() {
   };
 }
 
+// ===================== SWEET ALERT2 ESTILOS =====================
+
+// Función auxiliar para convertir un objeto JS de estilos a una cadena CSS en línea
+function objToInlineCss(styleObj: React.CSSProperties): string {
+  return Object.entries(styleObj)
+    .map(([key, value]) => {
+      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      return `${cssKey}: ${value};`;
+    })
+    .join(' ');
+}
+
+// DEFINICIONES DE ESTILOS PARA SWEETALERT2
+
+const estiloSwalTituloObj: React.CSSProperties = {
+  fontFamily: "'Montserrat', sans-serif",
+  fontSize: '1.5rem',
+  fontWeight: '600',
+  color: '#222'
+};
+
+const estiloSwalTextoObj: React.CSSProperties = {
+  fontFamily: "'Roboto', sans-serif",
+  fontSize: '1rem',
+  fontWeight: '400',
+  color: '#333'
+};
+
+const estiloSwalTextoConMargenObj: React.CSSProperties = {
+  ...estiloSwalTextoObj,
+  marginTop: '10px'
+};
+
+
+const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
+const swalTextoCssString = objToInlineCss(estiloSwalTextoObj);
+const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
+
+
 // Add sorting function outside the component
 const sortUsuarios = (data: Usuario[]) => {
   return [...data].sort((a, b) => (a.id || 0) - (b.id || 0));
@@ -350,8 +389,14 @@ export default function GestionUsuariosPage() {
     
     if (!filtersApplied) {
       Swal.fire({
-        title: 'Sin filtros',
-        text: 'No has seleccionado ningún filtro',
+        html: `
+          <div style="${swalTituloCssString}">
+            Sin filtros
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No has seleccionado ningún filtro
+          </div>
+        `,
         icon: 'info',
         confirmButtonColor: '#ff7300',
         timer: 5000,
@@ -368,10 +413,14 @@ export default function GestionUsuariosPage() {
     
     // Mostrar mensaje de éxito con los filtros aplicados
     Swal.fire({
-      title: 'Filtros aplicados',
       html: `
-        ${tempRol ? `<p>Rol: ${tempRol}</p>` : ''}
-        ${tempEstado ? `<p>Estado: ${tempEstado}</p>` : ''}
+        <div style="${swalTituloCssString}">
+          Filtros aplicados
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          ${tempRol ? `<p>Rol: ${tempRol}</p>` : ''}
+          ${tempEstado ? `<p>Estado: ${tempEstado}</p>` : ''}
+        </div>
       `,
       icon: 'success',
       confirmButtonColor: '#ff7300',
@@ -449,8 +498,14 @@ export default function GestionUsuariosPage() {
 
       setShowEditModal(false);
       Swal.fire({
-        title: 'Éxito',
-        text: 'Usuario actualizado correctamente',
+        html: `
+          <div style="${swalTituloCssString}">
+            Éxito
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Usuario actualizado correctamente
+          </div>
+        `,
         icon: 'success',
         confirmButtonColor: '#ff7300',
         timer: 5000,
@@ -459,8 +514,14 @@ export default function GestionUsuariosPage() {
       });
     } catch (err) {
       Swal.fire({
-        title: 'Error',
-        text:'Ha ocurrido un error inesperado: Error al actualizar el usuario',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Ha ocurrido un error inesperado: Error al actualizar el usuario
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         timer: 5000,
@@ -475,8 +536,14 @@ export default function GestionUsuariosPage() {
     // Validaciones
     if (!addFormData.nombre.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El nombre es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El nombre es requerido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         timer: 5000,
@@ -488,8 +555,14 @@ export default function GestionUsuariosPage() {
 
     if (!addFormData.email.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El email es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El email es requerido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         timer: 5000,
@@ -503,8 +576,14 @@ export default function GestionUsuariosPage() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(addFormData.email)) {
       Swal.fire({
-        title: 'Error',
-        text: 'Por favor ingrese un email válido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Por favor ingrese un email válido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         timer: 5000,
@@ -554,8 +633,14 @@ export default function GestionUsuariosPage() {
       });
       
       Swal.fire({
-        title: 'Éxito',
-        text: 'Usuario creado correctamente',
+        html: `
+          <div style="${swalTituloCssString}">
+            Éxito
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Usuario creado correctamente
+          </div>
+        `,
         icon: 'success',
         confirmButtonColor: '#ff7300',
         timer: 5000,
@@ -565,8 +650,14 @@ export default function GestionUsuariosPage() {
       });
     } catch (err) {
       Swal.fire({
-        title: 'Error',
-        text: `No se pudo crear el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No se pudo crear el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -587,8 +678,14 @@ export default function GestionUsuariosPage() {
   // Función para eliminar usuario
   const handleDelete = (usuario: Usuario) => {
     Swal.fire({
-      title: '¿Estás seguro?',
-      text: `¿Deseas eliminar al usuario "${usuario.nombre}"?`,
+      html: `
+        <div style="${swalTituloCssString}">
+          ¿Estás seguro?
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          ¿Deseas eliminar al usuario "${usuario.nombre}"?
+        </div>
+      `,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
@@ -600,14 +697,16 @@ export default function GestionUsuariosPage() {
       if (result.isConfirmed) {
         // Segunda confirmación
         Swal.fire({
-          title: 'ATENCIÓN: Eliminación Permanente',
           html: `
-            <div style="text-align: left; margin: 1rem 0;">
+            <div style="${swalTituloCssString}">
+              ATENCIÓN: Eliminación Permanente
+            </div>
+            <div style="${swalTextoConMargenCssString}">
               <p><strong>Al eliminar este usuario:</strong></p>
-              <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                <li>Todos los datos del usuario se eliminarán <strong>PERMANENTEMENTE</strong></li>
-                <li>Esta acción <strong>NO SE PUEDE DESHACER</strong></li>
-                <li>Se perderán todos los registros relacionados</li>
+              <ul>
+                <li style="text-align: left;">Todos los datos del usuario se eliminarán <strong>PERMANENTEMENTE</strong></li>
+                <li style="text-align: left;">Esta acción <strong>NO SE PUEDE DESHACER</strong></li>
+                <li style="text-align: left;">Se perderán todos los registros relacionados</li>
               </ul>
               <p style="color: #ef4444; font-weight: bold;">¿Estás completamente seguro de que deseas continuar?</p>
             </div>
@@ -661,8 +760,14 @@ export default function GestionUsuariosPage() {
               });
 
               Swal.fire({
-                title: 'Eliminado',
-                text: `El usuario "${usuario.nombre}" ha sido eliminado permanentemente`,
+                html: `
+                  <div style="${swalTituloCssString}">
+                    Eliminado
+                  </div>
+                  <div style="${swalTextoConMargenCssString}">
+                    El usuario "${usuario.nombre}" ha sido eliminado permanentemente
+                  </div>
+                `,
                 icon: 'success',
                 confirmButtonColor: '#ff7300',
                 timer: 5000, 
@@ -672,8 +777,14 @@ export default function GestionUsuariosPage() {
             } catch (err) {
               console.error('Error al eliminar usuario:', err);
               Swal.fire({
-                title: 'Error',
-                text: `No se pudo eliminar el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+                html: `
+                  <div style="${swalTituloCssString}">
+                    Error
+                  </div>
+                  <div style="${swalTextoConMargenCssString}">
+                    No se pudo eliminar el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}
+                  </div>
+                `,
                 icon: 'error',
                 confirmButtonColor: '#ff7300',
                 timer: 5000,
@@ -695,8 +806,14 @@ export default function GestionUsuariosPage() {
     setTempEstado('');
     setCurrentPage(1);
     Swal.fire({
-      title: 'Filtros reiniciados',
-      text: 'Se han eliminado todos los filtros',
+      html: `
+        <div style="${swalTituloCssString}">
+          Filtros reiniciados
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          Se han eliminado todos los filtros
+        </div>
+      `,
       icon: 'info',
       confirmButtonColor: '#ff7300',
       showCloseButton: true,

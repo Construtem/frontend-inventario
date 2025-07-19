@@ -254,8 +254,14 @@ export default function GestionProveedoresPage() {
     // Validaciones requeridas
     if (!addFormData.marca.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El nombre de la marca es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El nombre de la marca es requerido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         showCloseButton: true
@@ -265,8 +271,14 @@ export default function GestionProveedoresPage() {
 
     if (!addFormData.email.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El correo electrónico es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El correo electrónico es requerido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         showCloseButton: true
@@ -276,8 +288,14 @@ export default function GestionProveedoresPage() {
 
     if (!addFormData.telefono.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El teléfono es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El teléfono es requerido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         showCloseButton: true
@@ -287,8 +305,14 @@ export default function GestionProveedoresPage() {
 
     if (!addFormData.direccion.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'La dirección es requerida',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            La dirección es requerida
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         showCloseButton: true
@@ -299,8 +323,14 @@ export default function GestionProveedoresPage() {
     //Validación del email
     if (!addFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       Swal.fire({
-        title: 'Error',
-        text: 'El formato de email es inválido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El formato de email es inválido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         showCloseButton: true
@@ -326,8 +356,15 @@ export default function GestionProveedoresPage() {
       
       Swal.fire({
         icon: 'success',
-        title: '¡Proveedor agregado exitosamente!',
-        showConfirmButton: false,
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡Proveedor agregado exitosamente!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El proveedor se ha agregado correctamente a la lista.
+          </div>
+        `,
+        showConfirmButton: true,
         timer: 5000,
         timerProgressBar: true,
         showCloseButton: true
@@ -335,8 +372,14 @@ export default function GestionProveedoresPage() {
     } catch (error) {
 
       Swal.fire({
-        title: 'Error',
-        text: 'No se ha podido agregar el proveedor',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No se ha podido agregar el proveedor
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         timer: 5000,
@@ -360,8 +403,14 @@ export default function GestionProveedoresPage() {
     // Validaciones requeridas
     if (!editFormData.marca.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El nombre de la marca es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El nombre de la marca es requerido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         confirmButtonText: 'OK',
@@ -372,8 +421,14 @@ export default function GestionProveedoresPage() {
 
     if (!editFormData.email.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El correo electrónico es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El correo electrónico es requerido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         confirmButtonText: 'OK',
@@ -384,8 +439,14 @@ export default function GestionProveedoresPage() {
 
     if (!editFormData.telefono.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El teléfono es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El teléfono es requerido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         confirmButtonText: 'OK',
@@ -396,8 +457,14 @@ export default function GestionProveedoresPage() {
 
     if (!editFormData.direccion.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'La dirección es requerida',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            La dirección es requerida
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         showCloseButton: true
@@ -407,8 +474,14 @@ export default function GestionProveedoresPage() {
 
     if (!editFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       Swal.fire({
-        title: 'Error',
-        text: 'Email inválido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Email inválido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         showCloseButton: true
@@ -440,8 +513,15 @@ export default function GestionProveedoresPage() {
 
       Swal.fire({
         icon: 'success',
-        title: '¡Proveedor editado con éxito!',
-        showConfirmButton: false,
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡Proveedor editado con éxito!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Los cambios se han guardado correctamente.
+          </div>
+        `,
+        showConfirmButton: true,
         timer: 5000,
         timerProgressBar: true,
         showCloseButton: true,
@@ -451,8 +531,14 @@ export default function GestionProveedoresPage() {
     } catch (error) {
 
       Swal.fire({
-        title: 'Error',
-        text: 'No se pudo actualizar el proveedor',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No se pudo actualizar el proveedor
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         confirmButtonText: 'Aceptar',
@@ -467,8 +553,14 @@ export default function GestionProveedoresPage() {
   // Función para eliminar un proveedor
   const handleEliminar = async (proveedor: Proveedor) => {
     const result = await Swal.fire({
-      title: '¿Estás seguro?',
-      text: `¿Deseas eliminar el proveedor ${proveedor.marca}?`,
+      html: `
+        <div style="${swalTituloCssString}">
+          ¿Estás seguro?
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          ¿Deseas eliminar el proveedor ${proveedor.marca}?
+        </div>
+      `,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
@@ -489,8 +581,14 @@ export default function GestionProveedoresPage() {
         setProveedoresData(proveedoresData.filter(p => p.id !== proveedor.id));
 
         await Swal.fire({
-          title: '¡Eliminado!',
-          text: 'El proveedor ha sido eliminado correctamente',
+          html: `
+            <div style="${swalTituloCssString}">
+              ¡Eliminado!
+            </div>
+            <div style="${swalTextoConMargenCssString}">
+              El proveedor ha sido eliminado correctamente.
+            </div>
+          `,
           icon: 'success',
           confirmButtonColor: '#ff7300',
           timer: 5000,
@@ -500,8 +598,14 @@ export default function GestionProveedoresPage() {
       } catch (error) {
 
         await Swal.fire({
-          title: 'Error',
-          text: 'No se pudo eliminar el proveedor',
+          html: `
+            <div style="${swalTituloCssString}">
+              Error
+            </div>
+            <div style="${swalTextoConMargenCssString}">
+              No se pudo eliminar el proveedor
+            </div>
+          `,
           icon: 'error',
           confirmButtonColor: '#ff7300',
           timer: 5000,
@@ -867,8 +971,14 @@ export default function GestionProveedoresPage() {
                           onClick={() => {
 
                             Swal.fire({
-                              title: 'Diagnóstico',
-                              text: 'Información de diagnóstico enviada a la consola del navegador (F12)',
+                              html: `
+                                <div style="${swalTituloCssString}">
+                                  Diagnóstico
+                                </div>
+                                <div style="${swalTextoConMargenCssString}">
+                                  Información de diagnóstico enviada a la consola del navegador (F12)
+                                </div>
+                              `,
                               icon: 'info',
                               confirmButtonColor: '#ff7300'
                             });
