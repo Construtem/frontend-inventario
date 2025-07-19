@@ -7,7 +7,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import Swal from 'sweetalert2';
 import Image from "next/image";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { FaArrowLeft } from "react-icons/fa";
+
 
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
@@ -395,8 +395,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
     // Validaciones
     if (!formData.nombre.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El nombre es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El nombre es requerido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -405,8 +411,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
 
     if (!formData.descripcion.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'La descripción es requerida',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            La descripción es requerida
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -415,8 +427,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
 
     if (isNaN(formData.pesoKg) || formData.pesoKg < 0) {
       Swal.fire({
-        title: 'Error',
-        text: 'El peso debe ser un número válido y positivo',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El peso debe ser un número válido y positivo
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -425,8 +443,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
 
     if (isNaN(formData.precioVentaCu) || formData.precioVentaCu < 0) {
       Swal.fire({
-        title: 'Error',
-        text: 'El precio debe ser un número válido y positivo',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El precio debe ser un número válido y positivo
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -457,9 +481,16 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
             <input
               type="text"
               value={formData.nombre}
-              onChange={(e) => setFormData({...formData, nombre: e.target.value})}
               style={selectStyle}
               placeholder="Nombre del producto"
+              maxLength={50}
+              onChange={(e) => {
+                const valor = e.target.value;
+                // Solo permitir letras, espacios y caracteres acentuados
+                if (valor === '' || /^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
+                  setFormData({...formData, nombre: valor});
+                }
+              }}
             />
           </div>
 
@@ -888,11 +919,14 @@ export default function SucursalSlot1Page() {
       Swal.fire({
         icon: 'success',
         html: `
-          <div style="${swalTextoCssString}">
+          <div style="${swalTituloCssString}">
             ¡Producto actualizado exitosamente!
           </div>
+          <div style="${swalTextoConMargenCssString}">
+            El producto con SKU: <b>${updatedProduct.sku}</b> ha sido actualizado correctamente.
         `,
         showConfirmButton: false,
+        confirmButtonColor: '#ff7300',
         timer: 5000,
         timerProgressBar: true,
         showCloseButton: true,
@@ -989,59 +1023,6 @@ export default function SucursalSlot1Page() {
   };
 
 
-  // PAGINACIÓN
-  const renderPaginationButtons = () => {
-    const buttons = [];
-    // Lógica para mostrar un rango limitado de botones de página si hay muchas páginas
-    const maxButtonsToShow = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
-    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
-
-    if (endPage - startPage + 1 < maxButtonsToShow) {
-      startPage = Math.max(1, endPage - maxButtonsToShow + 1);
-    }
-
-    if (startPage > 1) {
-      buttons.push(
-        <button key="1" onClick={() => handlePageClick(1)} style={paginationButtonBaseStyle}>
-          1
-        </button>
-      );
-      if (startPage > 2) {
-        buttons.push(<span key="dots-start" style={paginationDotsStyle}>...</span>);
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      buttons.push(
-        <button
-          key={i}
-          onClick={() => handlePageClick(i)}
-          style={{
-            ...paginationButtonBaseStyle,
-            ...(currentPage === i ? paginationButtonActiveStyle : {}),
-          }}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        buttons.push(<span key="dots-end" style={paginationDotsStyle}>...</span>);
-      }
-      buttons.push(
-        <button key={totalPages} onClick={() => handlePageClick(totalPages)} style={paginationButtonBaseStyle}>
-          {totalPages}
-        </button>
-      );
-    }
-
-    return buttons;
-  };
-
-
   // Guardar los productos cargados en window para que el modal los pueda leer
   useEffect(() => {
     // @ts-expect-error: window.__LOADED_PRODUCTS__ es una variable global para comunicación con el modal
@@ -1119,7 +1100,14 @@ export default function SucursalSlot1Page() {
               type="text"
               placeholder="Buscar por nombre del producto..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                const valor = e.target.value;
+                // Solo permitir letras, espacios y caracteres acentuados
+                if (valor === '' || /^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
+                  setSearchTerm(valor);
+                }
+              }}
+              maxLength={100}
               style={{
                 ...inputStyle,
                 fontSize: isMobile ? "0.875rem" : "1rem"
@@ -1193,7 +1181,7 @@ export default function SucursalSlot1Page() {
           </div>
         )}
       </div>
-          </div>
+        </div>
 
           <div style={{
             ...rightControlsWrapperStyle,
@@ -1608,33 +1596,6 @@ const paginationButtonBaseStyle: React.CSSProperties = {
   backgroundColor: '#ff7300',
   color: '#fff',
   padding: '0.5rem',
-  borderRadius: '8px',
-  border: 'none',
-  cursor: 'pointer',
-  fontFamily: 'Montserrat, sans-serif',
-  fontSize: '0.9375rem',
-  fontWeight: 'semibold',
-  minWidth: '50px',
-  justifyContent: 'center',
-  display: 'flex',
-  alignItems: 'center',
-};
-
-const paginationButtonActiveStyle: React.CSSProperties = {
-  backgroundColor: '#5c5c5c',
-  color: '#fff',
-};
-
-const paginationDotsStyle: React.CSSProperties = {
-  color: '#5c5c5c',
-  fontSize: '1rem',
-  fontFamily: 'Montserrat, sans-serif',
-};
-
-const paginationNextButtonStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  color: '#fff',
-  padding: '0.5rem 1rem',
   borderRadius: '8px',
   border: 'none',
   cursor: 'pointer',

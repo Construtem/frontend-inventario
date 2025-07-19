@@ -7,7 +7,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import Swal from 'sweetalert2';
 import Image from "next/image";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { FaArrowLeft } from "react-icons/fa";
+
 
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
@@ -395,8 +395,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
     // Validaciones
     if (!formData.nombre.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El nombre es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El nombre es requerido
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -405,8 +411,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
 
     if (!formData.descripcion.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'La descripción es requerida',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            La descripción es requerida
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -415,8 +427,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
 
     if (isNaN(formData.pesoKg) || formData.pesoKg < 0) {
       Swal.fire({
-        title: 'Error',
-        text: 'El peso debe ser un número válido y positivo',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El peso debe ser un número válido y positivo
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -425,8 +443,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
 
     if (isNaN(formData.precioVentaCu) || formData.precioVentaCu < 0) {
       Swal.fire({
-        title: 'Error',
-        text: 'El precio debe ser un número válido y positivo',
+        html: `
+          <div style="${swalTituloCssString}">
+            Error
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El precio debe ser un número válido y positivo
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -457,9 +481,16 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
             <input
               type="text"
               value={formData.nombre}
-              onChange={(e) => setFormData({...formData, nombre: e.target.value})}
               style={selectStyle}
               placeholder="Nombre del producto"
+              maxLength={50}
+              onChange={(e) => {
+                const valor = e.target.value;
+                // Solo permitir letras, espacios y caracteres acentuados
+                if (valor === '' || /^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
+                  setFormData({...formData, nombre: valor});
+                }
+              }}
             />
           </div>
 
@@ -666,7 +697,7 @@ export default function SucursalSlot1Page() {
 
   // --- ESTADOS DE PAGINACIÓN ---
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15; // <- Setear número de productos por página
+  const itemsPerPage = 10; // <- Setear número de productos por página
 
   // Agregar CSS para la animación de carga
   useEffect(() => {
@@ -888,11 +919,14 @@ export default function SucursalSlot1Page() {
       Swal.fire({
         icon: 'success',
         html: `
-          <div style="${swalTextoCssString}">
+          <div style="${swalTituloCssString}">
             ¡Producto actualizado exitosamente!
           </div>
+          <div style="${swalTextoConMargenCssString}">
+            El producto con SKU: <b>${updatedProduct.sku}</b> ha sido actualizado correctamente.
         `,
         showConfirmButton: false,
+        confirmButtonColor: '#ff7300',
         timer: 5000,
         timerProgressBar: true,
         showCloseButton: true,
@@ -989,59 +1023,6 @@ export default function SucursalSlot1Page() {
   };
 
 
-  // PAGINACIÓN
-  const renderPaginationButtons = () => {
-    const buttons = [];
-    // Lógica para mostrar un rango limitado de botones de página si hay muchas páginas
-    const maxButtonsToShow = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
-    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
-
-    if (endPage - startPage + 1 < maxButtonsToShow) {
-      startPage = Math.max(1, endPage - maxButtonsToShow + 1);
-    }
-
-    if (startPage > 1) {
-      buttons.push(
-        <button key="1" onClick={() => handlePageClick(1)} style={paginationButtonBaseStyle}>
-          1
-        </button>
-      );
-      if (startPage > 2) {
-        buttons.push(<span key="dots-start" style={paginationDotsStyle}>...</span>);
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      buttons.push(
-        <button
-          key={i}
-          onClick={() => handlePageClick(i)}
-          style={{
-            ...paginationButtonBaseStyle,
-            ...(currentPage === i ? paginationButtonActiveStyle : {}),
-          }}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        buttons.push(<span key="dots-end" style={paginationDotsStyle}>...</span>);
-      }
-      buttons.push(
-        <button key={totalPages} onClick={() => handlePageClick(totalPages)} style={paginationButtonBaseStyle}>
-          {totalPages}
-        </button>
-      );
-    }
-
-    return buttons;
-  };
-
-
   // Guardar los productos cargados en window para que el modal los pueda leer
   useEffect(() => {
     // @ts-expect-error: window.__LOADED_PRODUCTS__ es una variable global para comunicación con el modal
@@ -1119,7 +1100,14 @@ export default function SucursalSlot1Page() {
               type="text"
               placeholder="Buscar por nombre del producto..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                const valor = e.target.value;
+                // Solo permitir letras, espacios y caracteres acentuados
+                if (valor === '' || /^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
+                  setSearchTerm(valor);
+                }
+              }}
+              maxLength={100}
               style={{
                 ...inputStyle,
                 fontSize: isMobile ? "0.875rem" : "1rem"
@@ -1193,7 +1181,7 @@ export default function SucursalSlot1Page() {
           </div>
         )}
       </div>
-          </div>
+        </div>
 
           <div style={{
             ...rightControlsWrapperStyle,
@@ -1379,7 +1367,6 @@ export default function SucursalSlot1Page() {
                   flexWrap: isMobile ? "wrap" : "nowrap",
                   width: isMobile ? "100%" : "auto"
                 }}>
-                  {renderPaginationButtons()}
                 </div>
               )}
             </div>
@@ -1621,33 +1608,6 @@ const paginationButtonBaseStyle: React.CSSProperties = {
   alignItems: 'center',
 };
 
-const paginationButtonActiveStyle: React.CSSProperties = {
-  backgroundColor: '#5c5c5c',
-  color: '#fff',
-};
-
-const paginationDotsStyle: React.CSSProperties = {
-  color: '#5c5c5c',
-  fontSize: '1rem',
-  fontFamily: 'Montserrat, sans-serif',
-};
-
-const paginationNextButtonStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  color: '#fff',
-  padding: '0.5rem 1rem',
-  borderRadius: '8px',
-  border: 'none',
-  cursor: 'pointer',
-  fontFamily: 'Montserrat, sans-serif',
-  fontSize: '0.9375rem',
-  fontWeight: 'semibold',
-  minWidth: '50px',
-  justifyContent: 'center',
-  display: 'flex',
-  alignItems: 'center',
-};
-
 const editButtonStyle: React.CSSProperties = {
   backgroundColor: "#ff7300",
   color: "white",
@@ -1774,166 +1734,166 @@ const writtenCharactersStyle: React.CSSProperties = {
   fontFamily: 'Montserrat, sans-serif',
 };
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    flexGrow: 1,
-    padding: "0.3rem 2.5rem 0.3rem 1rem",
-    borderTop: "1px solid #ccc",
-    borderRight: "1px solid #ccc",
-    borderBottom: "1px solid #ccc",
-    borderLeft: "1px solid #ccc",
-    outline: "none",
-    height: '40px',
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    boxSizing: 'border-box',
-    fontSize: '0.875rem',
-    fontFamily: 'Roboto, sans-serif',
-    fontWeight: 400,
-  };
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  flexGrow: 1,
+  padding: "0.3rem 2.5rem 0.3rem 1rem",
+  borderTop: "1px solid #ccc",
+  borderRight: "1px solid #ccc",
+  borderBottom: "1px solid #ccc",
+  borderLeft: "1px solid #ccc",
+  outline: "none",
+  height: '40px',
+  backgroundColor: 'white',
+  borderRadius: '8px',
+  boxSizing: 'border-box',
+  fontSize: '0.875rem',
+  fontFamily: 'Roboto, sans-serif',
+  fontWeight: 400,
+};
 
-  const lupaButtonStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    height: '40px',
-    width: '2.2rem',
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-  };
+const lupaButtonStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  right: 0,
+  height: '40px',
+  width: '2.2rem',
+  background: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+};
 
-  const loadingSpinnerStyle: React.CSSProperties = { 
-   width: "20px", 
-   height: "20px", 
-   border: "2px solid #f3f3f3", 
-   borderTop: "2px solid #ff7300", 
-   borderRadius: "50%", 
-   animation: "spin 1s linear infinite" 
-  };
+const loadingSpinnerStyle: React.CSSProperties = { 
+  width: "20px", 
+  height: "20px", 
+  border: "2px solid #f3f3f3", 
+  borderTop: "2px solid #ff7300", 
+  borderRadius: "50%", 
+  animation: "spin 1s linear infinite" 
+};
 
-  // Estilos para los botones de modificar y eliminar productos
-  const handleModifyProductButtonStyle: React.CSSProperties = {
-    ...modifyProductButtonStyle,
-    fontSize: '0.75rem',
-    padding: '0.25rem 0.5rem',
-    maxWidth: '60px'
-  };
+// Estilos para los botones de modificar y eliminar productos
+const handleModifyProductButtonStyle: React.CSSProperties = {
+  ...modifyProductButtonStyle,
+  fontSize: '0.75rem',
+  padding: '0.25rem 0.5rem',
+  maxWidth: '60px'
+};
 
-  const handleDeleteProductButtonStyle: React.CSSProperties = {
-   ...modifyProductButtonStyle,
-    backgroundColor: '#ef4444',
-    fontSize: '0.75rem',
-    padding: '0.25rem 0.5rem',
-    maxWidth: '60px'
-  };
+const handleDeleteProductButtonStyle: React.CSSProperties = {
+  ...modifyProductButtonStyle,
+  backgroundColor: '#ef4444',
+  fontSize: '0.75rem',
+  padding: '0.25rem 0.5rem',
+  maxWidth: '60px'
+};
 
-  const productStatusStyle: React.CSSProperties = {
-    color: 'white',
-    padding: '0.25rem 0.5rem',
-    borderRadius: '12px',
-    fontSize: '0.75rem',
-    fontWeight: '500'
-  };
+const productStatusStyle: React.CSSProperties = {
+  color: 'white',
+  padding: '0.25rem 0.5rem',
+  borderRadius: '12px',
+  fontSize: '0.75rem',
+  fontWeight: '500'
+};
 
-  const containerEditDeletebuttonsStyle: React.CSSProperties = {
-    display: "flex",
-    justifyContent: "center",
-    gap: "5px"
-  };
+const containerEditDeletebuttonsStyle: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "center",
+  gap: "5px"
+};
 
-  const unavailableProductsStyle: React.CSSProperties = {
-     ...tdStyle, 
-     textAlign: 'center', 
-     color: '#888', 
-     padding: "2rem" 
-  };
+const unavailableProductsStyle: React.CSSProperties = {
+    ...tdStyle, 
+    textAlign: 'center', 
+    color: '#888', 
+    padding: "2rem" 
+};
 
-  const entirePieceFilterButtonStyle: React.CSSProperties = {
-    backgroundColor: '#5c5c5c',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  };
+const entirePieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#5c5c5c',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
+};
 
-  const firstPieceFilterButtonStyle: React.CSSProperties = {
-    backgroundColor: '#ff7300',
-    borderTopRightRadius: '0',
-    borderBottomRightRadius: '0',
-    borderRight: '1px solid rgba(255, 255, 255, 0.3)',
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem'
-  };
-  
-  const secondPieceFilterButtonStyle: React.CSSProperties = {
-    backgroundColor: '#ef4444',
-    borderTopLeftRadius: '0',
-    borderBottomLeftRadius: '0',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0.25rem'
-  };
+const firstPieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  borderTopRightRadius: '0',
+  borderBottomRightRadius: '0',
+  borderRight: '1px solid rgba(255, 255, 255, 0.3)',
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
+};
 
-  const xClosebuttonStyle: React.CSSProperties = {
-    fontSize: '1rem',
-    lineHeight: '1' 
-  };
+const secondPieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ef4444',
+  borderTopLeftRadius: '0',
+  borderBottomLeftRadius: '0',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.25rem'
+};
 
-  const theadStyle: React.CSSProperties = {
-    position: "sticky", 
-    top: 0, 
-    zIndex: 2, 
-    background: "#5C5C5C",
-  };
+const xClosebuttonStyle: React.CSSProperties = {
+  fontSize: '1rem',
+  lineHeight: '1' 
+};
 
-  const colSpanStyle: React.CSSProperties = {
-    textAlign: "center",
-    padding: "2rem"
-  };
-  
-  const loadingStyle: React.CSSProperties = {
-    display: "flex", 
-    justifyContent: "center", 
-    alignItems: "center", 
-    gap: "10px" 
-  };
+const theadStyle: React.CSSProperties = {
+  position: "sticky", 
+  top: 0, 
+  zIndex: 2, 
+  background: "#5C5C5C",
+};
 
-  const skuContainerStyle: React.CSSProperties = {
-    fontSize: '0.9rem', 
-    color: '#666', 
-    backgroundColor: '#f3f4f6', 
-    padding: '0.5rem 0.75rem', 
-    borderRadius: '6px', 
-    border: '1px solid #d1d5db' 
-  };
+const colSpanStyle: React.CSSProperties = {
+  textAlign: "center",
+  padding: "2rem"
+};
 
-  const paginationButtonDisabledStyle: React.CSSProperties = {
-    backgroundColor: '#d1d5db',
-    color: '#9ca3af',
-    cursor: 'not-allowed',
-    opacity: 0.6
-  };
+const loadingStyle: React.CSSProperties = {
+  display: "flex", 
+  justifyContent: "center", 
+  alignItems: "center", 
+  gap: "10px" 
+};
 
-  const pageIndicatorStyle: React.CSSProperties = {
-    fontSize: '0.875rem',
-    fontWeight: '500',
-    color: '#f7f7f7',
-    fontFamily: 'Montserrat, sans-serif',
-    display: 'flex',
-    alignItems: 'center',
-    padding: '0 1rem',
-    backgroundColor: '#5c5c5c',
-    borderRadius: '6px',
-    border: '1px solid #e5e7eb',
-    minWidth: 'fit-content',
-    whiteSpace: 'nowrap',
-    paddingTop: '0.5rem',
-    paddingBottom: '0.5rem',
-  };
+const skuContainerStyle: React.CSSProperties = {
+  fontSize: '0.9rem', 
+  color: '#666', 
+  backgroundColor: '#f3f4f6', 
+  padding: '0.5rem 0.75rem', 
+  borderRadius: '6px', 
+  border: '1px solid #d1d5db' 
+};
+
+const paginationButtonDisabledStyle: React.CSSProperties = {
+  backgroundColor: '#d1d5db',
+  color: '#9ca3af',
+  cursor: 'not-allowed',
+  opacity: 0.6
+};
+
+const pageIndicatorStyle: React.CSSProperties = {
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  color: '#f7f7f7',
+  fontFamily: 'Montserrat, sans-serif',
+  display: 'flex',
+  alignItems: 'center',
+  padding: '0 1rem',
+  backgroundColor: '#5c5c5c',
+  borderRadius: '6px',
+  border: '1px solid #e5e7eb',
+  minWidth: 'fit-content',
+  whiteSpace: 'nowrap',
+  paddingTop: '0.5rem',
+  paddingBottom: '0.5rem',
+};

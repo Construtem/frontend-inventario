@@ -41,13 +41,37 @@ function useWindowSize() {
   };
 }
 
+// Add sorting function outside the component
+// Define the type for inventory data
+type InventarioData = {
+  id: number;
+  sku: string;
+  nombreProducto: string;
+  proveedor: string;
+  pesoKg: string | number;
+  largoCm: string | number;
+  anchoCm: string | number;
+  altoCm: string | number;
+  precioCU: number;
+  stock: number;
+  fechaIngreso: string;
+};
+
+const sortInventario = (data: InventarioData[]) => {
+  return [...data].sort((a, b) => {
+    const skuA = (a.sku || '').toString().toLowerCase();
+    const skuB = (b.sku || '').toString().toLowerCase();
+    return skuA.localeCompare(skuB);
+  });
+};
+
 export default function InventarioProveedoresPage() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
-  const itemsPerPage = 15;
+  const itemsPerPage = 10;
   const [inventarioData, setInventarioData] = useState<Array<{
   id: number;
   sku: string;
@@ -96,14 +120,15 @@ export default function InventarioProveedoresPage() {
 
   // Filtrar datos según búsqueda
   const filteredData = useMemo(() => {
-    return inventarioData.filter(item => {
+    const filtered = inventarioData.filter(item => {
       const searchLower = searchTerm.toLowerCase();
       return (
-        item.sku.toLowerCase().includes(searchLower) ||
-        item.nombreProducto.toLowerCase().includes(searchLower) ||
-        item.proveedor.toLowerCase().includes(searchLower)
+        (item.sku || '-').toLowerCase().includes(searchLower) ||
+        (item.nombreProducto || '-').toLowerCase().includes(searchLower) ||
+        (item.proveedor || '-').toLowerCase().includes(searchLower)
       );
     });
+    return sortInventario(filtered);
   }, [inventarioData, searchTerm]);
 
   // Calcular datos paginados
@@ -129,56 +154,6 @@ export default function InventarioProveedoresPage() {
     setCurrentPage(pageNumber);
   };
 
-  // Renderizar botones de paginación
-  const renderPaginationButtons = () => {
-    const buttons = [];
-    const maxButtonsToShow = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
-    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
-
-    if (endPage - startPage + 1 < maxButtonsToShow) {
-      startPage = Math.max(1, endPage - maxButtonsToShow + 1);
-    }
-
-    if (startPage > 1) {
-      buttons.push(
-        <button key="1" onClick={() => handlePageClick(1)} style={paginationButtonBaseStyle}>
-          1
-        </button>
-      );
-      if (startPage > 2) {
-        buttons.push(<span key="dots-start" style={paginationDotsStyle}>...</span>);
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      buttons.push(
-        <button
-          key={i}
-          onClick={() => handlePageClick(i)}
-          style={{
-            ...paginationButtonBaseStyle,
-            ...(currentPage === i ? paginationButtonActiveStyle : {}),
-          }}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        buttons.push(<span key="dots-end" style={paginationDotsStyle}>...</span>);
-      }
-      buttons.push(
-        <button key={totalPages} onClick={() => handlePageClick(totalPages)} style={paginationButtonBaseStyle}>
-          {totalPages}
-        </button>
-      );
-    }
-
-    return buttons;
-  };
 
   // Calcular ancho de búsqueda basado en el tamaño de la ventana
   const getSearchWidth = () => {
@@ -382,7 +357,7 @@ export default function InventarioProveedoresPage() {
                     <td style={tdStyle}>{item.largoCm}</td>
                     <td style={tdStyle}>{item.anchoCm}</td>
                     <td style={tdStyle}>{item.altoCm}</td>
-                    <td style={tdStyle}>${item.precioCU.toFixed(2)}</td>
+                    <td style={tdStyle}>${typeof item.precioCU === 'number' ? item.precioCU.toFixed(0) : '0'}</td>
                     <td style={tdStyle}>{item.stock}</td>
                     <td style={tdStyle}>{new Date(item.fechaIngreso).toLocaleDateString()}</td>
                     <td style={tdStyle}>
@@ -413,33 +388,66 @@ export default function InventarioProveedoresPage() {
           </table>
         </div>
 
-        {filteredData.length > 0 && (
-          <div style={{
-            ...paginationContainerStyle,
-            flexDirection: isMobile ? "column" : "row",
-            padding: "1rem",
-            marginTop: "1rem",
-            width: "100%",
-            boxSizing: "border-box"
-          }}>
+          {filteredData.length > 0 && (
+          <div style={paginationContainerStyle}>
             <div style={{
               ...paginationControlsStyle,
-              flexWrap: "wrap",
-              gap: isMobile ? "0.5rem" : "0.75rem"
+              flexDirection: isMobile ? "column" : "row",
+              gap: isMobile ? "1rem" : "1rem",
+              padding: isMobile ? "1rem" : "0.5rem 1rem"
             }}>
-              <button onClick={handlePrevPage} disabled={currentPage === 1} style={paginationButtonBaseStyle}>
-                Anterior
-              </button>
-              <div style={paginationButtonsWrapperStyle}>
-                {renderPaginationButtons()}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: isMobile ? "100%" : "auto",
+                gap: "1rem"
+              }}>
+                <button 
+                  onClick={handlePrevPage} 
+                  disabled={currentPage === 1} 
+                  style={{
+                    ...paginationButtonBaseStyle,
+                    ...(currentPage === 1 ? paginationButtonDisabledStyle : {}),
+                    flex: isMobile ? "1" : "none",
+                    minWidth: isMobile ? "auto" : "80px"
+                  }}
+                >
+                  Anterior
+                </button>
+                
+                <div style={{
+                  ...pageIndicatorStyle,
+                  margin: isMobile ? "0" : "0",
+                  flex: isMobile ? "0 0 auto" : "none"
+                }}>
+                  {currentPage} de {totalPages}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
+                </div>
+                
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    ...paginationButtonBaseStyle,
+                    ...(currentPage === totalPages ? paginationButtonDisabledStyle : {}),
+                    flex: isMobile ? "1" : "none",
+                    minWidth: isMobile ? "auto" : "80px"
+                  }}
+                >
+                  Siguiente
+                </button>
               </div>
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
-              >
-                Siguiente
-              </button>
+              
+              {totalPages > 1 && (
+                <div style={{
+                  ...paginationButtonsWrapperStyle,
+                  justifyContent: isMobile ? "center" : "flex-start",
+                  flexWrap: isMobile ? "wrap" : "nowrap",
+                  width: isMobile ? "100%" : "auto"
+                }}>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -722,4 +730,28 @@ const paginationButtonsWrapperStyle: React.CSSProperties = {
   gap: '5px',
   flexWrap: 'wrap',
   justifyContent: 'center'
+};
+
+const paginationButtonDisabledStyle: React.CSSProperties = {
+  backgroundColor: '#d1d5db',
+  color: '#9ca3af',
+  cursor: 'not-allowed',
+  opacity: 0.6
+};
+
+const pageIndicatorStyle: React.CSSProperties = {
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  color: '#f7f7f7',
+  fontFamily: 'Montserrat, sans-serif',
+  display: 'flex',
+  alignItems: 'center',
+  padding: '0 1rem',
+  backgroundColor: '#5c5c5c',
+  borderRadius: '6px',
+  border: '1px solid #e5e7eb',
+  minWidth: 'fit-content',
+  whiteSpace: 'nowrap',
+  paddingTop: '0.5rem',
+  paddingBottom: '0.5rem',
 };
