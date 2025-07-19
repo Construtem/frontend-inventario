@@ -12,7 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     // Solo revisa si existe el item 'user' en localStorage
-    //const user = localStorage.getItem("user");    // Descomentar esta linea para produccion
+    // const user = localStorage.getItem("user");    // Descomentar esta linea para produccion
 
     if (!localStorage.getItem("user")) {    // esto no va para produccion xddd
       const mockUser = {

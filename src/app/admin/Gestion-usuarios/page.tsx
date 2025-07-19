@@ -28,13 +28,14 @@ interface Usuario {
   fechaRegistro?: string;
 }
 
-const ROLES = ['Administrador', 'Vendedor'];
+// const ROLES = ['Administrador', 'Vendedor'];  //comenté esto ya que no se usa y el linter se picó
 const ESTADOS = ['Activo', 'Inactivo', 'Suspendido'];
 
 // Mapeo de roles para el API
 const ROLES_MAP = [
   { id: 1, nombre: 'Administrador' },
-  { id: 2, nombre: 'Vendedor' }
+  { id: 2, nombre: 'Vendedor' },
+  { id: 3, nombre: 'Superadmin' }
 ];
 
 // Hook para manejar el tamaño de la ventana
@@ -69,48 +70,59 @@ function useWindowSize() {
   };
 }
 
-// ===================== SWEET ALERT2 ESTILOS =====================
-
-// Función auxiliar para convertir un objeto JS de estilos a una cadena CSS en línea
-function objToInlineCss(styleObj: React.CSSProperties): string {
-  return Object.entries(styleObj)
-    .map(([key, value]) => {
-      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-      return `${cssKey}: ${value};`;
-    })
-    .join(' ');
-}
-
-// DEFINICIONES DE ESTILOS PARA SWEETALERT2
-
-const estiloSwalTituloObj: React.CSSProperties = {
-  fontFamily: "'Montserrat', sans-serif",
-  fontSize: '1.5rem',
-  fontWeight: '600',
-  color: '#222'
-};
-
-const estiloSwalTextoObj: React.CSSProperties = {
-  fontFamily: "'Roboto', sans-serif",
-  fontSize: '1rem',
-  fontWeight: '400',
-  color: '#333'
-};
-
-const estiloSwalTextoConMargenObj: React.CSSProperties = {
-  ...estiloSwalTextoObj,
-  marginTop: '10px'
-};
-
-
-const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
-const swalTextoCssString = objToInlineCss(estiloSwalTextoObj);
-const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
-
-
 // Add sorting function outside the component
 const sortUsuarios = (data: Usuario[]) => {
-  return [...data].sort((a, b) => (a.id || 0) - (b.id || 0));
+  return [...data].sort((a, b) => {
+    // Si hay id numérico, usar ese; sino usar email para ordenar
+    if (a.id && b.id) {
+      return a.id - b.id;
+    }
+    return (a.email || '').localeCompare(b.email || '');
+  });
+};
+
+// =====================
+// 3. FUNCIONES DE VALIDACIÓN
+// =====================
+
+// Validar nombre: solo letras y espacios
+const validateNombre = (nombre: string): { isValid: boolean; error?: string } => {
+  if (!nombre.trim()) {
+    return { isValid: false, error: 'El nombre es requerido' };
+  }
+  
+  const nameRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
+  if (!nameRegex.test(nombre)) {
+    return { isValid: false, error: 'El nombre solo puede contener letras y espacios' };
+  }
+  
+  if (nombre.length < 2) {
+    return { isValid: false, error: 'El nombre debe tener al menos 2 caracteres' };
+  }
+  
+  if (nombre.length > 50) {
+    return { isValid: false, error: 'El nombre no puede tener más de 50 caracteres' };
+  }
+  
+  return { isValid: true };
+};
+
+// Validar email: formato válido sin caracteres especiales raros
+const validateEmail = (email: string): { isValid: boolean; error?: string } => {
+  if (!email.trim()) {
+    return { isValid: false, error: 'El email es requerido' };
+  }
+  
+  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) {
+    return { isValid: false, error: 'Por favor ingrese un email válido' };
+  }
+  
+  if (email.length > 100) {
+    return { isValid: false, error: 'El email no puede tener más de 100 caracteres' };
+  }
+  
+  return { isValid: true };
 };
 
 export default function GestionUsuariosPage() {
@@ -119,6 +131,8 @@ export default function GestionUsuariosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usuariosData, setUsuariosData] = useState<Usuario[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedRol, setSelectedRol] = useState("");
   const [selectedEstado, setSelectedEstado] = useState("");
@@ -127,12 +141,7 @@ export default function GestionUsuariosPage() {
   const [tempRol, setTempRol] = useState("");
   const [tempEstado, setTempEstado] = useState("");
 
-  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
-
-  // --- ESTADOS DE PAGINACIÓN ---
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // <- Setear número de productos por página
-
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
   // =====================
   // 2. LLAMADA A LA API
   // =====================
@@ -193,14 +202,20 @@ export default function GestionUsuariosPage() {
         }
         
       } catch (err) {
-        let errorMessage = "Error desconocido al cargar datos";
+        let errorMessage = "Error de conexión. Por favor, intente nuevamente.";
         if (err instanceof Error) {
           if (err.name === 'AbortError') {
-            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+            errorMessage = 'Tiempo de espera agotado. Verifique su conexión a internet y vuelva a intentar.';
           } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
-            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+            errorMessage = '•No se pudo conectar al servidor.\n• Verifique su conexión a internet o contacte al administrador del sistema.';
+          } else if (err.message.includes('500')) {
+            errorMessage = 'Error interno del servidor (Error 500). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('404')) {
+            errorMessage = 'Servicio no encontrado (Error 404). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('403') || err.message.includes('401')) {
+            errorMessage = 'No tiene permisos para acceder a este recurso. Por favor, contacte al administrador del sistema.';
           } else {
-            errorMessage = err.message;
+            errorMessage = 'Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.';
           }
         }
         
@@ -256,14 +271,20 @@ export default function GestionUsuariosPage() {
         }
         
       } catch (err) {
-        let errorMessage = "Error desconocido al cargar datos";
+        let errorMessage = "Error de conexión. Por favor, intente nuevamente.";
         if (err instanceof Error) {
           if (err.name === 'AbortError') {
-            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+            errorMessage = 'Tiempo de espera agotado. Verifique su conexión a internet y vuelva a intentar.';
           } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
-            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+            errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet o contacte al administrador del sistema.';
+          } else if (err.message.includes('500')) {
+            errorMessage = 'Error interno del servidor (Error 500). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('404')) {
+            errorMessage = 'Servicio no encontrado (Error 404). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('403') || err.message.includes('401')) {
+            errorMessage = 'No tiene permisos para acceder a este recurso. Por favor, contacte al administrador del sistema.';
           } else {
-            errorMessage = err.message;
+            errorMessage = 'Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.';
           }
         }
         
@@ -330,9 +351,60 @@ export default function GestionUsuariosPage() {
     if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
+  const handlePageClick = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
 
   // Renderizar botones de paginación
+  const renderPaginationButtons = () => {
+    const buttons = [];
+    const maxButtonsToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
 
+    if (endPage - startPage + 1 < maxButtonsToShow) {
+      startPage = Math.max(1, endPage - maxButtonsToShow + 1);
+    }
+
+    if (startPage > 1) {
+      buttons.push(
+        <button key="1" onClick={() => handlePageClick(1)} style={paginationButtonBaseStyle}>
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        buttons.push(<span key="dots-start" style={paginationDotsStyle}>...</span>);
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => handlePageClick(i)}
+          style={{
+            ...paginationButtonBaseStyle,
+            ...(currentPage === i ? paginationButtonActiveStyle : {}),
+          }}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        buttons.push(<span key="dots-end" style={paginationDotsStyle}>...</span>);
+      }
+      buttons.push(
+        <button key={totalPages} onClick={() => handlePageClick(totalPages)} style={paginationButtonBaseStyle}>
+          {totalPages}
+        </button>
+      );
+    }
+
+    return buttons;
+  };
 
   // Calcular ancho de búsqueda basado en el tamaño de la ventana
   const getSearchWidth = () => {
@@ -389,19 +461,10 @@ export default function GestionUsuariosPage() {
     
     if (!filtersApplied) {
       Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Sin filtros
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            No has seleccionado ningún filtro
-          </div>
-        `,
+        title: 'Sin filtros',
+        text: 'No has seleccionado ningún filtro',
         icon: 'info',
-        confirmButtonColor: '#ff7300',
-        timer: 5000,
-        timerProgressBar: true,
-        showCancelButton: true,
+        confirmButtonColor: '#ff7300'
       });
       return;
     }
@@ -413,26 +476,20 @@ export default function GestionUsuariosPage() {
     
     // Mostrar mensaje de éxito con los filtros aplicados
     Swal.fire({
+      title: 'Filtros aplicados',
       html: `
-        <div style="${swalTituloCssString}">
-          Filtros aplicados
-        </div>
-        <div style="${swalTextoConMargenCssString}">
-          ${tempRol ? `<p>Rol: ${tempRol}</p>` : ''}
-          ${tempEstado ? `<p>Estado: ${tempEstado}</p>` : ''}
-        </div>
+        ${tempRol ? `<p>Rol: ${tempRol}</p>` : ''}
+        ${tempEstado ? `<p>Estado: ${tempEstado}</p>` : ''}
       `,
       icon: 'success',
-      confirmButtonColor: '#ff7300',
-      showCloseButton: true,
-      timer: 5000,
-      timerProgressBar: true
+      confirmButtonColor: '#ff7300'
     });
   };
 
   // Estados para el modal de edición
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState<Usuario | null>(null);
+  const [originalEmail, setOriginalEmail] = useState<string>(''); // Para guardar el email original
 
   // Estados para el modal de agregar
   const [showAddModal, setShowAddModal] = useState(false);
@@ -453,6 +510,9 @@ export default function GestionUsuariosPage() {
       rol_id: usuario.rol_id || usuario.rol?.id || 1,
       estado: usuario.estado || 'Activo'
     };
+    
+    // Guardar el email original para usarlo como identificador
+    setOriginalEmail(usuario.email || '');
     setEditFormData(usuarioParaEditar);
     setShowEditModal(true);
   };
@@ -461,144 +521,163 @@ export default function GestionUsuariosPage() {
   const handleSaveChanges = async () => {
     if (!editFormData) return;
 
+    // Validar nombre
+    const nombreValidation = validateNombre(editFormData.nombre);
+    if (!nombreValidation.isValid) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: nombreValidation.error,
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
+    // Validar email
+    const emailValidation = validateEmail(editFormData.email);
+    if (!emailValidation.isValid) {
+      Swal.fire({
+        title: 'Error de validación',
+        text: emailValidation.error,
+        icon: 'error',
+        confirmButtonColor: '#ff7300'
+      });
+      return;
+    }
+
     try {
       const dataToSend = {
-        nombre: editFormData.nombre || '',
-        email: editFormData.email || '',
+        nombre: editFormData.nombre.trim(),
+        email: editFormData.email.trim().toLowerCase(),
         rol_id: editFormData.rol_id || editFormData.rol?.id || 1
       };
 
-      const response = await fetch(`${apiInventarioUrl}/api/usuarios/${editFormData.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend),
-      });
+      console.log('Enviando datos al servidor:', dataToSend);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error al actualizar: ${response.status} - ${errorText}`);
-      }
+    // Usar siempre el id si existe, para permitir cambiar el email
+let identifier;
+let url;
+if (editFormData.id) {
+  identifier = editFormData.id;
+  url = `${apiInventarioUrl}/api/usuarios/${identifier}`;
+} else {
+  identifier = originalEmail;
+  url = `${apiInventarioUrl}/api/usuarios/${identifier}`;
+}
+console.log('Identificador para editar:', identifier);
+console.log('Email original:', originalEmail);
+console.log('Email editado:', editFormData.email);
+console.log('URL del endpoint:', url);
 
-      const updatedUsuario = await response.json();
+const response = await fetch(url, {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(dataToSend),
+});
 
-      // Asegurar que el usuario actualizado tenga el objeto rol completo
-      const usuarioConRol = {
-        ...updatedUsuario,
-        rol: ROLES_MAP.find(rol => rol.id === updatedUsuario.rol_id) || { id: updatedUsuario.rol_id, nombre: 'N/A' }
-      };
+console.log('Respuesta del servidor:', response.status, response.statusText);
 
-      // Update and sort the data
-      setUsuariosData(prevData => 
-        sortUsuarios(prevData.map(item => 
-          item.id === editFormData.id ? usuarioConRol : item
-        ))
-      );
+if (!response.ok) {
+  const errorText = await response.text();
+  console.error('Error response:', errorText);
+  throw new Error(`Error al actualizar: ${response.status} - ${errorText}`);
+}
 
-      setShowEditModal(false);
-      Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Éxito
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            Usuario actualizado correctamente
-          </div>
-        `,
-        icon: 'success',
-        confirmButtonColor: '#ff7300',
-        timer: 5000,
-        timerProgressBar: true,
-        showCloseButton: true,
-      });
+const updatedUsuario = await response.json();
+console.log('Usuario actualizado recibido:', updatedUsuario);
+
+// Asegurar que el usuario actualizado tenga el objeto rol completo
+const usuarioConRol = {
+  ...updatedUsuario,
+  rol: ROLES_MAP.find(rol => rol.id === updatedUsuario.rol_id) || { id: updatedUsuario.rol_id, nombre: 'N/A' }
+};
+
+// Actualizar los datos manteniendo el orden y la información completa
+setUsuariosData(prevData => {
+  let newData = prevData.map(item => {
+    // Si el usuario tiene id, comparar por id; si no, comparar por email original
+    const itemIdentifier = item.id ? item.id : item.email;
+    const editIdentifier = editFormData.id ? editFormData.id : originalEmail;
+    // Si coincide, reemplazar por el usuario actualizado (con el nuevo email)
+    return itemIdentifier === editIdentifier ? usuarioConRol : item;
+  });
+  // Si el email fue cambiado y no hay id, eliminar el usuario con el email original y agregar el actualizado si no se reemplazó
+  if (!editFormData.id && originalEmail !== editFormData.email.trim().toLowerCase()) {
+    newData = newData.filter(item => item.email !== originalEmail);
+    newData.push(usuarioConRol);
+  }
+  return sortUsuarios(newData);
+});
+
+setShowEditModal(false);
+setOriginalEmail(''); // Limpiar el email original
+Swal.fire({
+  title: 'Éxito',
+  text: 'Usuario actualizado correctamente',
+  icon: 'success',
+  confirmButtonColor: '#ff7300'
+});
+
     } catch (err) {
+      console.error('Error completo:', err);
+      let errorMessage = "Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.";
+      if (err instanceof Error) {
+        if (err.message.includes('500')) {
+          errorMessage = 'Error interno del servidor (Error 500). Por favor, contacte al administrador del sistema.';
+        } else if (err.message.includes('404')) {
+          errorMessage = 'Usuario no encontrado (Error 404). Por favor, actualice la página e intente nuevamente.';
+        } else if (err.message.includes('403') || err.message.includes('401')) {
+          errorMessage = 'No tiene permisos para realizar esta acción. Por favor, contacte al administrador del sistema.';
+        } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+          errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet.';
+        }
+      }
+      
       Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Error
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            Ha ocurrido un error inesperado: Error al actualizar el usuario
-          </div>
-        `,
+        title: 'Error',
+        text: errorMessage,
         icon: 'error',
-        confirmButtonColor: '#ff7300',
-        timer: 5000,
-        timerProgressBar: true,
-        showCloseButton: true
+        confirmButtonColor: '#ff7300'
       });
     }
   };
 
   // Función para guardar nuevo usuario
   const handleSaveNewUsuario = async () => {
-    // Validaciones
-    if (!addFormData.nombre.trim()) {
+    // Validar nombre
+    const nombreValidation = validateNombre(addFormData.nombre);
+    if (!nombreValidation.isValid) {
       Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Error
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            El nombre es requerido
-          </div>
-        `,
+        title: 'Error de validación',
+        text: nombreValidation.error,
         icon: 'error',
-        confirmButtonColor: '#ff7300',
-        timer: 5000,
-        timerProgressBar: true,
-        showCloseButton: true
+        confirmButtonColor: '#ff7300'
       });
       return;
     }
 
-    if (!addFormData.email.trim()) {
+    // Validar email
+    const emailValidation = validateEmail(addFormData.email);
+    if (!emailValidation.isValid) {
       Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Error
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            El email es requerido
-          </div>
-        `,
+        title: 'Error de validación',
+        text: emailValidation.error,
         icon: 'error',
-        confirmButtonColor: '#ff7300',
-        timer: 5000,
-        timerProgressBar: true,
-        showCloseButton: true
-      });
-      return;
-    }
-
-    // Validación básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(addFormData.email)) {
-      Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Error
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            Por favor ingrese un email válido
-          </div>
-        `,
-        icon: 'error',
-        confirmButtonColor: '#ff7300',
-        timer: 5000,
-        timerProgressBar: true,
-        showCloseButton: true
+        confirmButtonColor: '#ff7300'
       });
       return;
     }
 
     try {
       const dataToSend = {
-        nombre: addFormData.nombre,
-        email: addFormData.email,
+        nombre: addFormData.nombre.trim(),
+        email: addFormData.email.trim().toLowerCase(),
         rol_id: addFormData.rol_id
       };
+
+      console.log('Creando nuevo usuario:', dataToSend);
 
       const response = await fetch(`${apiInventarioUrl}/api/usuarios`, {
         method: 'POST',
@@ -608,12 +687,16 @@ export default function GestionUsuariosPage() {
         body: JSON.stringify(dataToSend),
       });
 
+      console.log('Respuesta del servidor:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Error al crear el usuario: ${response.status} - ${errorText}`);
+        console.error('Error response:', errorText);
+        throw new Error(`Error al crear usuario: ${response.status} - ${errorText}`);
       }
 
       const nuevoUsuario = await response.json();
+      console.log('Usuario creado:', nuevoUsuario);
 
       // Asegurar que el nuevo usuario tenga el objeto rol completo
       const usuarioConRol = {
@@ -633,31 +716,29 @@ export default function GestionUsuariosPage() {
       });
       
       Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Éxito
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            Usuario creado correctamente
-          </div>
-        `,
+        title: 'Éxito',
+        text: 'Usuario creado correctamente',
         icon: 'success',
-        confirmButtonColor: '#ff7300',
-        timer: 5000,
-        timerProgressBar: true,
-        showCloseButton : true,
-
+        confirmButtonColor: '#ff7300'
       });
     } catch (err) {
+      console.error('Error completo:', err);
+      let errorMessage = "Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.";
+      if (err instanceof Error) {
+        if (err.message.includes('500')) {
+          errorMessage = 'Error interno del servidor (Error 500). Por favor, contacte al administrador del sistema.';
+        } else if (err.message.includes('404')) {
+          errorMessage = 'Servicio no encontrado (Error 404). Por favor, contacte al administrador del sistema.';
+        } else if (err.message.includes('403') || err.message.includes('401')) {
+          errorMessage = 'No tiene permisos para realizar esta acción. Por favor, contacte al administrador del sistema.';
+        } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+          errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet.';
+        }
+      }
+      
       Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Error
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            No se pudo crear el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}
-          </div>
-        `,
+        title: 'Error',
+        text: errorMessage,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -677,126 +758,96 @@ export default function GestionUsuariosPage() {
 
   // Función para eliminar usuario
   const handleDelete = (usuario: Usuario) => {
-    Swal.fire({
-      html: `
-        <div style="${swalTituloCssString}">
-          ¿Estás seguro?
-        </div>
-        <div style="${swalTextoConMargenCssString}">
-          ¿Deseas eliminar al usuario "${usuario.nombre}"?
-        </div>
-      `,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Sí, continuar',
-      cancelButtonText: 'Cancelar',
-      showCloseButton: true,
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // Segunda confirmación
+  Swal.fire({
+    title: 'ATENCIÓN: Eliminación Permanente',
+    html: `
+      <div style="text-align: left; margin: 1rem 0;">
+        <p><strong>Al eliminar este usuario:</strong></p>
+        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+          <li>Todos los datos del usuario se eliminarán <strong>PERMANENTEMENTE</strong></li>
+          <li>Esta acción <strong>NO SE PUEDE DESHACER</strong></li>
+          <li>Se perderán todos los registros relacionados</li>
+        </ul>
+        <p style="color: #ef4444; font-weight: bold;"></p>
+      </div>
+    `,
+    icon: 'error',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'SÍ, ELIMINAR PERMANENTEMENTE',
+    cancelButtonText: 'No, cancelar',
+    reverseButtons: true,
+    focusCancel: true,
+    showCloseButton: true
+  }).then(async (finalResult) => {
+    if (finalResult.isConfirmed) {
+      try {
+        // Usar email como identificador si no hay id numérico
+        const identifier = usuario.id || usuario.email;
+        console.log('Eliminando usuario con identificador:', identifier);
+        console.log('URL del endpoint:', `${apiInventarioUrl}/api/usuarios/${identifier}`);
+
+        const response = await fetch(`${apiInventarioUrl}/api/usuarios/${identifier}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        console.log('Respuesta del servidor:', response.status, response.statusText);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          throw new Error(`Error al eliminar: ${response.status} - ${errorText}`);
+        }
+
+        // Actualizar el estado eliminando SOLO el usuario específico
+        setUsuariosData(prevData => {
+          console.log('Datos antes de eliminar:', prevData.length);
+          console.log('Usuario a eliminar:', usuario.nombre, 'con identificador:', identifier);
+
+          const newData = prevData.filter(item => {
+            const itemIdentifier = item.id || item.email;
+            return itemIdentifier !== identifier;
+          });
+          console.log('Datos después de eliminar:', newData.length);
+
+          return newData;
+        });
+
         Swal.fire({
-          html: `
-            <div style="${swalTituloCssString}">
-              ATENCIÓN: Eliminación Permanente
-            </div>
-            <div style="${swalTextoConMargenCssString}">
-              <p><strong>Al eliminar este usuario:</strong></p>
-              <ul>
-                <li style="text-align: left;">Todos los datos del usuario se eliminarán <strong>PERMANENTEMENTE</strong></li>
-                <li style="text-align: left;">Esta acción <strong>NO SE PUEDE DESHACER</strong></li>
-                <li style="text-align: left;">Se perderán todos los registros relacionados</li>
-              </ul>
-              <p style="color: #ef4444; font-weight: bold;">¿Estás completamente seguro de que deseas continuar?</p>
-            </div>
-          `,
-          icon: 'error',
-          showCancelButton: true,
-          confirmButtonColor: '#ff7300',
-          cancelButtonColor: '#5c5c5c',
-          confirmButtonText: 'SÍ, ELIMINAR PERMANENTEMENTE',
-          cancelButtonText: 'No, cancelar',
-          reverseButtons: true,
-          focusCancel: true,
-          showCloseButton: true,
-
-        }).then(async (finalResult) => {
-          if (finalResult.isConfirmed) {
-            try {
-              const response = await fetch(`${apiInventarioUrl}/api/usuarios/${usuario.id}`, {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              });
-
-              if (!response.ok) throw new Error('Error al eliminar');
-
-              // Actualizar el estado eliminando solo el usuario específico
-              setUsuariosData(prevData => {
-                const newData = prevData.filter(item => item.id !== usuario.id);
-                console.log('Datos antes de eliminar:', prevData.length);
-                console.log('Datos después de eliminar:', newData.length);
-                console.log('Usuario eliminado ID:', usuario.id);
-                
-                // Verificar si necesitamos ajustar la página actual
-                const searchLower = searchTerm.toLowerCase();
-                const newFilteredData = newData.filter(user => {
-                  const matchesSearch = user.nombre.toLowerCase().includes(searchLower) ||
-                                       user.email.toLowerCase().includes(searchLower);
-                  const rolNombre = user.rol?.nombre || '';
-                  const matchesRol = selectedRol ? rolNombre === selectedRol : true;
-                  const matchesEstado = selectedEstado ? user.estado === selectedEstado : true;
-                  return matchesSearch && matchesRol && matchesEstado;
-                });
-                
-                const newTotalPages = Math.ceil(newFilteredData.length / itemsPerPage);
-                if (currentPage > newTotalPages && newTotalPages > 0) {
-                  setCurrentPage(newTotalPages);
-                }
-                
-                return newData;
-              });
-
-              Swal.fire({
-                html: `
-                  <div style="${swalTituloCssString}">
-                    Eliminado
-                  </div>
-                  <div style="${swalTextoConMargenCssString}">
-                    El usuario "${usuario.nombre}" ha sido eliminado permanentemente
-                  </div>
-                `,
-                icon: 'success',
-                confirmButtonColor: '#ff7300',
-                timer: 5000, 
-                timerProgressBar: true,
-                showCloseButton: true
-              });
-            } catch (err) {
-              console.error('Error al eliminar usuario:', err);
-              Swal.fire({
-                html: `
-                  <div style="${swalTituloCssString}">
-                    Error
-                  </div>
-                  <div style="${swalTextoConMargenCssString}">
-                    No se pudo eliminar el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}
-                  </div>
-                `,
-                icon: 'error',
-                confirmButtonColor: '#ff7300',
-                timer: 5000,
-                timerProgressBar: true,
-                showCloseButton: true
-              });
-            }
+          title: 'Eliminado',
+          text: `El usuario "${usuario.nombre}" ha sido eliminado permanentemente`,
+          icon: 'success',
+          confirmButtonColor: '#ff7300'
+        });
+      } catch (err) {
+        console.error('Error al eliminar usuario:', err);
+        let errorMessage = "Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.";
+        if (err instanceof Error) {
+          if (err.message.includes('500')) {
+            errorMessage = 'Error interno del servidor (Error 500). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('404')) {
+            errorMessage = 'Usuario no encontrado (Error 404). Es posible que ya haya sido eliminado.';
+          } else if (err.message.includes('403') || err.message.includes('401')) {
+            errorMessage = 'No tiene permisos para eliminar usuarios. Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet.';
           }
+        }
+
+        Swal.fire({
+          title: 'Error',
+          text: errorMessage,
+          icon: 'error',
+          confirmButtonColor: '#ff7300'
         });
       }
-    });
-  };
+    }
+  });
+};
 
   // Agregar función para limpiar filtros desde la barra de herramientas
   const handleClearFiltersFromToolbar = () => {
@@ -806,19 +857,10 @@ export default function GestionUsuariosPage() {
     setTempEstado('');
     setCurrentPage(1);
     Swal.fire({
-      html: `
-        <div style="${swalTituloCssString}">
-          Filtros reiniciados
-        </div>
-        <div style="${swalTextoConMargenCssString}">
-          Se han eliminado todos los filtros
-        </div>
-      `,
+      title: 'Filtros reiniciados',
+      text: 'Se han eliminado todos los filtros',
       icon: 'info',
-      confirmButtonColor: '#ff7300',
-      showCloseButton: true,
-      timer: 3000,
-      timerProgressBar: true,
+      confirmButtonColor: '#ff7300'
     });
   };
 
@@ -978,7 +1020,7 @@ export default function GestionUsuariosPage() {
               }} />
               <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando usuarios...</div>
               <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
-                Conectando con el servidor
+                Conectando con el servidor...
               </div>
             </div>
           ) : error ? (
@@ -994,7 +1036,7 @@ export default function GestionUsuariosPage() {
               maxWidth: '600px',
               margin: '0 auto'
             }}>
-              <div style={{ fontSize: '1.1rem', color: '#ef4444', marginBottom: '1rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.1rem', color: '#ef4444', marginBottom: '1rem', textAlign: 'center', fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>
                 Error al cargar usuarios
               </div>
               <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '2rem', textAlign: 'center', whiteSpace: 'pre-line' }}>
@@ -1007,7 +1049,7 @@ export default function GestionUsuariosPage() {
                   backgroundColor: '#ef4444'
                 }}
               >
-                Reintentar conexión
+                Reintentar
               </button>
             </div>
           ) : (
@@ -1024,7 +1066,7 @@ export default function GestionUsuariosPage() {
                 <tbody>
                   {currentTableData && currentTableData.length > 0 ? (
                     currentTableData.map((usuario, index) => (
-                      <tr key={usuario.id || `user-${index}`}>
+                      <tr key={usuario.id || usuario.email || `user-${index}`}>
                         <td style={tdStyle}>{usuario.nombre}</td>
                         <td style={tdStyle}>{usuario.email}</td>
                         <td style={tdStyle}>{usuario.rol?.nombre || 'N/A'}</td>
@@ -1079,76 +1121,51 @@ export default function GestionUsuariosPage() {
                   color: '#666',
                   fontSize: '1rem'
                 }}>
-                  No se encontraron usuarios que coincidan con los criterios de búsqueda.
                 </div>
               )}
 
-          {filteredData.length > 0 && (
-          <div style={paginationContainerStyle}>
-            <div style={{
-              ...paginationControlsStyle,
-              flexDirection: isMobile ? "column" : "row",
-              gap: isMobile ? "1rem" : "1rem",
-              padding: isMobile ? "1rem" : "0.5rem 1rem"
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                width: isMobile ? "100%" : "auto",
-                gap: "1rem"
-              }}>
-                <button 
-                  onClick={handlePrevPage} 
-                  disabled={currentPage === 1} 
-                  style={{
-                    ...paginationButtonBaseStyle,
-                    ...(currentPage === 1 ? paginationButtonDisabledStyle : {}),
-                    flex: isMobile ? "1" : "none",
-                    minWidth: isMobile ? "auto" : "80px"
-                  }}
-                >
-                  Anterior
-                </button>
-                
-                <div style={{
-                  ...pageIndicatorStyle,
-                  margin: isMobile ? "0" : "0",
-                  flex: isMobile ? "0 0 auto" : "none"
-                }}>
-                  {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
-                </div>
-                
-                <button
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                  style={{
-                    ...paginationButtonBaseStyle,
-                    ...(currentPage === totalPages ? paginationButtonDisabledStyle : {}),
-                    flex: isMobile ? "1" : "none",
-                    minWidth: isMobile ? "auto" : "80px"
-                  }}
-                >
-                  Siguiente
-                </button>
-              </div>
-              
-
-
-                {totalPages > 1 && (
-                <div style={{
-                  ...paginationButtonsWrapperStyle,
-                  justifyContent: isMobile ? "center" : "flex-start",
-                  flexWrap: isMobile ? "wrap" : "nowrap",
-                  width: isMobile ? "100%" : "auto"
-                }}>
+              {totalPages > 1 && (
+                <div style={paginationContainerStyle}>
+                  <div style={paginationControlsStyle}>
+                    <button 
+                      onClick={handlePrevPage} 
+                      disabled={currentPage === 1}
+                      style={{
+                        ...paginationButtonBaseStyle,
+                        opacity: currentPage === 1 ? 0.5 : 1,
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      Anterior
+                    </button>
+                    
+                    <div style={paginationButtonsWrapperStyle}>
+                      {renderPaginationButtons()}
+                    </div>
+                    
+                    <button 
+                      onClick={handleNextPage} 
+                      disabled={currentPage === totalPages}
+                      style={{
+                        ...paginationButtonBaseStyle,
+                        opacity: currentPage === totalPages ? 0.5 : 1,
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                  
+                  <div style={{ 
+                    textAlign: 'center', 
+                    marginTop: '1rem', 
+                    color: '#666',
+                    fontSize: '0.875rem'
+                  }}>
+                    Página {currentPage} de {totalPages} | Total: {filteredData.length} usuarios
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
-              
-          )}
             </>
           )}
         </div>
@@ -1158,7 +1175,7 @@ export default function GestionUsuariosPage() {
       {showFilterModal && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', textAlign: 'left', verticalAlign: 'top' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={modalTitleStyle}>Filtrar Usuarios</h2>
               <button onClick={() => setShowFilterModal(false)} style={closeButtonStyle}>
                 ×
@@ -1176,6 +1193,20 @@ export default function GestionUsuariosPage() {
                   <option value="">Todos los roles</option>
                   {ROLES_MAP.map(rol => (
                     <option key={rol.id} value={rol.nombre}>{rol.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Estado</label>
+                <select 
+                  value={tempEstado}
+                  onChange={(e) => setTempEstado(e.target.value)}
+                  style={selectStyle}
+                >
+                  <option value="">Todos los estados</option>
+                  {ESTADOS.map(estado => (
+                    <option key={estado} value={estado}>{estado}</option>
                   ))}
                 </select>
               </div>
@@ -1219,43 +1250,38 @@ export default function GestionUsuariosPage() {
                 <input
                   type="text"
                   value={editFormData.nombre || ''}
-                  onChange={(e) => setEditFormData({...editFormData, nombre: e.target.value})}
-                  style={inputStyle}
-                  placeholder="Nombre de usuario"
-                  maxLength={50}
-                  title="El nombre solo puede contener letras y espacios"
-                  onKeyPress={(e) => {
-                    const regex = /^[a-zA-ZñÑáÁéÉíÍóÓúÚ\s]$/;
-                    if (!regex.test(e.key)) {
-                      e.preventDefault();
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    // Solo permitir letras, espacios y caracteres acentuados
+                    if (valor === '' || /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]*$/.test(valor)) {
+                      setEditFormData({...editFormData, nombre: valor});
                     }
                   }}
+                  style={inputStyle}
+                  placeholder="Ej: Juan Pérez"
+                  maxLength={50}
                 />
               </div>
 
+             
               <div style={selectGroupStyle}>
                 <label style={labelStyle}>Email</label>
                 <input
                   type="email"
                   value={editFormData.email || ''}
-                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
-                  style={inputStyle}
-                  placeholder="Email de usuario"
+                  readOnly
+                  onClick={() => {
+                    Swal.fire({
+                      title: 'No se puede editar el email',
+                      text: 'El email es el identificador único y no puede ser modificado.',
+                      icon: 'info',
+                      confirmButtonColor: '#ff7300',
+                      showCloseButton: true
+                    });
+                  }}
+                  style={{ ...inputStyle, backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
+                  placeholder="Ej: juan@empresa.com"
                   maxLength={100}
-                  onKeyPress={(e) => {
-                    const key = e.key;
-                    const regex = /^[a-zA-Z0-9ñÑ@._-]$/;
-                    if (!regex.test(key)) {
-                      e.preventDefault();
-                    }
-                  }}
-                  onPaste={(e) => {
-                    const pasted = e.clipboardData.getData('text');
-                    const regex = /^[a-zA-Z0-9ñÑ@._-]+$/;
-                    if (!regex.test(pasted)) {
-                      e.preventDefault();
-                    }
-                  }}
                 />
               </div>
 
@@ -1271,23 +1297,21 @@ export default function GestionUsuariosPage() {
                   ))}
                 </select>
               </div>
+            </div>
 
-              <div style={modalButtonsStyle}>
-                <button 
-                  type="button"
-                  onClick={() => setShowEditModal(false)} 
-                  style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="button"
-                  onClick={handleSaveChanges}
-                  style={modalButtonStyle}
-                >
-                  Guardar Cambios
-                </button>
-              </div>
+            <div style={modalButtonsStyle}>
+              <button 
+                onClick={() => setShowEditModal(false)} 
+                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSaveChanges}
+                style={modalButtonStyle}
+              >
+                Guardar Cambios
+              </button>
             </div>
           </div>
         </div>
@@ -1297,7 +1321,7 @@ export default function GestionUsuariosPage() {
       {showAddModal && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={modalTitleStyle}>Agregar Usuario</h2>
               <button onClick={() => setShowAddModal(false)} style={closeButtonStyle}>
                 ×
@@ -1310,9 +1334,16 @@ export default function GestionUsuariosPage() {
                 <input
                   type="text"
                   value={addFormData.nombre}
-                  onChange={(e) => setAddFormData({...addFormData, nombre: e.target.value})}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    // Solo permitir letras, espacios y caracteres acentuados
+                    if (valor === '' || /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]*$/.test(valor)) {
+                      setAddFormData({...addFormData, nombre: valor});
+                    }
+                  }}
                   style={inputStyle}
                   placeholder="Ej: Juan Pérez"
+                  maxLength={50}
                 />
               </div>
 
@@ -1321,9 +1352,16 @@ export default function GestionUsuariosPage() {
                 <input
                   type="email"
                   value={addFormData.email}
-                  onChange={(e) => setAddFormData({...addFormData, email: e.target.value})}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    // Solo permitir caracteres válidos para email
+                    if (valor === '' || /^[a-zA-Z0-9._@-]*$/.test(valor)) {
+                      setAddFormData({...addFormData, email: valor});
+                    }
+                  }}
                   style={inputStyle}
                   placeholder="Ej: juan@empresa.com"
+                  maxLength={100}
                 />
               </div>
 
@@ -1551,6 +1589,7 @@ const searchIconStyle: React.CSSProperties = {
 
 const paginationContainerStyle: React.CSSProperties = {
   display: 'flex',
+  flexDirection: 'column',
   justifyContent: 'center',
   marginTop: '2rem',
   padding: '1rem',
@@ -1567,6 +1606,7 @@ const paginationControlsStyle: React.CSSProperties = {
   borderRadius: '8px',
   padding: '0.5rem 1rem',
   boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  justifyContent: 'center',
 };
 
 const paginationButtonsWrapperStyle: React.CSSProperties = {
@@ -1578,7 +1618,7 @@ const paginationButtonsWrapperStyle: React.CSSProperties = {
 const paginationButtonBaseStyle: React.CSSProperties = {
   backgroundColor: '#ff7300',
   color: '#fff',
-  padding: '0.5rem',
+  padding: '0.5rem 1rem',
   borderRadius: '8px',
   border: 'none',
   cursor: 'pointer',
@@ -1630,10 +1670,8 @@ const modalTitleStyle: React.CSSProperties = {
   color: '#374151',
   fontSize: '1.5rem',
   fontWeight: 'bold',
-  marginBottom: '3rem',
-  marginTop: '0',
-  verticalAlign: 'top',
-  textAlign: 'left',
+  marginBottom: '1.5rem',
+  textAlign: 'center',
   fontFamily: 'Montserrat, sans-serif',
 };
 
@@ -1686,36 +1724,13 @@ const closeButtonStyle: React.CSSProperties = {
   border: 'none',
   fontSize: '1.5rem',
   cursor: 'pointer',
+  padding: '0.5rem',
   color: '#6b7280',
   transition: 'color 0.2s ease',
   borderRadius: '4px',
-  width: '1.5rem',
-  height: '1.5rem',
+  width: '2rem',
+  height: '2rem',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  padding: '0',
-  margin: '0'
-};
-
-const paginationButtonDisabledStyle: React.CSSProperties = {
-  backgroundColor: '#d1d5db',
-  color: '#9ca3af',
-  cursor: 'not-allowed',
-  opacity: 0.6
-};
-
-const pageIndicatorStyle: React.CSSProperties = {
-  fontSize: '0.875rem',
-  fontWeight: '500',
-  color: '#f7f7f7',
-  fontFamily: 'Montserrat, sans-serif',
-  display: 'flex',
-  alignItems: 'center',
-  padding: '0.5rem',
-  backgroundColor: '#5c5c5c',
-  borderRadius: '6px',
-  border: '1px solid #e5e7eb',
-  minWidth: 'fit-content',
-  whiteSpace: 'nowrap',
 };

@@ -22,14 +22,23 @@ interface RouteInfoProps {
 const RouteInfo: React.FC<RouteInfoProps> = React.memo(({ despachoInfo, routeDetails }) => {
   const getEstadoColor = (estado: string) => {
     switch (estado.toLowerCase()) {
-      case 'en ruta':
-        return '#22c55e'; // Verde
-      case 'pendiente':
-        return '#f59e0b'; // Amarillo
-      case 'entregado':
-        return '#3b82f6'; // Azul
+      case 'aprobada':
+      case 'aprobado':
+        return '#16a34a'; // Verde
+      case 'rechazada':
+      case 'rechazado':
+      case 'cancelada':
       case 'cancelado':
         return '#ef4444'; // Rojo
+      case 'enviada':
+      case 'enviado':
+        return '#2563eb'; // Azul
+      case 'pendiente':
+        return '#f59e0b'; // Amarillo
+      case 'en ruta':
+        return '#22c55e'; // Verde
+      case 'entregado':
+        return '#3b82f6'; // Azul
       default:
         return '#6b7280'; // Gris
     }

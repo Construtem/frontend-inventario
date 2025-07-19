@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { FaSearch } from "react-icons/fa";
+import React, { useEffect, useState, useMemo } from "react";
+import { FaSearch, FaTimes, FaBars } from "react-icons/fa";
 
 // =====================
 // 1. INTERFACES DE DATOS
@@ -63,6 +63,7 @@ interface DespachoBackend {
   destino: number;
   fecha_despacho: string;
   valor_despacho: number;
+  estado: string;
   cantidad_items: number;
   total_kg: number;
   cotizacion?: {
@@ -101,52 +102,33 @@ export default function DespachoPage() {
   const [selectedDespachoId, setSelectedDespachoId] = useState<number | null>(null);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loadingProductos, setLoadingProductos] = useState(false);
+  
+  // Estados para el modal de filtros
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [tempSucursal, setTempSucursal] = useState("");
+  const [tempEstado, setTempEstado] = useState("");
+  
+  // Estado para responsive
+  const [isMobile, setIsMobile] = useState(false);
+  
   const itemsPerPage = 15;
 
   // URL de la API
   const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || "https://api-inventario.tssw.cl";
 
   // =====================
-  // 3. DATOS DE EJEMPLO (MOCK DATA)
+  // 3. HOOK PARA RESPONSIVE
   // =====================
-  const getMockDespachos = (): Despacho[] => [
-    {
-      id: 1,
-      cliente: "Empresa ABC",
-      origen: "Sucursal 1",
-      destino: "Av. Principal 123, Santiago",
-      fechaDespacho: "2024-01-15",
-      valorDespacho: 45000,
-      estado: "pendiente",
-      camion: "AB-1234",
-      cantidadItems: 15,
-      totalKg: 250.5
-    },
-    {
-      id: 2,
-      cliente: "Corporación XYZ",
-      origen: "Sucursal 2",
-      destino: "Calle Norte 456, Valparaíso",
-      fechaDespacho: "2024-01-16",
-      valorDespacho: 67000,
-      estado: "enviado",
-      camion: "CD-5678",
-      cantidadItems: 23,
-      totalKg: 189.3
-    },
-    {
-      id: 3,
-      cliente: "Distribuidora DEF",
-      origen: "Sucursal 3",
-      destino: "Ruta Sur 789, Concepción",
-      fechaDespacho: "2024-01-17",
-      valorDespacho: 38000,
-      estado: "aprobado",
-      camion: "EF-9012",
-      cantidadItems: 12,
-      totalKg: 156.8
-    }
-  ];
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // =====================
   // 4. CARGA DE DATOS CON MANEJO DE ERRORES
@@ -185,7 +167,7 @@ export default function DespachoPage() {
           destino: d.destino_dir_cliente?.direccion || "Dirección desconocida",
           fechaDespacho: d.fecha_despacho,
           valorDespacho: Number(d.valor_despacho || 0),
-          estado: d.cotizacion?.estado || "pendiente",
+          estado: d.estado || "pendiente",
           camion: d.camion?.patente || "Camión no asignado",
           cantidadItems: d.cantidad_items || 0,
           totalKg: d.total_kg || 0,
@@ -196,22 +178,20 @@ export default function DespachoPage() {
       } catch (error: unknown) {
         console.warn("Backend no disponible, usando datos de ejemplo:", error);
         
-        // Determinar tipo de error
-        let errorMessage = "Error desconocido al cargar datos";
-        if (error instanceof Error) {
-          if (error.name === 'AbortError') {
-            errorMessage = "Tiempo de espera agotado al conectar con el servidor";
-          } else if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
-            errorMessage = "No se pudo conectar al servidor backend";
-          } else {
-            errorMessage = error.message;
-          }
+      // Determinar tipo de error
+      let errorMessage = "Error desconocido al cargar datos";
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = "Tiempo de espera agotado al conectar con el servidor";
+        } else if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+            errorMessage = '•No se pudo conectar al servidor.\n• Verifique su conexión a internet o contacte al administrador del sistema.';
+        } else {
+          errorMessage = error.message;
         }
-        
+      }
         setError(errorMessage);
         setIsOffline(true);
         // Cargar datos de ejemplo cuando el backend no esté disponible
-        setDespachos(getMockDespachos());
         
       } finally {
         setLoading(false);
@@ -364,18 +344,41 @@ export default function DespachoPage() {
     setProductos([]);
   };
 
+  // =====================
+  // 8. FUNCIONES PARA FILTROS
+  // =====================
+  const handleApplyFilters = () => {
+    setSucursal(tempSucursal);
+    setEstado(tempEstado);
+    setCurrentPage(1);
+    setShowFilterModal(false);
+  };
+
+  const handleClearFilters = () => {
+    setTempSucursal("");
+    setTempEstado("");
+    setSucursal("");
+    setEstado("");
+    setCurrentPage(1);
+    setShowFilterModal(false);
+  };
+
+  const hasActiveFilters = Boolean(sucursal || estado);
+
   // Filtrar despachos basado en los filtros activos
-  const filteredDespachos = despachos.filter((d) => {
-    const matchesSearch = search === "" || 
-      `${d.cliente} ${d.origen} ${d.destino} ${d.camion} ${d.estado}`
-        .toLowerCase()
-        .includes(search.toLowerCase());
-    
-    const matchesSucursal = sucursal === "" || d.origen === sucursal;
-    const matchesEstado = estado === "" || d.estado === estado;
-    
-    return matchesSearch && matchesSucursal && matchesEstado;
-  });
+  const filteredDespachos = useMemo(() => {
+    return despachos.filter((d) => {
+      const matchesSearch = search === "" || 
+        `${d.cliente} ${d.origen} ${d.destino} ${d.camion} ${d.estado}`
+          .toLowerCase()
+          .includes(search.toLowerCase());
+      
+      const matchesSucursal = sucursal === "" || d.origen === sucursal;
+      const matchesEstado = estado === "" || d.estado === estado;
+      
+      return matchesSearch && matchesSucursal && matchesEstado;
+    });
+  }, [despachos, search, sucursal, estado]);
 
   // Funciones de paginación
   const handleNextPage = () => {
@@ -442,10 +445,13 @@ export default function DespachoPage() {
   };
 
   // Calcular datos paginados y total de páginas
-  const currentTableData = filteredDespachos.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const currentTableData = useMemo(() => {
+    return filteredDespachos.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredDespachos, currentPage, itemsPerPage]);
+  
   const totalPages = Math.ceil(filteredDespachos.length / itemsPerPage);
 
   // =====================
@@ -456,236 +462,344 @@ export default function DespachoPage() {
       <div style={cardStyle}>
         <h1 style={titleStyle}>Gestión de Despachos</h1>
 
-        {/* Filtros */}
-        <div style={filterRowStyle}>
-          <input
-            type="text"
-            placeholder="Buscar despachos..."
-            style={selectStyle}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-
-          <select
-            style={selectStyle}
-            value={sucursal}
-            onChange={(e) => setSucursal(e.target.value)}
-          >
-            <option value="">Todas las Sucursales</option>
-            <option value="Bodega Central">Bodega Central</option>
-            <option value="Bodega Norte">Bodega Norte</option>
-            <option value="Bodega Sur">Bodega Sur</option>
-            <option value="Sucursal Centro">Sucursal Centro</option>
-            <option value="Sucursal La Florida">Sucursal La Florida</option>
-            <option value="Sucursal Maipú">Sucursal Maipú</option>
-          </select>
-
-          <select
-            style={selectStyle}
-            value={estado}
-            onChange={(e) => setEstado(e.target.value)}
-          >
-            <option value="">Todos los Estados</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="enviada">Enviada</option>
-            <option value="aprobada">Aprobada</option>
-            <option value="cancelada">Cancelada</option>
-            <option value="rechazada">Rechazada</option>
-          </select>
-
-          <button 
-            style={searchButtonStyle}
-            onClick={() => {
-              // Aquí puedes agregar lógica adicional si es necesaria
-              console.log("Filtros aplicados:", { sucursal, estado, search });
-            }}
-          >
-            <FaSearch />
-            Buscar
-          </button>
-        </div>
-
-        {/* Mostrar errores y estado offline */}
-        {error && (
+        {/* Barra de herramientas moderna */}
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1.5rem",
+          gap: "1rem",
+          flexWrap: "wrap"
+        }}>
+          {/* Grupo de controles izquierdo */}
           <div style={{
-            backgroundColor: isOffline ? "#fef3c7" : "#fee2e2",
-            border: `1px solid ${isOffline ? "#f59e0b" : "#fecaca"}`,
-            color: isOffline ? "#92400e" : "#dc2626",
-            padding: "1rem",
-            borderRadius: "8px",
-            marginBottom: "1rem",
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center"
+            gap: "1rem",
+            alignItems: "center",
+            flex: "1"
           }}>
-            <div>
-              <strong>{isOffline ? "⚠️ Modo Offline" : "❌ Error de conexión"}</strong>
-              <br />
-              {error}
-              {isOffline && (
-                <>
-                  <br />
-                  <small>Mostrando datos de ejemplo. Los cambios no se guardarán.</small>
-                </>
-              )}
+            {/* Búsqueda */}
+            <div style={{
+              position: 'relative',
+              minWidth: '300px',
+              maxWidth: '400px',
+              flex: '1'
+            }}>
+              <input
+                type="text"
+                placeholder="Buscar despachos..."
+                style={{
+                  width: '100%',
+                  padding: "0.75rem 3rem 0.75rem 1rem",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "8px",
+                  fontSize: "0.875rem",
+                  fontFamily: "Roboto, sans-serif",
+                  outline: "none",
+                  transition: "border-color 0.2s ease",
+                  boxSizing: "border-box"
+                }}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <button 
+                style={{
+                  position: 'absolute',
+                  right: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  fontSize: '1rem'
+                }}
+              >
+                <FaSearch />
+              </button>
             </div>
+
+            {/* Botón de filtros */}
             <button 
-              onClick={handleRetry}
               style={{
-                backgroundColor: isOffline ? "#f59e0b" : "#dc2626",
-                color: "white",
-                border: "none",
-                padding: "0.5rem 1rem",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "0.9rem"
+                ...filterButtonStyle,
+                width: isMobile ? "100%" : "auto",
+                fontSize: isMobile ? "0.875rem" : "1rem",
+                padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
+              }}
+              onClick={() => {
+                setTempSucursal(sucursal);
+                setTempEstado(estado);
+                setShowFilterModal(true);
               }}
             >
-              🔄 Reintentar
-            </button>
-          </div>
-        )}
-
-        {/* Tabla */}
-        <div style={tableWrapperStyle}>
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                {[
-                  "ID",
-                  "Cliente",
-                  "Origen",
-                  "Destino",
-                  "Fecha Despacho",
-                  "Valor Despacho",
-                  "Estado",
-                  "Camión",
-                  "Items",
-                  "Productos",
-                  "Ruta",
-                  "PDF",
-                  "Accion",
-                ].map((col) => (
-                  <th key={col} style={thStyle}>
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={13} style={tdStyle}>
-                    Cargando...
-                  </td>
-                </tr>
-              ) : filteredDespachos.length === 0 ? (
-                <tr>
-                  <td colSpan={13} style={tdStyle}>
-                    {despachos.length === 0 ? "No hay despachos disponibles" : "No se encontraron despachos con los filtros aplicados"}
-                  </td>
-                </tr>
-              ) : (
-                currentTableData.map((d) => (
-                  <tr key={d.id}>
-                    <td style={tdStyle}>#{d.id}</td>
-                    <td style={tdStyle}>{d.cliente}</td>
-                    <td style={tdStyle}>{d.origen}</td>
-                    <td style={tdStyle}>{d.destino}</td>
-                    <td style={tdStyle}>
-                      {new Date(d.fechaDespacho).toLocaleDateString()}
-                    </td>
-                    <td style={tdStyle}>${d.valorDespacho.toLocaleString()}</td>
-                    <td style={{
-                      ...tdStyle,
-                      fontWeight: "600",
-                      color: d.estado === "aprobado" ? "#16a34a" : 
-                             d.estado === "enviado" ? "#2563eb" :
-                             d.estado === "cancelado" ? "#dc2626" : "#f59e0b"
-                    }}>
-                      {d.estado.charAt(0).toUpperCase() + d.estado.slice(1)}
-                    </td>
-                    <td style={tdStyle}>{d.camion}</td>
-                    <td style={tdStyle}>{d.cantidadItems}</td>
-                    <td style={tdStyle}>
-                      <span
-                        onClick={() => handleViewProducts(d.id)}
-                        style={{
-                          color: "#ff7300",
-                          fontWeight: "bold",
-                          textDecoration: "none",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Ver Productos
-                      </span>
-                    </td>
-                    <td style={tdStyle}>
-                      <a
-                        href={`/admin/despacho/ruta?despachoId=${d.id}`}
-                        style={{
-                          color: "#2563eb",
-                          fontWeight: "bold",
-                          textDecoration: "underline",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Ver ruta
-                      </a>
-                    </td>
-                    <td style={tdStyle}>
-                      <a
-                        href={`${apiInventarioUrl}/api/despachos/${d.id}/pdf`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          color: "#ff7300",
-                          fontWeight: "bold",
-                          textDecoration: "none",
-                        }}
-                      >
-                        Ver PDF
-                      </a>
-                    </td>
-                    <td style={tdStyle}>
-                      <span
-                        onClick={() => handleDelete(d.id)}
-                        style={deleteIconStyle}
-                        title="Eliminar despacho"
-                      >
-                        🗑️
-                      </span>
-                    </td>
-                  </tr>
-                ))
+              <FaBars style={{ fontSize: '1rem' }} />
+              Filtros
+              {hasActiveFilters && (
+                <span style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '1.25rem',
+                  height: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  marginLeft: '0.25rem'
+                }}>
+                  {[sucursal, estado].filter(Boolean).length}
+                </span>
               )}
-            </tbody>
-          </table>
-        </div>
+            </button>
 
-        {/* Paginación */}
-        {filteredDespachos.length > 0 && (
-          <div style={paginationContainerStyle}>
-            <div style={paginationControlsStyle}>
+            {/* Botón limpiar filtros */}
+            {hasActiveFilters && (
               <button 
-                onClick={handlePrevPage} 
-                disabled={currentPage === 1} 
-                style={paginationButtonBaseStyle}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  fontFamily: 'Montserrat, sans-serif',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  transition: 'background-color 0.2s ease',
+                  whiteSpace: 'nowrap'
+                }}
+                onClick={() => {
+                  setSucursal("");
+                  setEstado("");
+                  setCurrentPage(1);
+                }}
               >
-                Anterior
+                <FaTimes />
+                Limpiar
               </button>
-              <div style={paginationButtonsWrapperStyle}>
-                {renderPaginationButtons()}
-              </div>
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
-              >
-                Siguiente
-              </button>
-            </div>
+            )}
           </div>
+        </div>
+        
+        {/* Mostrar errores y estado offline SOLO dentro del card */}
+        {(loading || error) ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '3rem',
+            backgroundColor: 'white',
+            borderRadius: '10px',
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            minHeight: '300px',
+            margin: '2rem 0'
+          }}>
+            {loading ? (
+              <>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  border: '4px solid #f3f4f6',
+                  borderTop: '4px solid #ff7300',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  marginBottom: '1rem'
+                }} />
+                <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando despachos...</div>
+                <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
+                  Conectando con el servidor...
+                </div>
+                <style>
+                  {`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}
+                </style>
+              </>
+            ) : (
+              <>
+                <div style={{ 
+                  fontSize: '1.1rem', 
+                  color: '#ef4444',
+                  textAlign: 'center',
+                  marginBottom: '1.5rem'
+                }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '1rem', fontFamily: 'Montserrat, sans-serif', fontSize: '1.5rem' }}>
+                    Error al cargar los despachos
+                  </div>
+                  <div style={{ 
+                    fontSize: '1rem', 
+                    marginTop: '0.5rem',
+                    whiteSpace: 'normal',
+                    lineHeight: '1.5',
+                    color: '#666'
+                  }}>
+                    {error || "No se pudo conectar con el servidor. \nVerifique su conexión a internet o contacte al administrador del sistema."}
+                  </div>
+                </div>
+                <button
+                  onClick={handleRetry}
+                  style={{
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                    minWidth: '120px'
+                  }}
+                >
+                  Reintentar
+                </button>
+              </>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Tabla */}
+            <div style={tableWrapperStyle}>
+              <table style={tableStyle}>
+                <thead>
+                  <tr>
+                    {[
+                      "ID",
+                      "Cliente",
+                      "Origen",
+                      "Destino",
+                      "Fecha Despacho",
+                      "Valor Despacho",
+                      "Estado",
+                      "Camión",
+                      "Items",
+                      "Productos",
+                      "Ruta",
+                      "PDF",
+                      "Accion",
+                    ].map((col) => (
+                      <th key={col} style={thStyle}>
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredDespachos.length === 0 ? (
+                    <tr>
+                      <td colSpan={13} style={tdStyle}>
+                        {despachos.length === 0 ? "No hay despachos disponibles" : "No se encontraron despachos con los filtros aplicados"}
+                      </td>
+                    </tr>
+                  ) : (
+                    currentTableData.map((d) => (
+                      <tr key={d.id}>
+                        <td style={tdStyle}>#{d.id}</td>
+                        <td style={tdStyle}>{d.cliente}</td>
+                        <td style={tdStyle}>{d.origen}</td>
+                        <td style={tdStyle}>{d.destino}</td>
+                        <td style={tdStyle}>
+                          {new Date(d.fechaDespacho).toLocaleDateString()}
+                        </td>
+                        <td style={tdStyle}>${d.valorDespacho.toLocaleString()}</td>
+                        <td style={{
+                          ...tdStyle,
+                          fontWeight: "600",
+                          color: d.estado === "aprobado" || d.estado === "aprobada" ? "#16a34a" : 
+                                 d.estado === "rechazado" || d.estado === "rechazada" ? "#ef4444" :
+                                 d.estado === "cancelado" || d.estado === "cancelada" ? "#ef4444" :
+                                 d.estado === "enviado" || d.estado === "enviada" ? "#2563eb" :
+                                 d.estado === "pendiente" ? "#f59e0b" : "#6b7280"
+                        }}>
+                          {d.estado.charAt(0).toUpperCase() + d.estado.slice(1)}
+                        </td>
+                        <td style={tdStyle}>{d.camion}</td>
+                        <td style={tdStyle}>{d.cantidadItems}</td>
+                        <td style={tdStyle}>
+                          <span
+                            onClick={() => handleViewProducts(d.id)}
+                            style={{
+                              color: "#ff7300",
+                              fontWeight: "bold",
+                              textDecoration: "none",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Ver Productos
+                          </span>
+                        </td>
+                        <td style={tdStyle}>
+                          <a
+                            href={`/admin/despacho/ruta?despachoId=${d.id}`}
+                            style={{
+                              color: "#2563eb",
+                              fontWeight: "bold",
+                              textDecoration: "underline",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Ver ruta
+                          </a>
+                        </td>
+                        <td style={tdStyle}>
+                          <a
+                            href={`${apiInventarioUrl}/api/despachos/${d.id}/pdf`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: "#ff7300",
+                              fontWeight: "bold",
+                              textDecoration: "none",
+                            }}
+                          >
+                            Ver PDF
+                          </a>
+                        </td>
+                        <td style={tdStyle}>
+                          <button
+                            onClick={() => handleDelete(d.id)}
+                            style={deleteButtonStyle}
+                            title="Eliminar despacho"
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {/* Paginación */}
+            {filteredDespachos.length > 0 && (
+              <div style={paginationContainerStyle}>
+                <div style={paginationControlsStyle}>
+                  <button 
+                    onClick={handlePrevPage} 
+                    disabled={currentPage === 1} 
+                    style={paginationButtonBaseStyle}
+                  >
+                    Anterior
+                  </button>
+                  <div style={paginationButtonsWrapperStyle}>
+                    {renderPaginationButtons()}
+                  </div>
+                  <button
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -772,6 +886,73 @@ export default function DespachoPage() {
             </div>
           </div>
         )}
+
+      {/* Modal de Filtros */}
+      {showFilterModal && (
+        <div style={filterModalOverlayStyle}>
+          <div style={filterModalContentStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={filterModalTitleStyle}>Filtros</h2>
+              <button 
+                onClick={() => setShowFilterModal(false)}
+                style={filterCloseButtonStyle}
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div style={filterModalFormStyle}>
+              <div style={filterSelectGroupStyle}>
+                <label style={filterLabelStyle}>Sucursal</label>
+                <select 
+                  value={tempSucursal}
+                  onChange={(e) => setTempSucursal(e.target.value)}
+                  style={filterSelectStyle}
+                >
+                  <option value="">Todas las Sucursales</option>
+                  <option value="Bodega Central">Bodega Central</option>
+                  <option value="Bodega Norte">Bodega Norte</option>
+                  <option value="Bodega Sur">Bodega Sur</option>
+                  <option value="Sucursal Centro">Sucursal Centro</option>
+                  <option value="Sucursal La Florida">Sucursal La Florida</option>
+                  <option value="Sucursal Maipú">Sucursal Maipú</option>
+                </select>
+              </div>
+
+              <div style={filterSelectGroupStyle}>
+                <label style={filterLabelStyle}>Estado</label>
+                <select 
+                  value={tempEstado}
+                  onChange={(e) => setTempEstado(e.target.value)}
+                  style={filterSelectStyle}
+                >
+                  <option value="">Todos los Estados</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="enviada">Enviada</option>
+                  <option value="aprobada">Aprobada</option>
+                  <option value="cancelada">Cancelada</option>
+                  <option value="rechazada">Rechazada</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={filterModalButtonsStyle}>
+              <button 
+                onClick={handleClearFilters} 
+                style={{...filterModalButtonStyle, backgroundColor: '#6b7280'}}
+              >
+                Limpiar filtros
+              </button>
+              <button 
+                onClick={handleApplyFilters}
+                style={filterModalButtonStyle}
+              >
+                Aplicar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -801,39 +982,6 @@ const titleStyle: React.CSSProperties = {
   fontWeight: "bold",
   fontFamily: "Montserrat, sans-serif",
   marginBottom: "2rem",
-};
-
-const filterRowStyle: React.CSSProperties = {
-  display: "flex",
-  gap: "1rem",
-  flexWrap: "wrap",
-  alignItems: "center",
-  marginBottom: "2rem",
-};
-
-const selectStyle: React.CSSProperties = {
-  padding: "0.6rem 1rem",
-  borderRadius: "10px",
-  border: "1px solid #ccc",
-  fontSize: "1rem",
-  flex: "1 1 200px",
-  fontFamily: "Roboto, sans-serif",
-};
-
-const searchButtonStyle: React.CSSProperties = {
-  backgroundColor: "#ff7300",
-  color: "#fff",
-  padding: "0.6rem 1.2rem",
-  borderRadius: "10px",
-  border: "none",
-  cursor: "pointer",
-  fontWeight: "600",
-  fontSize: "1rem",
-  display: "flex",
-  alignItems: "center",
-  gap: "0.5rem",
-  transition: "background-color 0.3s ease",
-  fontFamily: "Roboto, sans-serif",
 };
 
 const tableWrapperStyle: React.CSSProperties = {
@@ -867,11 +1015,17 @@ const tdStyle: React.CSSProperties = {
   fontFamily: "Roboto, sans-serif",
 };
 
-const deleteIconStyle: React.CSSProperties = {
+const deleteButtonStyle: React.CSSProperties = {
+  backgroundColor: "#ef4444",
+  color: "#ffffff",
+  border: "none",
+  padding: "0.5rem 1rem",
+  borderRadius: "8px",
   cursor: "pointer",
-  fontSize: "1.2rem",
-  color: "#ef4444",
-  transition: "color 0.3s ease",
+  fontSize: "0.875rem",
+  fontWeight: "600",
+  fontFamily: "Roboto, sans-serif",
+  transition: "background-color 0.3s ease",
 };
 
 const paginationContainerStyle: React.CSSProperties = {
@@ -1024,4 +1178,126 @@ const loadingStyle: React.CSSProperties = {
   fontSize: '1.2rem',
   color: '#666666',
   fontFamily: 'Roboto, sans-serif',
+};
+
+// =====================
+// 8. ESTILOS DEL MODAL DE FILTROS
+// =====================
+
+const filterModalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000,
+};
+
+const filterModalContentStyle: React.CSSProperties = {
+  backgroundColor: 'white',
+  padding: '2rem',
+  borderRadius: '12px',
+  width: '90%',
+  maxWidth: '500px',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+  maxHeight: '90vh',
+  overflow: 'hidden',
+};
+
+const filterModalTitleStyle: React.CSSProperties = {
+  color: '#374151',
+  fontSize: '1.5rem',
+  fontWeight: 'bold',
+  marginBottom: '1.5rem',
+  textAlign: 'center',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const filterModalFormStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+};
+
+const filterSelectGroupStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.5rem',
+};
+
+const filterLabelStyle: React.CSSProperties = {
+  color: '#374151',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  fontFamily: 'Roboto, sans-serif',
+};
+
+const filterSelectStyle: React.CSSProperties = {
+  padding: '0.5rem',
+  borderRadius: '6px',
+  border: '1px solid #d1d5db',
+  fontSize: '0.875rem',
+  width: '100%',
+  fontFamily: 'Roboto, sans-serif',
+  outline: 'none',
+  transition: 'border-color 0.2s ease',
+};
+
+const filterModalButtonsStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '1rem',
+  marginTop: '2rem',
+};
+
+const filterModalButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: 'white',
+  padding: '0.5rem 1rem',
+  borderRadius: '6px',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  fontFamily: 'Montserrat, sans-serif',
+  transition: 'background-color 0.2s ease',
+};
+
+const filterCloseButtonStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontSize: '1.5rem',
+  cursor: 'pointer',
+  padding: '0.5rem',
+  color: '#6b7280',
+  transition: 'color 0.2s ease',
+  borderRadius: '4px',
+  width: '2rem',
+  height: '2rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+// =====================
+// 9. ESTILOS DEL BOTÓN DE FILTROS
+// =====================
+
+const filterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#5c5c5c',
+  color: 'white',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontFamily: 'Montserrat, sans-serif',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  transition: 'background-color 0.2s ease',
+  whiteSpace: 'nowrap'
 };

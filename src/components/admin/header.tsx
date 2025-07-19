@@ -20,6 +20,7 @@ interface UserData {
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const [user, setUser] = useState<UserData | null>(null);
   const router = useRouter();
+  const frontLoginUrl = process.env.NEXT_PUBLIC_FRONT_LOGIN || "https://login.tssw.cl";
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -39,7 +40,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
     localStorage.removeItem("user");
     console.log("Usuario ha cerrado sesión");
     // Redirige al usuario a la página raíz
-    window.location.href = "http://localhost:3000/"; // Redirige a la página principal
+    window.location.href = `${frontLoginUrl}`; // Redirige a la página principal
   };
 
   return (

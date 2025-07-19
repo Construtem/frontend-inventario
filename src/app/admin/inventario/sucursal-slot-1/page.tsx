@@ -6,7 +6,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Swal from 'sweetalert2';
 import Image from "next/image";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { FaArrowLeft } from "react-icons/fa";
 
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
@@ -598,6 +599,7 @@ function useWindowSize() {
 export default function SucursalSlot1Page() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const sucursalId = searchParams.get('id');
   const [sucursalNombre, setSucursalNombre] = useState<string>('Sucursal Slot 1');
 

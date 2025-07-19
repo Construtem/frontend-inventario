@@ -4,7 +4,177 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
 // Configuración del API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
+
+// Interfaz para los datos de los clientes en la API
+interface ClienteAPI {
+  rut: string;
+  nombre: string;
+  telefono: string;
+  email: string;
+  razon_social: string;
+  tipo_id: number;
+  tipo: {
+    id: number;
+    nombre: string;
+  };
+}
+
+// Interfaz para los datos de las sucursales de la API
+interface SucursalesAPI{
+  id: number;
+  nombre: string;
+  direccion: string;
+  telefono: string;
+  comuna: string;
+  ciudad: string;
+  tipo_id: number;
+  tipo: {
+    id: number;
+    nombre: string;
+  };
+}
+
+// Interfaz para los datos de las sucursales de la API
+interface BodegasAPI{
+  id: number;
+  nombre: string;
+  direccion: string;
+  telefono: string;
+  comuna: string;
+  ciudad: string;
+  tipo_id: number;
+  tipo: {
+    id: number;
+    nombre: string;
+  };
+}
+
+// Interfaz para los datos de los despachos de la API
+interface DespachoAPI {
+  id: number;
+  cotizacion_id: number;
+  camion_id: number;
+  origen: number;
+  destino: number;
+  fecha_despacho: string;
+  valor_despacho: number;
+  estado: string;
+  cotizacion: {
+    id: number;
+    fecha_crea: string;
+    estado: string;
+    costo_envio: number;
+    rut_cliente: string;
+    user_id: string;
+    tipo_despacho: string;
+    cliente: {
+      rut: string;
+      nombre: string;
+      telefono: string;
+      email: string;
+      razon_social: string;
+      tipo_id: number;
+      tipo: {
+        id: number;
+        nombre: string;
+      };
+    };
+    usuario: {
+      email: string;
+      nombre: string;
+      rol_id: number;
+      rol: {
+        id: number;
+        nombre: string;
+      };
+    };
+  };
+  camion: {
+    id: number;
+    patente: string;
+    tipo_id: number;
+    activo: boolean;
+    tipo: {
+      id: number;
+      volumen: number;
+      peso_maximo: number;
+    };
+  };
+  origen_sucursal: {
+    id: number;
+    nombre: string;
+    telefono: string;
+    direccion: string;
+    comuna: string;
+    ciudad: string;
+    tipo_id: number;
+    tipo: {
+      id: number;
+      nombre: string;
+    };
+  };
+  destino_dir_cliente: {
+    id: number;
+    rut_cliente: string;
+    nombre: string;
+    direccion: string;
+    comuna: string;
+    ciudad: string;
+    cliente: {
+      rut: string;
+      nombre: string;
+      telefono: string;
+      email: string;
+      razon_social: string;
+      tipo_id: number;
+      tipo: {
+        id: number;
+        nombre: string;
+      };
+    };
+  };
+  productos: any[];
+  cantidad_items: number;
+  total_kg: number;
+  total_precio: number;
+  items: any;
+}
+
+// Interfaz para los datos de los productos de la API
+interface ProductoAPI {
+  sku: string;
+  nombre: string;
+  descripcion: string;
+  proveedor_id: number;
+  peso: number;
+  largo: number;
+  ancho: number;
+  alto: number;
+  precio: number;
+  categoria_id: number;
+  estado: boolean;
+  proveedor: {
+    id: number;
+    marca: string;
+    email: string;
+    telefono: string;
+    direccion: string;
+  };
+  categoria: {
+    id: number;
+    nombre: string;
+  };
+}
+
+// Interfaz para los datos de los proveedores de la API
+interface ProveedorAPI {
+  id: number;
+  marca: string;
+  email: string;
+  telefono: string;
+  direccion: string;
+}
 
 // Interfaz para los datos de usuario del API
 interface UsuarioAPI {
@@ -16,13 +186,205 @@ interface UsuarioAPI {
   };
 }
 
+// Función para obtener clientes del endpoint
+const fetchClientes = async (): Promise<ClienteAPI[]> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
+    
+    const response = await fetch(`${API_BASE_URL}/api/clientes`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('⏱️ Timeout al cargar clientes - operación cancelada');
+    } else {
+      console.warn('⚠️ Error al cargar clientes - usando datos por defecto');
+    }
+    return [];
+  }
+};
+
+// Función para obtener sucursales del endpoint
+const fetchSucursales = async (): Promise<SucursalesAPI[]> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
+    
+    const response = await fetch(`${API_BASE_URL}/api/sucursales`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('⏱️ Timeout al cargar sucursales - operación cancelada');
+    } else {
+      console.warn('⚠️ Error al cargar sucursales - usando datos por defecto');
+    }
+    return [];
+  }
+};
+
+// Función para obtener sucursales del endpoint
+const fetchBodegas = async (): Promise<BodegasAPI[]> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
+    
+    const response = await fetch(`${API_BASE_URL}/api/bodegas`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('⏱️ Timeout al cargar bodegas - operación cancelada');
+    } else {
+      console.warn('⚠️ Error al cargar bodegas - usando datos por defecto');
+    }
+    return [];
+  }
+};
+
+// Función para obtener despachos del endpoint
+const fetchDespachos = async (): Promise<DespachoAPI[]> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
+    
+    const response = await fetch(`${API_BASE_URL}/api/despachos`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('⏱️ Timeout al cargar despachos - operación cancelada');
+    } else {
+      console.warn('⚠️ Error al cargar despachos - usando datos por defecto');
+    }
+    return [];
+  }
+};
+
+// Función para obtener productos del endpoint
+const fetchProductos = async (): Promise<ProductoAPI[]> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
+    
+    const response = await fetch(`${API_BASE_URL}/api/productos`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('⏱️ Timeout al cargar productos - operación cancelada');
+    } else {
+      console.warn('⚠️ Error al cargar productos - usando datos por defecto');
+    }
+    return [];
+  }
+};
+
+// Función para obtener proveedores del endpoint
+const fetchProveedores = async (): Promise<ProveedorAPI[]> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
+    
+    const response = await fetch(`${API_BASE_URL}/api/proveedores`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('⏱️ Timeout al cargar proveedores - operación cancelada');
+    } else {
+      console.warn('⚠️ Error al cargar proveedores - usando datos por defecto');
+    }
+    return [];
+  }
+};
+
 // Función para obtener usuarios del endpoint
 const fetchUsuarios = async (): Promise<UsuarioAPI[]> => {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
     
-    const response = await fetch(`${API_BASE_URL}/usuarios`, {
+    const response = await fetch(`${API_BASE_URL}/api/usuarios`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -100,6 +462,12 @@ export default function InicioPage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [openCard, setOpenCard] = useState<number | null>(null);
   const [usuariosCount, setUsuariosCount] = useState<number>(0);
+  const [clientesCount, setClientesCount] = useState<number>(0);
+  const [sucursalesCount, setSucursalesCount] = useState<number>(0);
+  const [despachosCount, setDespachosCount] = useState<number>(0);
+  const [productosCount, setProductosCount] = useState<number>(0);
+  const [proveedoresCount, setProveedoresCount] = useState<number>(0);
+  const [realBodegas, setRealBodegas] = useState<BodegasAPI[]>([]);
   const { isSmall, isMobile } = useWindowSize();
 
   useEffect(() => {
@@ -114,19 +482,43 @@ export default function InicioPage() {
       }
     }
 
-    // Cargar conteo de usuarios
-    const loadUsuariosCount = async () => {
+    // Cargar conteo de usuarios, clientes, sucursales, despachos, productos y proveedores
+    const loadCounts = async () => {
       try {
-        const usuarios = await fetchUsuarios();
+        const [usuarios, clientes, sucursales, despachos, productos, proveedores] = await Promise.all([
+          fetchUsuarios(),
+          fetchClientes(),
+          fetchSucursales(),
+          fetchDespachos(),
+          fetchProductos(),
+          fetchProveedores()
+        ]);
         setUsuariosCount(usuarios.length);
-        console.log("📊 Conteo de usuarios cargado:", usuarios.length);
+        setClientesCount(clientes.length);
+        setSucursalesCount(sucursales.length);
+        setDespachosCount(despachos.length);
+        setProductosCount(productos.length);
+        setProveedoresCount(proveedores.length);
+        console.log("📊 Conteos cargados:", { 
+          usuarios: usuarios.length, 
+          clientes: clientes.length, 
+          sucursales: sucursales.length,
+          despachos: despachos.length,
+          productos: productos.length,
+          proveedores: proveedores.length 
+        });
       } catch (error) {
-        console.error("Error loading usuarios count:", error);
+        console.error("Error loading counts:", error);
         setUsuariosCount(0);
+        setClientesCount(0);
+        setSucursalesCount(0);
+        setDespachosCount(0);
+        setProductosCount(0);
+        setProveedoresCount(0);
       }
     };
 
-    loadUsuariosCount();
+    loadCounts();
   }, []);
 
 
@@ -139,18 +531,17 @@ export default function InicioPage() {
   };
 
   const cardData: CardProps[] = [
-    { id: 1, mainText: '12', subText: 'Clientes', imagePath: '/images/inicio/clientes.png' },
-    { id: 2, mainText: '20', subText: 'Proveedores', imagePath: '/images/inicio/proveedores.png' },
+    { id: 1, mainText: clientesCount.toString(), subText: 'Clientes', imagePath: '/images/inicio/clientes.png' },
+    { id: 2, mainText: proveedoresCount.toString(), subText: 'Proveedores', imagePath: '/images/inicio/proveedores.png' },
     { id: 3, mainText: '4', subText: 'Bodegas', imagePath: '/images/inicio/bodegas.png' },
-    { id: 4, mainText: '100', subText: 'Productos registrados', imagePath: '/images/inicio/productos.png' },
+    { id: 4, mainText: productosCount.toString(), subText: 'Productos registrados', imagePath: '/images/inicio/productos.png' },
     { id: 5, mainText: '25', subText: 'Productos disponibles', imagePath: '/images/inicio/productos.png' },
-    { id: 6, mainText: '25', subText: 'Productos no disponibles', imagePath: '/images/inicio/productos.png' },
-    { id: 7, mainText: '50', subText: 'Pedidos', imagePath: '/images/inicio/pedidos.png' },
-    { id: 8, mainText: '50', subText: 'Facturas emitidas', imagePath: '/images/inicio/facturas.png' },
+    //{ id: 6, mainText: '25', subText: 'Productos no disponibles', imagePath: '/images/inicio/productos.png' },
+    { id: 7, mainText: despachosCount.toString(), subText: 'Despachos', imagePath: '/images/inicio/pedidos.png' },
     { id: 9, mainText: '150', subText: 'Existencia total', imagePath: '/images/inicio/existencias.png' },
-    { id: 10, mainText: '100', subText: 'Existencia vendida', imagePath: '/images/inicio/existencias.png' },
-    { id: 11, mainText: '5', subText: 'Sucursales', imagePath: '/images/inicio/sucursales.png' },
-    { id: 12, mainText: '50', subText: 'Ventas', imagePath: '/images/inicio/ventas.png' },
+    //{ id: 10, mainText: '100', subText: 'Existencia vendida', imagePath: '/images/inicio/existencias.png' },
+    { id: 11, mainText: sucursalesCount.toString(), subText: 'Sucursales', imagePath: '/images/inicio/sucursales.png' },
+    //{ id: 12, mainText: '50', subText: 'Ventas', imagePath: '/images/inicio/ventas.png' },
     { id: 13, mainText: usuariosCount.toString(), subText: 'Usuarios registrados', imagePath: '/images/inicio/usuarios_registrados.png' },
   ];
 
@@ -171,12 +562,14 @@ export default function InicioPage() {
           ...textStyle,
           fontSize: isMobile ? "0.9rem" : "1rem",
         }}>
-          Bienvenido a su panel de gestión,{" "}
-          <span style={{ fontWeight: "bold" }}>
-            {user ? user.name : "Invitado"}
-          </span>
-          !
+          Bienvenido a su panel de gestión
+          {user && user.name && user.name.trim() !== "" ? (
+            <>, <span style={{ fontWeight: "bold" }}>{user.name}</span>!</>
+          ) : (
+            "!"
+          )}
         </h3>
+
         <div style={subtleLineStyle}></div>
         <h1 style={{
           ...titleStyle,
@@ -312,24 +705,76 @@ interface CardModalProps {
 const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [realUsuarios, setRealUsuarios] = useState<UsuarioAPI[]>([]);
+  const [realClientes, setRealClientes] = useState<ClienteAPI[]>([]);
+  const [realSucursales, setRealSucursales] = useState<SucursalesAPI[]>([]);
+  const [realBodegas, setRealBodegas] = useState<BodegasAPI[]>([]);
+  const [realDespachos, setRealDespachos] = useState<DespachoAPI[]>([]);
+  const [realProductos, setRealProductos] = useState<ProductoAPI[]>([]);
+  const [realProveedores, setRealProveedores] = useState<ProveedorAPI[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Cargar datos reales de usuarios cuando el modal se abre y es la card de usuarios
+  // Cargar datos reales de usuarios, clientes, sucursales, despachos, productos y proveedores cuando el modal se abre
   useEffect(() => {
     const loadRealData = async () => {
-      if (card.subText !== 'Usuarios registrados') {
+      if (card.subText !== 'Usuarios registrados' && card.subText !== 'Clientes' && card.subText !== 'Sucursales' && card.subText !== 'Bodegas' && card.subText !== 'Despachos' && card.subText !== 'Productos registrados' && card.subText !== 'Proveedores') {
         setRealUsuarios([]);
+        setRealClientes([]);
+        setRealSucursales([]);
+        setRealBodegas([]);
+        setRealDespachos([]);
+        setRealProductos([]);
+        setRealProveedores([]);
         return;
       }
 
       setLoading(true);
       try {
-        const usuarios = await fetchUsuarios();
-        setRealUsuarios(usuarios);
-        console.log("📊 Usuarios cargados en modal:", usuarios);
+        if (card.subText === 'Usuarios registrados') {
+          const usuarios = await fetchUsuarios();
+          setRealUsuarios(usuarios);
+          console.log("📊 Usuarios cargados en modal:", usuarios);
+        } else if (card.subText === 'Clientes') {
+          const clientes = await fetchClientes();
+          setRealClientes(clientes);
+          console.log("📊 Clientes cargados en modal:", clientes);
+        } else if (card.subText === 'Sucursales') {
+          const sucursales = await fetchSucursales();
+          setRealSucursales(sucursales);
+          console.log("📊 Sucursales cargadas en modal:", sucursales);
+        } else if (card.subText === 'Bodegas') {
+          const bodegas = await fetchBodegas();
+          setRealBodegas(bodegas);
+          console.log("📦 Bodegas cargadas en modal:", bodegas);
+        } else if (card.subText === 'Despachos') {
+          const despachos = await fetchDespachos();
+          setRealDespachos(despachos);
+          console.log("📊 Despachos cargados en modal:", despachos);
+        } else if (card.subText === 'Productos registrados') {
+          const productos = await fetchProductos();
+          setRealProductos(productos);
+          console.log("📊 Productos cargados en modal:", productos);
+        } else if (card.subText === 'Proveedores') {
+          const proveedores = await fetchProveedores();
+          setRealProveedores(proveedores);
+          console.log("📊 Proveedores cargados en modal:", proveedores);
+        }
       } catch (error) {
-        console.error("Error loading usuarios in modal:", error);
-        setRealUsuarios([]);
+        console.error("Error loading data in modal:", error);
+        if (card.subText === 'Usuarios registrados') {
+          setRealUsuarios([]);
+        } else if (card.subText === 'Clientes') {
+          setRealClientes([]);
+        } else if (card.subText === 'Sucursales') {
+          setRealSucursales([]);
+        } else if (card.subText === 'Bodegas') {
+          setRealBodegas([]);
+        } else if (card.subText === 'Despachos') {
+          setRealDespachos([]);
+        } else if (card.subText === 'Productos registrados') {
+          setRealProductos([]);
+        } else if (card.subText === 'Proveedores') {
+          setRealProveedores([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -368,6 +813,196 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
       }];
     }
 
+    // Si es la card de clientes, usar datos reales del endpoint
+    if (card.subText === 'Clientes') {
+      if (loading) {
+        return [{
+          id: 1,
+          mensaje: 'Cargando información...',
+          estado: 'Conectando al servidor',
+          descripcion: 'Por favor espere mientras se cargan los clientes'
+        }];
+      }
+
+      if (realClientes.length > 0) {
+        // Convertir los datos del API al formato de la tabla
+        return realClientes.map((cliente, index) => ({
+          id: index + 1,
+          rut: cliente.rut,
+          nombre: cliente.nombre,
+          email: cliente.email,
+          telefono: cliente.telefono,
+          tipo: cliente.tipo.nombre,
+          razon_social: cliente.razon_social || 'Sin razon social'
+        }));
+      }
+
+      return [{
+        id: 1,
+        mensaje: 'No hay clientes registrados',
+        descripcion: 'No se encontraron clientes en el sistema'
+      }];
+    }
+
+    // ...dentro de CardModal...
+
+// Si es la card de sucursales, mostrar solo las sucursales (tipo.id === 2)
+if (card.subText === 'Sucursales') {
+  if (loading) {
+    return [{
+      id: 1,
+      mensaje: 'Cargando información...',
+      estado: 'Conectando al servidor',
+      descripcion: 'Por favor espere mientras se cargan las sucursales'
+    }];
+  }
+
+  if (realSucursales.length > 0) {
+    return realSucursales.map((sucursal, index) => ({
+      id: index + 1,
+      nombre: sucursal.nombre,
+      direccion: sucursal.direccion,
+      telefono: sucursal.telefono,
+      comuna: sucursal.comuna,
+      ciudad: sucursal.ciudad,
+      tipo: sucursal.tipo.nombre
+    }));
+  }
+
+  return [{
+    id: 1,
+    mensaje: 'No hay sucursales registradas',
+    descripcion: 'No se encontraron sucursales en el sistema'
+  }];
+}
+
+// Si es la card de bodegas, mostrar las bodegas reales
+if (card.subText === 'Bodegas') {
+  if (loading) {
+    return [{
+      id: 1,
+      mensaje: 'Cargando información...',
+      estado: 'Conectando al servidor',
+      descripcion: 'Por favor espere mientras se cargan las bodegas'
+    }];
+  }
+
+  if (realBodegas.length > 0) {
+    return realBodegas.map((bodega, index) => ({
+      id: index + 1,
+      nombre: bodega.nombre,
+      direccion: bodega.direccion,
+      telefono: bodega.telefono,
+      comuna: bodega.comuna,
+      ciudad: bodega.ciudad,
+      tipo: bodega.tipo.nombre
+    }));
+  }
+
+  return [{
+    id: 1,
+    mensaje: 'No hay bodegas registradas',
+    descripcion: 'No se encontraron bodegas en el sistema'
+  }];
+}
+
+    // Si es la card de despachos, usar datos reales del endpoint
+    if (card.subText === 'Despachos') {
+      if (loading) {
+        return [{
+          id: 1,
+          mensaje: 'Cargando información...',
+          estado: 'Conectando al servidor',
+          descripcion: 'Por favor espere mientras se cargan los despachos'
+        }];
+      }
+
+      if (realDespachos.length > 0) {
+        // Convertir los datos del API al formato de la tabla con información más relevante
+        return realDespachos.map((despacho, index) => ({
+          id: index + 1,
+          fecha_despacho: new Date(despacho.fecha_despacho).toLocaleDateString('es-ES'),
+          estado: despacho.estado,
+          cliente: despacho.cotizacion.cliente.nombre,
+          origen: despacho.origen_sucursal.nombre,
+          destino: `${despacho.destino_dir_cliente.comuna}, ${despacho.destino_dir_cliente.ciudad}`,
+          valor_despacho: `$${despacho.valor_despacho.toLocaleString()}`,
+          camion: despacho.camion.patente,
+          total_items: despacho.cantidad_items,
+          total_kg: `${despacho.total_kg} kg`
+        }));
+      }
+
+      return [{
+        id: 1,
+        mensaje: 'No hay despachos registrados',
+        descripcion: 'No se encontraron despachos en el sistema'
+      }];
+    }
+
+    // Si es la card de productos registrados, usar datos reales del endpoint
+    if (card.subText === 'Productos registrados') {
+      if (loading) {
+        return [{
+          id: 1,
+          mensaje: 'Cargando información...',
+          estado: 'Conectando al servidor',
+          descripcion: 'Por favor espere mientras se cargan los productos'
+        }];
+      }
+
+      if (realProductos.length > 0) {
+        // Convertir los datos del API al formato de la tabla con información relevante
+        return realProductos.map((producto, index) => ({
+          id: index + 1,
+          sku: producto.sku,
+          nombre: producto.nombre,
+          descripcion: producto.descripcion,
+          categoria: producto.categoria.nombre,
+          proveedor: producto.proveedor.marca,
+          precio: `$${producto.precio.toLocaleString()}`,
+          peso: `${producto.peso} kg`,
+          dimensiones: `${producto.largo}x${producto.ancho}x${producto.alto} cm`,
+          estado: producto.estado ? 'Activo' : 'Inactivo'
+        }));
+      }
+
+      return [{
+        id: 1,
+        mensaje: 'No hay productos registrados',
+        descripcion: 'No se encontraron productos en el sistema'
+      }];
+    }
+
+    // Si es la card de proveedores, usar datos reales del endpoint
+    if (card.subText === 'Proveedores') {
+      if (loading) {
+        return [{
+          id: 1,
+          mensaje: 'Cargando información...',
+          estado: 'Conectando al servidor',
+          descripcion: 'Por favor espere mientras se cargan los proveedores'
+        }];
+      }
+
+      if (realProveedores.length > 0) {
+        // Convertir los datos del API al formato de la tabla con información relevante
+        return realProveedores.map((proveedor, index) => ({
+          id: index + 1,
+          marca: proveedor.marca,
+          email: proveedor.email,
+          telefono: proveedor.telefono,
+          direccion: proveedor.direccion
+        }));
+      }
+
+      return [{
+        id: 1,
+        mensaje: 'No hay proveedores registrados',
+        descripcion: 'No se encontraron proveedores en el sistema'
+      }];
+    }
+
     // Para otras cards, usar datos estáticos o mostrar mensaje de no implementado
     return generateSampleData(card.subText);
   };
@@ -392,19 +1027,10 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
         { id: 300, nombre: 'Carlos López', email: 'carlos@email.com', telefono: '555-123-4567', empresa: 'Solutions Inc' },
       ],
       'Proveedores': [
-        { id: 1, nombre: 'Suministros ABC', contacto: 'Ana Torres', telefono: '111-222-3333', categoria: 'Materiales' },
-        { id: 2, nombre: 'Distribuidora XYZ', contacto: 'Luis Méndez', telefono: '444-555-6666', categoria: 'Equipos' },
-        { id: 3, nombre: 'Importadora DEF', contacto: 'Sofia Ruiz', telefono: '777-888-9999', categoria: 'Herramientas' },
-      ],
-      'Bodegas': [
-        { id: 1, nombre: 'Bodega Central', ubicacion: 'Zona Norte', capacidad: '1000 m²', responsable: 'Pedro Ramírez' },
-        { id: 2, nombre: 'Bodega Sur', ubicacion: 'Zona Sur', capacidad: '750 m²', responsable: 'Laura Jiménez' },
-        { id: 3, nombre: 'Bodega Este', ubicacion: 'Zona Este', capacidad: '500 m²', responsable: 'Miguel Santos' },
+        { id: 1, mensaje: 'Datos conectados a la API', descripcion: 'Esta sección ahora obtiene datos reales del servidor' },
       ],
       'Productos registrados': [
-        { id: 1, codigo: 'P001', nombre: 'Laptop HP', categoria: 'Tecnología', precio: '$800', stock: 15 },
-        { id: 2, codigo: 'P002', nombre: 'Mouse Logitech', categoria: 'Accesorios', precio: '$25', stock: 50 },
-        { id: 3, codigo: 'P003', nombre: 'Monitor Samsung', categoria: 'Tecnología', precio: '$300', stock: 8 },
+        { id: 1, mensaje: 'Datos conectados a la API', descripcion: 'Esta sección ahora obtiene datos reales del servidor' },
       ],
       'Productos disponibles': [
         { id: 1, codigo: 'P001', nombre: 'Laptop HP', stock: 15, estado: 'Disponible', ubicacion: 'Bodega A' },
@@ -418,10 +1044,6 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
         { id: 1, numero: 'PED-001', cliente: 'Juan Pérez', fecha: '2025-07-01', estado: 'Pendiente', total: '$1,200' },
         { id: 2, numero: 'PED-002', cliente: 'María García', fecha: '2025-07-02', estado: 'Procesando', total: '$850' },
       ],
-      'Facturas emitidas': [
-        { id: 1, numero: 'FAC-001', cliente: 'Tech Corp', fecha: '2025-07-01', monto: '$1,200', estado: 'Pagada' },
-        { id: 2, numero: 'FAC-002', cliente: 'Design LLC', fecha: '2025-07-02', monto: '$850', estado: 'Pendiente' },
-      ],
       'Existencia total': [
         { id: 1, producto: 'Laptop HP', categoria: 'Tecnología', cantidad: 15, valor_unitario: '$800', valor_total: '$12,000' },
         { id: 2, producto: 'Mouse Logitech', categoria: 'Accesorios', cantidad: 50, valor_unitario: '$25', valor_total: '$1,250' },
@@ -434,10 +1056,10 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
         { id: 1, nombre: 'Sucursal Centro', direccion: 'Av. Principal 123', telefono: '123-456-7890', gerente: 'Ana López' },
         { id: 2, nombre: 'Sucursal Norte', direccion: 'Calle Norte 456', telefono: '098-765-4321', gerente: 'Carlos Méndez' },
       ],
-      'Ventas': [
+/*      'Ventas': [
         { id: 1, numero: 'V-001', fecha: '2025-07-01', cliente: 'Juan Pérez', producto: 'Laptop HP', cantidad: 1, total: '$800' },
         { id: 2, numero: 'V-002', fecha: '2025-07-02', cliente: 'María García', producto: 'Mouse Logitech', cantidad: 2, total: '$50' },
-      ],
+      ],*/
     };
     
     return dataMap[cardSubText] || [
@@ -579,6 +1201,16 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
             height={60}
           />
           <h2 style={modalTitleStyle}>{card.subText}</h2>
+          <div style={{ 
+            marginLeft: 'auto',
+            padding: '0.5rem 1rem', 
+            borderRadius: '8px',
+            flexShrink: 0
+          }}>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>
+              Total de registros: {dataToShow.length} | Mostrando: {filteredData.length}
+            </p>
+          </div>
         </div>
 
         {/* Buscador */}
