@@ -47,7 +47,20 @@ export default function InventarioProveedoresPage() {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
-  const [inventarioData, setInventarioData] = useState([]);
+  const [inventarioData, setInventarioData] = useState<Array<{
+  id: number;
+  sku: string;
+  nombreProducto: string;
+  proveedor: string;
+  pesoKg: string | number;
+  largoCm: string | number;
+  anchoCm: string | number;
+  altoCm: string | number;
+  precioCU: number;
+  stock: number;
+  fechaIngreso: string;
+}>>([]);
+
 
   useEffect(() => {
     const fetchInventario = async () => {
