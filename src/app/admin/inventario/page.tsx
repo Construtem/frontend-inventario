@@ -87,16 +87,20 @@ export default function InventarioPage() {
         }
         
       } catch (err) {
-
-        
-        let errorMessage = "Error desconocido al cargar datos";
+        let errorMessage = "Error de conexión. Por favor, intente nuevamente.";
         if (err instanceof Error) {
           if (err.name === 'AbortError') {
-            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+            errorMessage = 'Tiempo de espera agotado. Verifique su conexión a internet y vuelva a intentar.';
           } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
-            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+            errorMessage = '•No se pudo conectar al servidor.\n• Verifique su conexión a internet o contacte al administrador del sistema.';
+          } else if (err.message.includes('500')) {
+            errorMessage = 'Error interno del servidor (Error 500). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('404')) {
+            errorMessage = 'Servicio no encontrado (Error 404). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('403') || err.message.includes('401')) {
+            errorMessage = 'No tiene permisos para acceder a este recurso. Por favor, contacte al administrador del sistema.';
           } else {
-            errorMessage = err.message;
+            errorMessage = 'Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.';
           }
         }
         
@@ -136,8 +140,22 @@ export default function InventarioPage() {
           throw new Error('Los datos recibidos no tienen el formato esperado');
         }
       } catch (err) {
-
-        setError(err instanceof Error ? err.message : 'Error al recargar los datos');
+        let errorMessage = "Error de conexión. Por favor, intente nuevamente.";
+        if (err instanceof Error) {
+          if (err.message.includes('500')) {
+            errorMessage = 'Error interno del servidor (Error 500). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('404')) {
+            errorMessage = 'Servicio no encontrado (Error 404). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('403') || err.message.includes('401')) {
+            errorMessage = 'No tiene permisos para acceder a este recurso. Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet.';
+          } else {
+            errorMessage = 'Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.';
+          }
+        }
+        
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -226,7 +244,7 @@ export default function InventarioPage() {
           <div style={loadingSpinnerStyle} />
           <div style={loadingTextStyle}>Cargando sucursales...</div>
           <div style={loadingSubTextStyle}>
-            Conectando con http://localhost:8080
+            Conectando con el servidor...
           </div>
         </div>
       );
@@ -235,33 +253,13 @@ export default function InventarioPage() {
     if (error) {
       return (
         <div style={errorContainerStyle}>
-          <div style={errorTitleStyle}>Error al cargar las sucursales</div>
+          <div style={errorTitleStyle}>Error al cargar Inventario</div>
           <div style={errorMessageStyle}>{error}</div>
           
           <div style={errorButtonsStyle}>
             <button onClick={retryFetch} style={retryButtonStyle}>
               Reintentar
             </button>
-            
-            <button
-              onClick={() => {
-
-              }}
-              style={diagnosticButtonStyle}
-            >
-              Diagnóstico
-            </button>
-          </div>
-          
-          <div style={helpContainerStyle}>
-            <div style={helpTitleStyle}>💡 Posibles soluciones:</div>
-            <ul style={helpListStyle}>
-              <li>Verificar que el backend esté ejecutándose en el puerto 8080</li>
-              <li>Comprobar que la URL de la API sea correcta</li>
-              <li>Revisar la configuración de CORS en el backend</li>
-              <li>Verificar la conexión a internet</li>
-              <li>Intentar acceder directamente a: <a href={`${apiInventarioUrl}/api/sucursales`} target="_blank" style={{ color: '#3b82f6' }}>{apiInventarioUrl}/api/sucursales</a></li>
-            </ul>
           </div>
         </div>
       );
@@ -633,7 +631,7 @@ const errorButtonsStyle: React.CSSProperties = {
 };
 
 const retryButtonStyle: React.CSSProperties = {
-  backgroundColor: '#10b981',
+  backgroundColor: '#ef4444',
   color: 'white',
   padding: '0.75rem 1.5rem',
   borderRadius: '8px',
@@ -660,31 +658,6 @@ const diagnosticButtonStyle: React.CSSProperties = {
   boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
   transition: 'all 0.3s ease',
   minWidth: '120px',
-};
-
-const helpContainerStyle: React.CSSProperties = {
-  padding: '1.5rem',
-  backgroundColor: '#f3f4f6',
-  borderRadius: '8px',
-  width: '100%',
-  boxSizing: 'border-box',
-  textAlign: 'left',
-};
-
-const helpTitleStyle: React.CSSProperties = {
-  fontWeight: 'bold',
-  marginBottom: '1rem',
-  color: '#374151',
-  fontFamily: 'Montserrat, sans-serif',
-};
-
-const helpListStyle: React.CSSProperties = {
-  margin: 0,
-  paddingLeft: '1.2rem',
-  fontSize: '0.875rem',
-  color: '#666',
-  fontFamily: 'Roboto, sans-serif',
-  lineHeight: '1.6',
 };
 
 // Estilos para estado vacío

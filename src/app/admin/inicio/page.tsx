@@ -35,6 +35,21 @@ interface SucursalesAPI{
   };
 }
 
+// Interfaz para los datos de las sucursales de la API
+interface BodegasAPI{
+  id: number;
+  nombre: string;
+  direccion: string;
+  telefono: string;
+  comuna: string;
+  ciudad: string;
+  tipo_id: number;
+  tipo: {
+    id: number;
+    nombre: string;
+  };
+}
+
 // Interfaz para los datos de los despachos de la API
 interface DespachoAPI {
   id: number;
@@ -235,6 +250,38 @@ const fetchSucursales = async (): Promise<SucursalesAPI[]> => {
   }
 };
 
+// Función para obtener sucursales del endpoint
+const fetchBodegas = async (): Promise<BodegasAPI[]> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
+    
+    const response = await fetch(`${API_BASE_URL}/bodegas`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('⏱️ Timeout al cargar bodegas - operación cancelada');
+    } else {
+      console.warn('⚠️ Error al cargar bodegas - usando datos por defecto');
+    }
+    return [];
+  }
+};
+
 // Función para obtener despachos del endpoint
 const fetchDespachos = async (): Promise<DespachoAPI[]> => {
   try {
@@ -420,6 +467,7 @@ export default function InicioPage() {
   const [despachosCount, setDespachosCount] = useState<number>(0);
   const [productosCount, setProductosCount] = useState<number>(0);
   const [proveedoresCount, setProveedoresCount] = useState<number>(0);
+  const [realBodegas, setRealBodegas] = useState<BodegasAPI[]>([]);
   const { isSmall, isMobile } = useWindowSize();
 
   useEffect(() => {
@@ -514,12 +562,14 @@ export default function InicioPage() {
           ...textStyle,
           fontSize: isMobile ? "0.9rem" : "1rem",
         }}>
-          Bienvenido a su panel de gestión,{" "}
-          <span style={{ fontWeight: "bold" }}>
-            {user ? user.name : "Invitado"}
-          </span>
-          !
+          Bienvenido a su panel de gestión
+          {user && user.name && user.name.trim() !== "" ? (
+            <>, <span style={{ fontWeight: "bold" }}>{user.name}</span>!</>
+          ) : (
+            "!"
+          )}
         </h3>
+
         <div style={subtleLineStyle}></div>
         <h1 style={{
           ...titleStyle,
@@ -657,6 +707,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   const [realUsuarios, setRealUsuarios] = useState<UsuarioAPI[]>([]);
   const [realClientes, setRealClientes] = useState<ClienteAPI[]>([]);
   const [realSucursales, setRealSucursales] = useState<SucursalesAPI[]>([]);
+  const [realBodegas, setRealBodegas] = useState<BodegasAPI[]>([]);
   const [realDespachos, setRealDespachos] = useState<DespachoAPI[]>([]);
   const [realProductos, setRealProductos] = useState<ProductoAPI[]>([]);
   const [realProveedores, setRealProveedores] = useState<ProveedorAPI[]>([]);
@@ -665,10 +716,11 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   // Cargar datos reales de usuarios, clientes, sucursales, despachos, productos y proveedores cuando el modal se abre
   useEffect(() => {
     const loadRealData = async () => {
-      if (card.subText !== 'Usuarios registrados' && card.subText !== 'Clientes' && card.subText !== 'Sucursales' && card.subText !== 'Despachos' && card.subText !== 'Productos registrados' && card.subText !== 'Proveedores') {
+      if (card.subText !== 'Usuarios registrados' && card.subText !== 'Clientes' && card.subText !== 'Sucursales' && card.subText !== 'Bodegas' && card.subText !== 'Despachos' && card.subText !== 'Productos registrados' && card.subText !== 'Proveedores') {
         setRealUsuarios([]);
         setRealClientes([]);
         setRealSucursales([]);
+        setRealBodegas([]);
         setRealDespachos([]);
         setRealProductos([]);
         setRealProveedores([]);
@@ -689,6 +741,10 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
           const sucursales = await fetchSucursales();
           setRealSucursales(sucursales);
           console.log("📊 Sucursales cargadas en modal:", sucursales);
+        } else if (card.subText === 'Bodegas') {
+          const bodegas = await fetchBodegas();
+          setRealBodegas(bodegas);
+          console.log("📦 Bodegas cargadas en modal:", bodegas);
         } else if (card.subText === 'Despachos') {
           const despachos = await fetchDespachos();
           setRealDespachos(despachos);
@@ -710,6 +766,8 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
           setRealClientes([]);
         } else if (card.subText === 'Sucursales') {
           setRealSucursales([]);
+        } else if (card.subText === 'Bodegas') {
+          setRealBodegas([]);
         } else if (card.subText === 'Despachos') {
           setRealDespachos([]);
         } else if (card.subText === 'Productos registrados') {
@@ -786,36 +844,67 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
       }];
     }
 
-    // Si es la card de sucursales, usar datos reales del endpoint
-    if (card.subText === 'Sucursales') {
-      if (loading) {
-        return [{
-          id: 1,
-          mensaje: 'Cargando información...',
-          estado: 'Conectando al servidor',
-          descripcion: 'Por favor espere mientras se cargan las sucursales'
-        }];
-      }
+    // ...dentro de CardModal...
 
-      if (realSucursales.length > 0) {
-        // Convertir los datos del API al formato de la tabla
-        return realSucursales.map((sucursal, index) => ({
-          id: index + 1,
-          nombre: sucursal.nombre,
-          direccion: sucursal.direccion,
-          telefono: sucursal.telefono,
-          comuna: sucursal.comuna,
-          ciudad: sucursal.ciudad,
-          tipo: sucursal.tipo.nombre
-        }));
-      }
+// Si es la card de sucursales, mostrar solo las sucursales (tipo.id === 2)
+if (card.subText === 'Sucursales') {
+  if (loading) {
+    return [{
+      id: 1,
+      mensaje: 'Cargando información...',
+      estado: 'Conectando al servidor',
+      descripcion: 'Por favor espere mientras se cargan las sucursales'
+    }];
+  }
 
-      return [{
-        id: 1,
-        mensaje: 'No hay sucursales registradas',
-        descripcion: 'No se encontraron sucursales en el sistema'
-      }];
-    }
+  if (realSucursales.length > 0) {
+    return realSucursales.map((sucursal, index) => ({
+      id: index + 1,
+      nombre: sucursal.nombre,
+      direccion: sucursal.direccion,
+      telefono: sucursal.telefono,
+      comuna: sucursal.comuna,
+      ciudad: sucursal.ciudad,
+      tipo: sucursal.tipo.nombre
+    }));
+  }
+
+  return [{
+    id: 1,
+    mensaje: 'No hay sucursales registradas',
+    descripcion: 'No se encontraron sucursales en el sistema'
+  }];
+}
+
+// Si es la card de bodegas, mostrar las bodegas reales
+if (card.subText === 'Bodegas') {
+  if (loading) {
+    return [{
+      id: 1,
+      mensaje: 'Cargando información...',
+      estado: 'Conectando al servidor',
+      descripcion: 'Por favor espere mientras se cargan las bodegas'
+    }];
+  }
+
+  if (realBodegas.length > 0) {
+    return realBodegas.map((bodega, index) => ({
+      id: index + 1,
+      nombre: bodega.nombre,
+      direccion: bodega.direccion,
+      telefono: bodega.telefono,
+      comuna: bodega.comuna,
+      ciudad: bodega.ciudad,
+      tipo: bodega.tipo.nombre
+    }));
+  }
+
+  return [{
+    id: 1,
+    mensaje: 'No hay bodegas registradas',
+    descripcion: 'No se encontraron bodegas en el sistema'
+  }];
+}
 
     // Si es la card de despachos, usar datos reales del endpoint
     if (card.subText === 'Despachos') {
@@ -939,11 +1028,6 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
       ],
       'Proveedores': [
         { id: 1, mensaje: 'Datos conectados a la API', descripcion: 'Esta sección ahora obtiene datos reales del servidor' },
-      ],
-      'Bodegas': [
-        { id: 1, nombre: 'Bodega Central', ubicacion: 'Zona Norte', capacidad: '1000 m²', responsable: 'Pedro Ramírez' },
-        { id: 2, nombre: 'Bodega Sur', ubicacion: 'Zona Sur', capacidad: '750 m²', responsable: 'Laura Jiménez' },
-        { id: 3, nombre: 'Bodega Este', ubicacion: 'Zona Este', capacidad: '500 m²', responsable: 'Miguel Santos' },
       ],
       'Productos registrados': [
         { id: 1, mensaje: 'Datos conectados a la API', descripcion: 'Esta sección ahora obtiene datos reales del servidor' },

@@ -23,6 +23,10 @@ interface Sucursal {
   tipo_id?: number; 
 }
 
+const maxPorTipo = 3;
+const totalBodegas = 3; // Cambia por el conteo real
+const totalSucursales = 3; // Cambia por el conteo real
+
 const CIUDADES = ['Santiago'];
 
 const COMUNAS_POR_CIUDAD: { [key: string]: string[] } = {
@@ -204,7 +208,7 @@ export default function SucursalesPage() {
           if (err.name === 'AbortError') {
             errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
           } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
-            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+            errorMessage = '•No se pudo conectar al servidor.\n• Verifique su conexión a internet o contacte al administrador del sistema.';
           } else {
             errorMessage = err.message;
           }
@@ -218,6 +222,7 @@ export default function SucursalesPage() {
 
     fetchSucursales();
   }, []);
+
 
   // Función para reintentar la carga de datos
   const retryFetch = () => {
@@ -266,7 +271,7 @@ export default function SucursalesPage() {
           if (err.name === 'AbortError') {
             errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
           } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
-            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+            errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet o contacte al administrador del sistema.';
           } else {
             errorMessage = err.message;
           }
@@ -689,80 +694,64 @@ export default function SucursalesPage() {
     return { sucursales, bodegas };
   }, [sucursalesData]);
 
-  // Modificar handleDelete para usar la misma lógica
   const handleDelete = (sucursal: Sucursal) => {
-    const tipoValue = sucursal.tipo_id || sucursal.tipo;
-    const tipo = (tipoValue === 1 || tipoValue === '1' || 
-                  sucursal.nombre?.toLowerCase()?.includes('bodega')) ? 'bodega' : 'sucursal';
-    
-    Swal.fire({
-      title: '¿Estás seguro?',
-      text: `¿Deseas eliminar la ${tipo} "${sucursal.nombre}"?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Sí, continuar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // Segunda confirmación con advertencia de productos
+  const tipoValue = sucursal.tipo_id || sucursal.tipo;
+  const tipo = (tipoValue === 1 || tipoValue === '1' ||
+    sucursal.nombre?.toLowerCase()?.includes('bodega')) ? 'bodega' : 'sucursal';
+
+  Swal.fire({
+    title: 'ATENCIÓN: Eliminación Permanente',
+    html:
+      `<div style='text-align: left; margin: 1rem 0;'>
+        <p><strong>Al eliminar esta ${tipo}:</strong></p>
+        <ul style='margin: 0.5rem 0; padding-left: 1.5rem;'>
+          <li>Todos los productos asociados se eliminarán <strong>PERMANENTEMENTE</strong></li>
+          <li>Esta acción <strong>NO SE PUEDE DESHACER</strong></li>
+          <li>Se perderán todos los datos relacionados</li>
+        </ul>
+        <p style='color: #ef4444; font-weight: bold;'></p>
+      </div>`,
+    icon: 'error',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'SÍ, ELIMINAR PERMANENTEMENTE',
+    cancelButtonText: 'No, cancelar',
+    reverseButtons: true,
+    focusCancel: true,
+    showCloseButton: true
+  }).then(async (finalResult) => {
+    if (finalResult.isConfirmed) {
+      try {
+        const response = await fetch(`${apiInventarioUrl}/api/sucursales/${sucursal.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) throw new Error('Error al eliminar');
+
+        // Actualizar el estado eliminando la sucursal
+        setSucursalesData(prevData => prevData.filter(item => item.id !== sucursal.id));
+
         Swal.fire({
-          title: 'ATENCIÓN: Eliminación Permanente',
-          html: `
-            <div style="text-align: left; margin: 1rem 0;">
-              <p><strong>Al eliminar esta ${tipo}:</strong></p>
-              <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                <li>Todos los productos asociados se eliminarán <strong>PERMANENTEMENTE</strong></li>
-                <li>Esta acción <strong>NO SE PUEDE DESHACER</strong></li>
-                <li>Se perderán todos los datos relacionados</li>
-              </ul>
-              <p style="color: #ef4444; font-weight: bold;">¿Estás completamente seguro de que deseas continuar?</p>
-            </div>
-          `,
+          title: 'Eliminado',
+          text: `La ${tipo} y todos sus productos asociados han sido eliminados permanentemente`,
+          icon: 'success',
+          confirmButtonColor: '#ff7300'
+        });
+      } catch (err) {
+        Swal.fire({
+          title: 'Error',
+          text: `No se pudo eliminar la ${tipo}`,
           icon: 'error',
-          showCancelButton: true,
-          confirmButtonColor: '#ef4444',
-          cancelButtonColor: '#6b7280',
-          confirmButtonText: 'SÍ, ELIMINAR PERMANENTEMENTE',
-          cancelButtonText: 'No, cancelar',
-          reverseButtons: true,
-          focusCancel: true
-        }).then(async (finalResult) => {
-          if (finalResult.isConfirmed) {
-            try {
-                const response = await fetch(`${apiInventarioUrl}/api/sucursales/${sucursal.id}`, {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              });
-
-              if (!response.ok) throw new Error('Error al eliminar');
-
-              // Actualizar el estado eliminando la sucursal
-              setSucursalesData(prevData => prevData.filter(item => item.id !== sucursal.id));
-
-              Swal.fire({
-                title: 'Eliminado',
-                text: `La ${tipo} y todos sus productos asociados han sido eliminados permanentemente`,
-                icon: 'success',
-                confirmButtonColor: '#ff7300'
-              });
-            } catch (err) {
-
-              Swal.fire({
-                title: 'Error',
-                text: `No se pudo eliminar la ${tipo}`,
-                icon: 'error',
-                confirmButtonColor: '#ff7300'
-              });
-            }
-          }
+          confirmButtonColor: '#ff7300'
         });
       }
-    });
-  };
+    }
+  });
+};
 
   // Función para manejar agregar sucursal
   const handleAddSucursal = () => {
@@ -984,7 +973,7 @@ export default function SucursalesPage() {
               }} />
               <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando sucursales...</div>
               <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
-                Conectando con http://localhost:8080
+                Conectando con el servidor...
               </div>
             </div>
           ) : error ? (
@@ -1006,9 +995,9 @@ export default function SucursalesPage() {
                 textAlign: 'center',
                 marginBottom: '1.5rem'
               }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>❌ Error al cargar las sucursales</div>
+                <div style={{ fontWeight: 'bold', marginBottom: '1rem', fontFamily: 'Montserrat, sans-serif', fontSize: '1.5rem' }}>Error al cargar las sucursales</div>
                 <div style={{ 
-                  fontSize: '0.9rem', 
+                  fontSize: '1rem', 
                   marginTop: '0.5rem',
                   whiteSpace: 'pre-line',
                   lineHeight: '1.5',
@@ -1024,10 +1013,11 @@ export default function SucursalesPage() {
                 flexDirection: isMobile ? 'column' : 'row',
                 width: isMobile ? '100%' : 'auto'
               }}>
+                
                 <button
                   onClick={retryFetch}
                   style={{
-                    backgroundColor: '#10b981',
+                    backgroundColor: '#ef4444',
                     color: 'white',
                     padding: '0.75rem 1.5rem',
                     borderRadius: '8px',
@@ -1035,60 +1025,13 @@ export default function SucursalesPage() {
                     cursor: 'pointer',
                     fontSize: '1rem',
                     fontFamily: 'Montserrat, sans-serif',
-                    fontWeight: 'semibold',
+                    fontWeight: 'bold',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-                    transition: 'all 0.3s ease',
                     minWidth: '120px'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#059669'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
                 >
-                  🔄 Reintentar
+                  Reintentar
                 </button>
-                
-                <button
-                  onClick={() => {
-                  }}
-                  style={{
-                    backgroundColor: '#6b7280',
-                    color: 'white',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '8px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '1rem',
-                    fontFamily: 'Montserrat, sans-serif',
-                    fontWeight: 'semibold',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-                    transition: 'all 0.3s ease',
-                    minWidth: '120px'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
-                >
-                  🔍 Diagnóstico
-                </button>
-              </div>
-              
-              <div style={{
-                marginTop: '1.5rem',
-                padding: '1rem',
-                backgroundColor: '#f3f4f6',
-                borderRadius: '8px',
-                fontSize: '0.875rem',
-                color: '#666',
-                textAlign: 'left',
-                width: '100%',
-                boxSizing: 'border-box'
-              }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Posibles soluciones:</div>
-                <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
-                  <li>Verificar que el backend esté ejecutándose en el puerto 8080</li>
-                  <li>Comprobar que la URL de la API sea correcta</li>
-                  <li>Revisar la configuración de CORS en el backend</li>
-                  <li>Verificar la conexión a internet</li>
-                  <li>Intentar acceder directamente a: <a href="http://localhost:8080/api/sucursales" target="_blank" style={{ color: '#3b82f6' }}>http://localhost:8080/api/sucursales</a></li>
-                </ul>
               </div>
             </div>
           ) : (
@@ -1317,157 +1260,189 @@ export default function SucursalesPage() {
       )}
 
       {/* Modal de Edición */}
-      {showEditModal && editFormData && (
-        <div style={modalOverlayStyle}>
-          <div style={{...modalContentStyle, padding: '2rem'}}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-              <h2 style={{...modalTitleStyle, margin: 0}}>Editar Sucursal</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
-                  ID: <strong>{editFormData.id}</strong>
-                </div>
-                <button 
-                  onClick={() => setShowEditModal(false)}
-                  style={closeButtonStyle}
-                >
-                  &times;
-                </button>
-              </div>
-            </div>
-            
-            <div style={modalFormStyle}>
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Nombre</label>
-                <input
-                  type="text"
-                  value={editFormData.nombre || ''}
-                  onChange={(e) => {
-                    const filteredValue = filterTextInput(e.target.value);
-                    const validation = validateTextInput(filteredValue);
-                    
-                    if (!validation.isValid) {
-                      Swal.fire({
-                        title: 'Caracteres no permitidos',
-                        text: validation.message,
-                        icon: 'warning',
-                        confirmButtonColor: '#ff7300',
-                        timer: 3000,
-                        timerProgressBar: true
-                      });
-                    }
-                    
-                    setEditFormData({...editFormData, nombre: filteredValue});
-                  }}
-                  style={inputStyle}
-                  placeholder="Nombre de la sucursal"
-                />
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Dirección</label>
-                <input
-                  type="text"
-                  value={editFormData.direccion}
-                  onChange={(e) => {
-                    const filteredValue = filterTextInput(e.target.value);
-                    const validation = validateTextInput(filteredValue);
-                    
-                    if (!validation.isValid) {
-                      Swal.fire({
-                        title: 'Caracteres no permitidos',
-                        text: validation.message,
-                        icon: 'warning',
-                        confirmButtonColor: '#ff7300',
-                        timer: 3000,
-                        timerProgressBar: true
-                      });
-                    }
-                    
-                    setEditFormData({...editFormData, direccion: filteredValue});
-                  }}
-                  style={inputStyle}
-                />
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Teléfono</label>
-                <input
-                  type="text"
-                  value={editFormData.telefono}
-                  onChange={(e) => {
-                    const filteredValue = filterPhoneInput(e.target.value);
-                    const validation = validatePhoneInput(filteredValue);
-                    
-                    if (!validation.isValid) {
-                      Swal.fire({
-                        title: 'Formato de teléfono inválido',
-                        text: validation.message,
-                        icon: 'warning',
-                        confirmButtonColor: '#ff7300',
-                        timer: 3000,
-                        timerProgressBar: true
-                      });
-                    }
-                    
-                    setEditFormData({...editFormData, telefono: filteredValue});
-                  }}
-                  style={inputStyle}
-                />
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Ciudad</label>
-                <select 
-                  value={editFormData.ciudad || ''}
-                  onChange={(e) => {
-                    setEditFormData({
-                      ...editFormData,
-                      ciudad: e.target.value,
-                      comuna: '' // Reset comuna when city changes
-                    });
-                  }}
-                  style={selectStyle}
-                >
-                  <option value="">Seleccionar ciudad</option>
-                  {CIUDADES.map(ciudad => (
-                    <option key={ciudad} value={ciudad}>{ciudad}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Comuna</label>
-                <select 
-                  value={editFormData.comuna || ''}
-                  onChange={(e) => setEditFormData({...editFormData, comuna: e.target.value})}
-                  style={selectStyle}
-                  disabled={!editFormData.ciudad}
-                >
-                  <option value="">Seleccionar comuna</option>
-                  {editFormData.ciudad && COMUNAS_POR_CIUDAD[editFormData.ciudad]?.map(comuna => (
-                    <option key={comuna} value={comuna}>{comuna}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div style={modalButtonsStyle}>
-              <button 
-                onClick={() => setShowEditModal(false)} 
-                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleSaveChanges}
-                style={modalButtonStyle}
-              >
-                Guardar Cambios
-              </button>
-            </div>
+{showEditModal && editFormData && (
+  <div style={modalOverlayStyle}>
+    <div style={{ ...modalContentStyle, padding: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+        <h2 style={{ ...modalTitleStyle, margin: 0 }}>Editar Sucursal</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+            ID: <strong>{editFormData.id}</strong>
           </div>
+          <button
+            onClick={() => setShowEditModal(false)}
+            style={closeButtonStyle}
+          >
+            &times;
+          </button>
         </div>
-      )}
+      </div>
+
+      <div style={modalFormStyle}>
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Nombre</label>
+          <input
+            type="text"
+            value={editFormData.nombre || ''}
+            onChange={(e) => {
+              const filteredValue = filterTextInput(e.target.value);
+              const validation = validateTextInput(filteredValue);
+
+              if (!validation.isValid) {
+                Swal.fire({
+                  title: 'Caracteres no permitidos',
+                  text: validation.message,
+                  icon: 'warning',
+                  confirmButtonColor: '#ff7300',
+                  timer: 3000,
+                  timerProgressBar: true
+                });
+              }
+
+              setEditFormData({ ...editFormData, nombre: filteredValue });
+            }}
+            style={inputStyle}
+            placeholder="Ej: Sucursal Central"
+          />
+        </div>
+
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Dirección</label>
+          <input
+            type="text"
+            value={editFormData.direccion || ''}
+            onChange={(e) => {
+              const filteredValue = filterTextInput(e.target.value);
+              const validation = validateTextInput(filteredValue);
+
+              if (!validation.isValid) {
+                Swal.fire({
+                  title: 'Caracteres no permitidos',
+                  text: validation.message,
+                  icon: 'warning',
+                  confirmButtonColor: '#ff7300',
+                  timer: 3000,
+                  timerProgressBar: true
+                });
+              }
+
+              setEditFormData({ ...editFormData, direccion: filteredValue });
+            }}
+            style={inputStyle}
+            placeholder="Ej: Av. Siempre Viva 123"
+          />
+        </div>
+
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Teléfono</label>
+          <input
+            type="text"
+            value={editFormData.telefono || ''}
+            onChange={(e) => {
+              const filteredValue = filterPhoneInput(e.target.value);
+              const validation = validatePhoneInput(filteredValue);
+
+              if (!validation.isValid) {
+                Swal.fire({
+                  title: 'Formato de teléfono inválido',
+                  text: validation.message,
+                  icon: 'warning',
+                  confirmButtonColor: '#ff7300',
+                  timer: 3000,
+                  timerProgressBar: true
+                });
+              }
+
+              setEditFormData({ ...editFormData, telefono: filteredValue });
+            }}
+            style={inputStyle}
+            placeholder="Ej: +56912345678"
+          />
+        </div>
+
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Ciudad</label>
+          <select
+            value={editFormData.ciudad || ''}
+            onChange={(e) => {
+              setEditFormData({
+                ...editFormData,
+                ciudad: e.target.value,
+                comuna: ''
+              });
+            }}
+            style={selectStyle}
+          >
+            <option value="">Seleccionar ciudad</option>
+            {CIUDADES.map(ciudad => (
+              <option key={ciudad} value={ciudad}>{ciudad}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Comuna</label>
+          <select
+            value={editFormData.comuna || ''}
+            onChange={(e) => setEditFormData({ ...editFormData, comuna: e.target.value })}
+            style={selectStyle}
+            disabled={!editFormData.ciudad}
+          >
+            <option value="">Seleccionar comuna</option>
+            {editFormData.ciudad && COMUNAS_POR_CIUDAD[editFormData.ciudad]?.map(comuna => (
+              <option key={comuna} value={comuna}>{comuna}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Tipo de Sucursal</label>
+          <select
+            value={editFormData.tipo || ''}
+            onChange={(e) => {
+              setEditFormData({ ...editFormData, tipo: e.target.value });
+            }}
+            style={selectStyle}
+            disabled={
+              (editFormData.tipo === 'Bodega' && totalBodegas >= maxPorTipo) ||
+              (editFormData.tipo === 'Sucursal' && totalSucursales >= maxPorTipo)
+            }
+          >
+            <option value="">Seleccionar tipo</option>
+            <option value="Bodega" disabled={totalBodegas >= maxPorTipo}>Bodega</option>
+            <option value="Sucursal" disabled={totalSucursales >= maxPorTipo}>Sucursal</option>
+          </select>
+        </div>
+      </div>
+
+      <div style={modalButtonsStyle}>
+        <button
+          onClick={() => setShowEditModal(false)}
+          style={{ ...modalButtonStyle, backgroundColor: '#6b7280' }}
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={() => {
+            if (!editFormData.tipo) {
+              Swal.fire({
+                title: 'Tipo de sucursal obligatorio',
+                text: 'Debes seleccionar Bodega o Sucursal',
+                icon: 'warning',
+                confirmButtonColor: '#ff7300',
+              });
+              return;
+            }
+            handleSaveChanges();
+          }}
+          style={modalButtonStyle}
+        >
+          Guardar Cambios
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Modal de Agregar Sucursal */}
       {showAddModal && (
