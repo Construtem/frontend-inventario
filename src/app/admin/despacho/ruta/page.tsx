@@ -7,7 +7,7 @@ import { FaArrowLeft } from "react-icons/fa";
 import { MapView } from "./MapView";
 
 // Configuración del API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
 interface DespachoInfo {
   id: string;

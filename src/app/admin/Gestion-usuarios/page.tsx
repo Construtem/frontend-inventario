@@ -140,7 +140,7 @@ export default function GestionUsuariosPage() {
   const [tempRol, setTempRol] = useState("");
   const [tempEstado, setTempEstado] = useState("");
 
-  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
   // =====================
   // 2. LLAMADA A LA API
   // =====================
@@ -558,10 +558,10 @@ let identifier;
 let url;
 if (editFormData.id) {
   identifier = editFormData.id;
-  url = `http://localhost:8080/api/usuarios/${identifier}`;
+  url = `${apiInventarioUrl}/api/usuarios/${identifier}`;
 } else {
   identifier = originalEmail;
-  url = `http://localhost:8080/api/usuarios/${identifier}`;
+  url = `${apiInventarioUrl}/api/usuarios/${identifier}`;
 }
 console.log('Identificador para editar:', identifier);
 console.log('Email original:', originalEmail);
@@ -678,7 +678,7 @@ Swal.fire({
 
       console.log('Creando nuevo usuario:', dataToSend);
 
-      const response = await fetch(`http://localhost:8080/api/usuarios`, {
+      const response = await fetch(`${apiInventarioUrl}/api/usuarios`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -785,9 +785,9 @@ Swal.fire({
         // Usar email como identificador si no hay id numérico
         const identifier = usuario.id || usuario.email;
         console.log('Eliminando usuario con identificador:', identifier);
-        console.log('URL del endpoint:', `http://localhost:8080/api/usuarios/${identifier}`);
+        console.log('URL del endpoint:', `${apiInventarioUrl}/api/usuarios/${identifier}`);
 
-        const response = await fetch(`http://localhost:8080/api/usuarios/${identifier}`, {
+        const response = await fetch(`${apiInventarioUrl}/api/usuarios/${identifier}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',

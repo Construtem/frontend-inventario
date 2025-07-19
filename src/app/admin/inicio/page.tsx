@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
 // Configuración del API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
 // Interfaz para los datos de los clientes en la API
 interface ClienteAPI {
@@ -192,7 +192,7 @@ const fetchClientes = async (): Promise<ClienteAPI[]> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
     
-    const response = await fetch(`${API_BASE_URL}/clientes`, {
+    const response = await fetch(`${API_BASE_URL}/api/clientes`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -224,7 +224,7 @@ const fetchSucursales = async (): Promise<SucursalesAPI[]> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
     
-    const response = await fetch(`${API_BASE_URL}/sucursales`, {
+    const response = await fetch(`${API_BASE_URL}/api/sucursales`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -256,7 +256,7 @@ const fetchBodegas = async (): Promise<BodegasAPI[]> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
     
-    const response = await fetch(`${API_BASE_URL}/bodegas`, {
+    const response = await fetch(`${API_BASE_URL}/api/bodegas`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -288,7 +288,7 @@ const fetchDespachos = async (): Promise<DespachoAPI[]> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
     
-    const response = await fetch(`${API_BASE_URL}/despachos`, {
+    const response = await fetch(`${API_BASE_URL}/api/despachos`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -320,7 +320,7 @@ const fetchProductos = async (): Promise<ProductoAPI[]> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
     
-    const response = await fetch(`${API_BASE_URL}/productos`, {
+    const response = await fetch(`${API_BASE_URL}/api/productos`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -352,7 +352,7 @@ const fetchProveedores = async (): Promise<ProveedorAPI[]> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
     
-    const response = await fetch(`${API_BASE_URL}/proveedores`, {
+    const response = await fetch(`${API_BASE_URL}/api/proveedores`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -384,7 +384,7 @@ const fetchUsuarios = async (): Promise<UsuarioAPI[]> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
     
-    const response = await fetch(`${API_BASE_URL}/usuarios`, {
+    const response = await fetch(`${API_BASE_URL}/api/usuarios`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

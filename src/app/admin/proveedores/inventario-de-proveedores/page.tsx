@@ -46,6 +46,7 @@ export default function InventarioProveedoresPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
   const itemsPerPage = 15;
   const [inventarioData, setInventarioData] = useState<Array<{
   id: number;
@@ -66,7 +67,7 @@ export default function InventarioProveedoresPage() {
     const fetchInventario = async () => {
       setLoading(true);
       try {
-        const response = await fetch("http://localhost:8080/api/stock-proveedor");
+        const response = await fetch(`${apiInventarioUrl}/api/stock-proveedor`);
         if (!response.ok) throw new Error("Error al cargar inventario");
         const data = await response.json();
         // Mapear los datos para la tabla
