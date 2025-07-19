@@ -161,7 +161,7 @@ export default function GestionProveedoresPage() {
           if (err.name === 'AbortError') {
             errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
           } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
-            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+            errorMessage = '•No se pudo conectar al servidor.\n• Verifique su conexión a internet o contacte al administrador del sistema.';
           } else {
             errorMessage = err.message;
           }
@@ -344,100 +344,92 @@ export default function GestionProveedoresPage() {
 
   // Función para guardar cambios del modal de edición
   const handleSaveEditChanges = async () => {
-    if (!editFormData || !editingProveedor) return;
+  if (!editFormData || !editingProveedor) return;
 
-    // Validaciones
-    if (!editFormData.marca.trim()) {
-      Swal.fire({
-        title: 'Error',
-        text: 'La marca es requerida',
-        icon: 'error',
-        confirmButtonColor: '#ff7300'
-      });
-      return;
+  // Validaciones
+  if (!editFormData.marca.trim()) {
+    Swal.fire({ title: 'Error', text: 'La marca es requerida', icon: 'error', confirmButtonColor: '#ff7300' });
+    return;
+  }
+
+  if (!editFormData.email.trim()) {
+    Swal.fire({ title: 'Error', text: 'El email es requerido', icon: 'error', confirmButtonColor: '#ff7300' });
+    return;
+  }
+
+  if (!editFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    Swal.fire({ title: 'Error', text: 'Email inválido', icon: 'error', confirmButtonColor: '#ff7300' });
+    return;
+  }
+
+  if (!editFormData.telefono.trim()) {
+    Swal.fire({ title: 'Error', text: 'El teléfono es requerido', icon: 'error', confirmButtonColor: '#ff7300' });
+    return;
+  }
+
+  if (!editFormData.direccion.trim()) {
+    Swal.fire({ title: 'Error', text: 'La dirección es requerida', icon: 'error', confirmButtonColor: '#ff7300' });
+    return;
+  }
+
+  try {
+    // Normalizar teléfono: quitar todo menos números
+    const telefonoNormalizado = editFormData.telefono.replace(/\D/g, '');
+
+    // Crear el cuerpo del request
+    const payload = {
+      marca: editFormData.marca.trim(),
+      email: editFormData.email.trim(),
+      telefono: telefonoNormalizado,
+      direccion: editFormData.direccion.trim(),
+    };
+
+    console.log('Payload enviado al backend:', payload);
+
+    const response = await fetch(`${apiInventarioUrl}/api/proveedores/${editingProveedor.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error del backend:', errorText);
+      throw new Error('Error al actualizar el proveedor');
     }
 
-    if (!editFormData.email.trim()) {
-      Swal.fire({
-        title: 'Error',
-        text: 'El email es requerido',
-        icon: 'error',
-        confirmButtonColor: '#ff7300'
-      });
-      return;
-    }
+    const proveedorActualizado = await response.json();
 
-    if (!editFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Email inválido',
-        icon: 'error',
-        confirmButtonColor: '#ff7300'
-      });
-      return;
-    }
+    setProveedoresData(prevData =>
+      prevData.map(p =>
+        p.id === editingProveedor.id ? proveedorActualizado : p
+      )
+    );
 
-    if (!editFormData.telefono.trim()) {
-      Swal.fire({
-        title: 'Error',
-        text: 'El teléfono es requerido',
-        icon: 'error',
-        confirmButtonColor: '#ff7300'
-      });
-      return;
-    }
+    setShowEditModal(false);
+    setEditingProveedor(null);
+    setEditFormData(null);
 
-    if (!editFormData.direccion.trim()) {
-      Swal.fire({
-        title: 'Error',
-        text: 'La dirección es requerida',
-        icon: 'error',
-        confirmButtonColor: '#ff7300'
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch(`${apiInventarioUrl}/api/proveedores/${editingProveedor.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editFormData),
-      });
-
-      if (!response.ok) throw new Error('Error al actualizar el proveedor');
-
-      const proveedorActualizado = await response.json();
-      setProveedoresData(prevData => 
-        prevData.map(p => 
-          p.id === editingProveedor.id ? proveedorActualizado : p
-        )
-      );
-
-      setShowEditModal(false);
-      setEditingProveedor(null);
-      setEditFormData(null);
-
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: '¡Proveedor actualizado exitosamente!',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true,
-      });
-    } catch (error) {
-
-      Swal.fire({
-        title: 'Error',
-        text: 'No se pudo actualizar el proveedor',
-        icon: 'error',
-        confirmButtonColor: '#ff7300'
-      });
-    }
-  };
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: '¡Proveedor actualizado exitosamente!',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+    });
+  } catch (error) {
+    Swal.fire({
+      title: 'Error',
+      text: 'No se pudo actualizar el proveedor',
+      icon: 'error',
+      confirmButtonColor: '#ff7300'
+    });
+  }
+};
 
   // Función para eliminar un proveedor
   const handleEliminar = async (proveedor: Proveedor) => {
@@ -765,7 +757,7 @@ export default function GestionProveedoresPage() {
                       }} />
                       <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando proveedores...</div>
                       <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
-                        Conectando con http://localhost:8080
+                        Conectando con el servidor...
                       </div>
                     </div>
                   </td>
@@ -791,7 +783,7 @@ export default function GestionProveedoresPage() {
                         textAlign: 'center',
                         marginBottom: '1.5rem'
                       }}>
-                        <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>❌ Error al cargar los proveedores</div>
+                        <div style={{ fontWeight: 'bold', marginBottom: '1rem', fontFamily: 'Montserrat, sans-serif', fontSize: '1.5rem' }}>Error al cargar los proveedores</div>
                         <div style={{ 
                           fontSize: '0.9rem', 
                           marginTop: '0.5rem',
@@ -812,7 +804,7 @@ export default function GestionProveedoresPage() {
                         <button
                           onClick={retryFetch}
                           style={{
-                            backgroundColor: '#10b981',
+                            backgroundColor: '#ef4444',
                             color: 'white',
                             padding: '0.75rem 1.5rem',
                             borderRadius: '8px',
@@ -825,62 +817,9 @@ export default function GestionProveedoresPage() {
                             transition: 'all 0.3s ease',
                             minWidth: '120px'
                           }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#059669'}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
                         >
-                          🔄 Reintentar
+                          Reintentar
                         </button>
-                        
-                        <button
-                          onClick={() => {
-
-                            Swal.fire({
-                              title: 'Diagnóstico',
-                              text: 'Información de diagnóstico enviada a la consola del navegador (F12)',
-                              icon: 'info',
-                              confirmButtonColor: '#ff7300'
-                            });
-                          }}
-                          style={{
-                            backgroundColor: '#6b7280',
-                            color: 'white',
-                            padding: '0.75rem 1.5rem',
-                            borderRadius: '8px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '1rem',
-                            fontFamily: 'Montserrat, sans-serif',
-                            fontWeight: 'semibold',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-                            transition: 'all 0.3s ease',
-                            minWidth: '120px'
-                          }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#4b5563'}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#6b7280'}
-                        >
-                          🔍 Diagnóstico
-                        </button>
-                      </div>
-                      
-                      <div style={{
-                        marginTop: '1.5rem',
-                        padding: '1rem',
-                        backgroundColor: '#f3f4f6',
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        color: '#666',
-                        textAlign: 'left',
-                        width: '100%',
-                        boxSizing: 'border-box'
-                      }}>
-                        <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>💡 Posibles soluciones:</div>
-                        <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
-                          <li>Verificar que el backend esté ejecutándose en el puerto 8080</li>
-                          <li>Comprobar que la URL de la API sea correcta</li>
-                          <li>Revisar la configuración de CORS en el backend</li>
-                          <li>Verificar la conexión a internet</li>
-                          <li>Intentar acceder directamente a: <a href="http://localhost:8080/api/proveedores" target="_blank" style={{ color: '#3b82f6' }}>http://localhost:8080/api/proveedores</a></li>
-                        </ul>
                       </div>
                     </div>
                   </td>
@@ -968,174 +907,238 @@ export default function GestionProveedoresPage() {
         )}
       </div>
 
+
       {/* Modal de Edición */}
-      {showEditModal && editFormData && (
-        <div style={modalOverlayStyle}>
-          <div style={{...modalContentStyle, maxWidth: '500px', padding: '2rem'}}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-              <h2 style={{...modalTitleStyle, margin: 0}}>Editar Proveedor</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
-                  ID: <strong>{editFormData.id}</strong>
-                </div>
-                <button 
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setEditingProveedor(null);
-                    setEditFormData(null);
-                  }}
-                  style={closeButtonStyle}
-                >
-                  &times;
-                </button>
-              </div>
-            </div>
-            
-            <div style={{...modalFormStyle, padding: '0 1rem'}}>
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Marca</label>
-                <input
-                  type="text"
-                  value={editFormData.marca}
-                  onChange={(e) => setEditFormData({...editFormData, marca: e.target.value})}
-                  style={selectStyle}
-                  placeholder="Nombre de la marca"
-                />
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Email</label>
-                <input
-                  type="email"
-                  value={editFormData.email}
-                  onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
-                  style={selectStyle}
-                  placeholder="correo@ejemplo.com"
-                />
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Teléfono</label>
-                <input
-                  type="tel"
-                  value={editFormData.telefono}
-                  onChange={(e) => setEditFormData({...editFormData, telefono: e.target.value})}
-                  style={selectStyle}
-                  placeholder="+56 9 1234 5678"
-                />
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Dirección</label>
-                <input
-                  type="text"
-                  value={editFormData.direccion}
-                  onChange={(e) => setEditFormData({...editFormData, direccion: e.target.value})}
-                  style={selectStyle}
-                  placeholder="Dirección completa"
-                />
-              </div>
-            </div>
-
-            <div style={{...modalButtonsStyle, padding: '0 1rem'}}>
-              <button 
-                onClick={() => {
-                  setShowEditModal(false);
-                  setEditingProveedor(null);
-                  setEditFormData(null);
-                }} 
-                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleSaveEditChanges}
-                style={modalButtonStyle}
-              >
-                Guardar Cambios
-              </button>
-            </div>
+      {/* Modal de Edición */}
+{showEditModal && editFormData && (
+  <div style={modalOverlayStyle}>
+    <div style={{ ...modalContentStyle, maxWidth: '500px', padding: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+        <h2 style={{ ...modalTitleStyle, margin: 0 }}>Editar Proveedor</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+            ID: <strong>{editFormData.id}</strong>
           </div>
+          <button
+            onClick={() => {
+              setShowEditModal(false);
+              setEditingProveedor(null);
+              setEditFormData(null);
+            }}
+            style={closeButtonStyle}
+          >
+            &times;
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* Modal de Agregar Proveedor */}
-      {showAddModal && (
-        <div style={modalOverlayStyle}>
-          <div style={{...modalContentStyle, maxWidth: '500px', padding: '2rem'}}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-              <h2 style={{...modalTitleStyle, margin: 0}}>Agregar Nuevo Proveedor</h2>
-              <button 
-                onClick={() => setShowAddModal(false)}
-                style={closeButtonStyle}
-              >
-                &times;
-              </button>
-            </div>
-            
-            <div style={{...modalFormStyle, padding: '0 1rem'}}>
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Marca</label>
-                <input
-                  type="text"
-                  value={addFormData.marca}
-                  onChange={(e) => setAddFormData({...addFormData, marca: e.target.value})}
-                  style={selectStyle}
-                  placeholder="Nombre de la marca"
-                />
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Email</label>
-                <input
-                  type="email"
-                  value={addFormData.email}
-                  onChange={(e) => setAddFormData({...addFormData, email: e.target.value})}
-                  style={selectStyle}
-                  placeholder="correo@ejemplo.com"
-                />
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Teléfono</label>
-                <input
-                  type="tel"
-                  value={addFormData.telefono}
-                  onChange={(e) => setAddFormData({...addFormData, telefono: e.target.value})}
-                  style={selectStyle}
-                  placeholder="+56 9 1234 5678"
-                />
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Dirección</label>
-                <input
-                  type="text"
-                  value={addFormData.direccion}
-                  onChange={(e) => setAddFormData({...addFormData, direccion: e.target.value})}
-                  style={selectStyle}
-                  placeholder="Dirección completa"
-                />
-              </div>
-            </div>
-
-            <div style={{...modalButtonsStyle, padding: '0 1rem'}}>
-              <button 
-                onClick={() => setShowAddModal(false)} 
-                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleSaveNewProveedor}
-                style={modalButtonStyle}
-              >
-                Crear Proveedor
-              </button>
-            </div>
-          </div>
+      <div style={{ ...modalFormStyle, padding: '0 1rem' }}>
+        {/* Marca */}
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Marca</label>
+          <input
+            type="text"
+            value={editFormData.marca}
+            onChange={(e) => setEditFormData({ ...editFormData, marca: e.target.value })}
+            style={selectStyle}
+            placeholder="Nombre de la marca"
+          />
         </div>
-      )}
+
+        {/* Email */}
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Email</label>
+          <input
+            type="email"
+            value={editFormData.email}
+            maxLength={100}
+            onChange={(e) => {
+              const valor = e.target.value;
+              // Solo caracteres válidos para email
+              if (valor === '' || /^[a-zA-Z0-9._@-]*$/.test(valor)) {
+                setEditFormData({ ...editFormData, email: valor });
+              }
+            }}
+            style={selectStyle}
+            placeholder="correo@ejemplo.com"
+          />
+        </div>
+
+        {/* Celular */}
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Celular</label>
+          <input
+            type="tel"
+            value={editFormData.telefono || '+56 9 '}
+            maxLength={15}
+            onChange={(e) => {
+              let valor = e.target.value;
+
+              // Mantener prefijo +56 9
+              if (!valor.startsWith('+56 9 ')) {
+                valor = valor.replace(/[^\d]/g, '');
+              } else {
+                valor = valor.replace('+56 9 ', '').replace(/[^\d]/g, '');
+              }
+
+              // Limitar solo 9 dígitos
+              if (valor.length > 9) valor = valor.slice(0, 9);
+
+              // Formatear como +56 9 XXXX XXXX
+              let formateado = '+56 9 ';
+              if (valor.length > 4) {
+                formateado += valor.slice(0, 4) + ' ' + valor.slice(4);
+              } else {
+                formateado += valor;
+              }
+
+              setEditFormData({ ...editFormData, telefono: formateado });
+            }}
+            style={selectStyle}
+            placeholder="+56 9 1234 5678"
+          />
+        </div>
+
+        {/* Dirección */}
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Dirección</label>
+          <input
+            type="text"
+            value={editFormData.direccion}
+            onChange={(e) => setEditFormData({ ...editFormData, direccion: e.target.value })}
+            style={selectStyle}
+            placeholder="Dirección completa"
+          />
+        </div>
+      </div>
+
+      {/* Botones */}
+      <div style={{ ...modalButtonsStyle, padding: '0 1rem' }}>
+        <button
+          onClick={() => {
+            setShowEditModal(false);
+            setEditingProveedor(null);
+            setEditFormData(null);
+          }}
+          style={{ ...modalButtonStyle, backgroundColor: '#6b7280' }}
+        >
+          Cancelar
+        </button>
+        <button onClick={handleSaveEditChanges} style={modalButtonStyle}>
+          Guardar Cambios
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Modal de Agregar Proveedor */}
+{showAddModal && (
+  <div style={modalOverlayStyle}>
+    <div style={{ ...modalContentStyle, maxWidth: '500px', padding: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+        <h2 style={{ ...modalTitleStyle, margin: 0 }}>Agregar Nuevo Proveedor</h2>
+        <button
+          onClick={() => setShowAddModal(false)}
+          style={closeButtonStyle}
+        >
+          &times;
+        </button>
+      </div>
+
+      <div style={{ ...modalFormStyle, padding: '0 1rem' }}>
+        {/* Marca */}
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Marca</label>
+          <input
+            type="text"
+            value={addFormData.marca}
+            onChange={(e) => setAddFormData({ ...addFormData, marca: e.target.value })}
+            style={selectStyle}
+            placeholder="Nombre de la marca"
+          />
+        </div>
+
+        {/* Email */}
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Email</label>
+          <input
+            type="email"
+            value={addFormData.email}
+            maxLength={100}
+            onChange={(e) => {
+              const valor = e.target.value;
+              if (valor === '' || /^[a-zA-Z0-9._@-]*$/.test(valor)) {
+                setAddFormData({ ...addFormData, email: valor });
+              }
+            }}
+            style={selectStyle}
+            placeholder="correo@ejemplo.com"
+          />
+        </div>
+
+        {/* Celular */}
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Celular</label>
+          <input
+            type="tel"
+            value={addFormData.telefono || '+56 9 '}
+            maxLength={15}
+            onChange={(e) => {
+              let valor = e.target.value;
+
+              // Forzar prefijo +56 9
+              if (!valor.startsWith('+56 9 ')) {
+                valor = valor.replace(/[^\d]/g, '');
+              } else {
+                valor = valor.replace('+56 9 ', '').replace(/[^\d]/g, '');
+              }
+
+              // Limitar a 9 dígitos
+              if (valor.length > 9) valor = valor.slice(0, 9);
+
+              // Formatear +56 9 XXXX XXXX
+              let formateado = '+56 9 ';
+              if (valor.length > 4) {
+                formateado += valor.slice(0, 4) + ' ' + valor.slice(4);
+              } else {
+                formateado += valor;
+              }
+
+              setAddFormData({ ...addFormData, telefono: formateado });
+            }}
+            style={selectStyle}
+            placeholder="+56 9 1234 5678"
+          />
+        </div>
+
+        {/* Dirección */}
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Dirección</label>
+          <input
+            type="text"
+            value={addFormData.direccion}
+            onChange={(e) => setAddFormData({ ...addFormData, direccion: e.target.value })}
+            style={selectStyle}
+            placeholder="Dirección completa"
+          />
+        </div>
+      </div>
+
+      <div style={{ ...modalButtonsStyle, padding: '0 1rem' }}>
+        <button
+          onClick={() => setShowAddModal(false)}
+          style={{ ...modalButtonStyle, backgroundColor: '#6b7280' }}
+        >
+          Cancelar
+        </button>
+        <button onClick={handleSaveNewProveedor} style={modalButtonStyle}>
+          Crear Proveedor
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

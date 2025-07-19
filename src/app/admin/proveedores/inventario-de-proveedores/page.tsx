@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo} from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 
 // Importaciones de imágenes
@@ -44,78 +44,54 @@ function useWindowSize() {
 export default function InventarioProveedoresPage() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const [inventarioData, setInventarioData] = useState<Array<{
+  id: number;
+  sku: string;
+  nombreProducto: string;
+  proveedor: string;
+  pesoKg: string | number;
+  largoCm: string | number;
+  anchoCm: string | number;
+  altoCm: string | number;
+  precioCU: number;
+  stock: number;
+  fechaIngreso: string;
+}>>([]);
 
-  // Datos de ejemplo
-  const inventarioData = useMemo(() => [
-    {
-      id: 1,
-      sku: "SKU001",
-      nombreProducto: "Laptop Dell Inspiron",
-      proveedor: "Tech Solutions",
-      pesoKg: 2.5,
-      largoCm: 35.6,
-      anchoCm: 23.4,
-      altoCm: 2.1,
-      precioCU: 850.00,
-      stock: 15,
-      fechaIngreso: "2025-01-15"
-    },
-    {
-      id: 2,
-      sku: "SKU002",
-      nombreProducto: "Mouse Logitech MX",
-      proveedor: "Periféricos SA",
-      pesoKg: 0.1,
-      largoCm: 12.5,
-      anchoCm: 8.5,
-      altoCm: 4.2,
-      precioCU: 75.00,
-      stock: 50,
-      fechaIngreso: "2025-02-10"
-    },
-    {
-      id: 3,
-      sku: "SKU003",
-      nombreProducto: "Monitor Samsung 27\"",
-      proveedor: "Displays Corp",
-      pesoKg: 5.8,
-      largoCm: 61.3,
-      anchoCm: 20.5,
-      altoCm: 45.7,
-      precioCU: 320.00,
-      stock: 8,
-      fechaIngreso: "2025-03-05"
-    },
-    {
-      id: 4,
-      sku: "SKU004",
-      nombreProducto: "Teclado Mecánico RGB",
-      proveedor: "Gaming Gear",
-      pesoKg: 1.2,
-      largoCm: 44.0,
-      anchoCm: 13.5,
-      altoCm: 3.8,
-      precioCU: 120.00,
-      stock: 25,
-      fechaIngreso: "2025-04-12"
-    },
-    {
-      id: 5,
-      sku: "SKU005",
-      nombreProducto: "Impresora HP LaserJet",
-      proveedor: "Office Solutions",
-      pesoKg: 18.5,
-      largoCm: 42.0,
-      anchoCm: 39.8,
-      altoCm: 31.2,
-      precioCU: 450.00,
-      stock: 5,
-      fechaIngreso: "2025-05-20"
-    }
-  ], []);
+
+  useEffect(() => {
+    const fetchInventario = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch("http://localhost:8080/api/stock-proveedor");
+        if (!response.ok) throw new Error("Error al cargar inventario");
+        const data = await response.json();
+        // Mapear los datos para la tabla
+        const mapped = Array.isArray(data) ? data.map((item, idx) => ({
+          id: idx + 1,
+          sku: item.sku,
+          nombreProducto: item.producto?.nombre || "",
+          proveedor: item.proveedor?.marca || "",
+          pesoKg: item.producto?.peso || "",
+          largoCm: item.producto?.largo || "",
+          anchoCm: item.producto?.ancho || "",
+          altoCm: item.producto?.alto || "",
+          precioCU: item.producto?.precio || "",
+          stock: item.stock,
+          fechaIngreso: item.fecha_ingreso
+        })) : [];
+        setInventarioData(mapped);
+      } catch (err) {
+        setInventarioData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInventario();
+  }, []);
 
   // Filtrar datos según búsqueda
   const filteredData = useMemo(() => {

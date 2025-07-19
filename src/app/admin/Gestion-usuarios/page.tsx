@@ -201,14 +201,20 @@ export default function GestionUsuariosPage() {
         }
         
       } catch (err) {
-        let errorMessage = "Error desconocido al cargar datos";
+        let errorMessage = "Error de conexión. Por favor, intente nuevamente.";
         if (err instanceof Error) {
           if (err.name === 'AbortError') {
-            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+            errorMessage = 'Tiempo de espera agotado. Verifique su conexión a internet y vuelva a intentar.';
           } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
-            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+            errorMessage = '•No se pudo conectar al servidor.\n• Verifique su conexión a internet o contacte al administrador del sistema.';
+          } else if (err.message.includes('500')) {
+            errorMessage = 'Error interno del servidor (Error 500). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('404')) {
+            errorMessage = 'Servicio no encontrado (Error 404). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('403') || err.message.includes('401')) {
+            errorMessage = 'No tiene permisos para acceder a este recurso. Por favor, contacte al administrador del sistema.';
           } else {
-            errorMessage = err.message;
+            errorMessage = 'Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.';
           }
         }
         
@@ -264,14 +270,20 @@ export default function GestionUsuariosPage() {
         }
         
       } catch (err) {
-        let errorMessage = "Error desconocido al cargar datos";
+        let errorMessage = "Error de conexión. Por favor, intente nuevamente.";
         if (err instanceof Error) {
           if (err.name === 'AbortError') {
-            errorMessage = 'Tiempo de espera agotado al conectar con el servidor';
+            errorMessage = 'Tiempo de espera agotado. Verifique su conexión a internet y vuelva a intentar.';
           } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
-            errorMessage = 'No se pudo conectar al servidor backend. Verifique que:\n• El backend esté ejecutándose en http://localhost:8080\n• No haya problemas de CORS\n• Su conexión a internet funcione correctamente';
+            errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet o contacte al administrador del sistema.';
+          } else if (err.message.includes('500')) {
+            errorMessage = 'Error interno del servidor (Error 500). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('404')) {
+            errorMessage = 'Servicio no encontrado (Error 404). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('403') || err.message.includes('401')) {
+            errorMessage = 'No tiene permisos para acceder a este recurso. Por favor, contacte al administrador del sistema.';
           } else {
-            errorMessage = err.message;
+            errorMessage = 'Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.';
           }
         }
         
@@ -540,63 +552,91 @@ export default function GestionUsuariosPage() {
       };
 
       console.log('Enviando datos al servidor:', dataToSend);
-      
-      // Usar el email original o el ID como identificador (NO el email editado)
-      const identifier = editFormData.id || originalEmail;
-      console.log('Identificador para editar:', identifier);
-      console.log('Email original:', originalEmail);
-      console.log('Email editado:', editFormData.email);
-      console.log('URL del endpoint:', `http://localhost:8080/api/usuarios/${identifier}`);
 
-      const response = await fetch(`http://localhost:8080/api/usuarios/${identifier}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend),
-      });
+    // Usar siempre el id si existe, para permitir cambiar el email
+let identifier;
+let url;
+if (editFormData.id) {
+  identifier = editFormData.id;
+  url = `http://localhost:8080/api/usuarios/${identifier}`;
+} else {
+  identifier = originalEmail;
+  url = `http://localhost:8080/api/usuarios/${identifier}`;
+}
+console.log('Identificador para editar:', identifier);
+console.log('Email original:', originalEmail);
+console.log('Email editado:', editFormData.email);
+console.log('URL del endpoint:', url);
 
-      console.log('Respuesta del servidor:', response.status, response.statusText);
+const response = await fetch(url, {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(dataToSend),
+});
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`Error al actualizar: ${response.status} - ${errorText}`);
-      }
+console.log('Respuesta del servidor:', response.status, response.statusText);
 
-      const updatedUsuario = await response.json();
-      console.log('Usuario actualizado recibido:', updatedUsuario);
+if (!response.ok) {
+  const errorText = await response.text();
+  console.error('Error response:', errorText);
+  throw new Error(`Error al actualizar: ${response.status} - ${errorText}`);
+}
 
-      // Asegurar que el usuario actualizado tenga el objeto rol completo
-      const usuarioConRol = {
-        ...updatedUsuario,
-        rol: ROLES_MAP.find(rol => rol.id === updatedUsuario.rol_id) || { id: updatedUsuario.rol_id, nombre: 'N/A' }
-      };
+const updatedUsuario = await response.json();
+console.log('Usuario actualizado recibido:', updatedUsuario);
 
-      // Actualizar los datos manteniendo el orden y la información completa
-      setUsuariosData(prevData => {
-        const newData = prevData.map(item => {
-          // Comparar por id si existe, sino por email original
-          const itemIdentifier = item.id || item.email;
-          const editIdentifier = editFormData.id || originalEmail;
-          return itemIdentifier === editIdentifier ? usuarioConRol : item;
-        });
-        return sortUsuarios(newData);
-      });
+// Asegurar que el usuario actualizado tenga el objeto rol completo
+const usuarioConRol = {
+  ...updatedUsuario,
+  rol: ROLES_MAP.find(rol => rol.id === updatedUsuario.rol_id) || { id: updatedUsuario.rol_id, nombre: 'N/A' }
+};
 
-      setShowEditModal(false);
-      setOriginalEmail(''); // Limpiar el email original
-      Swal.fire({
-        title: 'Éxito',
-        text: 'Usuario actualizado correctamente',
-        icon: 'success',
-        confirmButtonColor: '#ff7300'
-      });
+// Actualizar los datos manteniendo el orden y la información completa
+setUsuariosData(prevData => {
+  let newData = prevData.map(item => {
+    // Si el usuario tiene id, comparar por id; si no, comparar por email original
+    const itemIdentifier = item.id ? item.id : item.email;
+    const editIdentifier = editFormData.id ? editFormData.id : originalEmail;
+    // Si coincide, reemplazar por el usuario actualizado (con el nuevo email)
+    return itemIdentifier === editIdentifier ? usuarioConRol : item;
+  });
+  // Si el email fue cambiado y no hay id, eliminar el usuario con el email original y agregar el actualizado si no se reemplazó
+  if (!editFormData.id && originalEmail !== editFormData.email.trim().toLowerCase()) {
+    newData = newData.filter(item => item.email !== originalEmail);
+    newData.push(usuarioConRol);
+  }
+  return sortUsuarios(newData);
+});
+
+setShowEditModal(false);
+setOriginalEmail(''); // Limpiar el email original
+Swal.fire({
+  title: 'Éxito',
+  text: 'Usuario actualizado correctamente',
+  icon: 'success',
+  confirmButtonColor: '#ff7300'
+});
+
     } catch (err) {
       console.error('Error completo:', err);
+      let errorMessage = "Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.";
+      if (err instanceof Error) {
+        if (err.message.includes('500')) {
+          errorMessage = 'Error interno del servidor (Error 500). Por favor, contacte al administrador del sistema.';
+        } else if (err.message.includes('404')) {
+          errorMessage = 'Usuario no encontrado (Error 404). Por favor, actualice la página e intente nuevamente.';
+        } else if (err.message.includes('403') || err.message.includes('401')) {
+          errorMessage = 'No tiene permisos para realizar esta acción. Por favor, contacte al administrador del sistema.';
+        } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+          errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet.';
+        }
+      }
+      
       Swal.fire({
         title: 'Error',
-        text: `No se pudo actualizar el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+        text: errorMessage,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -682,9 +722,22 @@ export default function GestionUsuariosPage() {
       });
     } catch (err) {
       console.error('Error completo:', err);
+      let errorMessage = "Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.";
+      if (err instanceof Error) {
+        if (err.message.includes('500')) {
+          errorMessage = 'Error interno del servidor (Error 500). Por favor, contacte al administrador del sistema.';
+        } else if (err.message.includes('404')) {
+          errorMessage = 'Servicio no encontrado (Error 404). Por favor, contacte al administrador del sistema.';
+        } else if (err.message.includes('403') || err.message.includes('401')) {
+          errorMessage = 'No tiene permisos para realizar esta acción. Por favor, contacte al administrador del sistema.';
+        } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+          errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet.';
+        }
+      }
+      
       Swal.fire({
         title: 'Error',
-        text: `No se pudo crear el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+        text: errorMessage,
         icon: 'error',
         confirmButtonColor: '#ff7300'
       });
@@ -704,96 +757,96 @@ export default function GestionUsuariosPage() {
 
   // Función para eliminar usuario
   const handleDelete = (usuario: Usuario) => {
-    Swal.fire({
-      title: '¿Estás seguro?',
-      text: `¿Deseas eliminar al usuario "${usuario.nombre}"?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Sí, continuar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // Segunda confirmación
+  Swal.fire({
+    title: 'ATENCIÓN: Eliminación Permanente',
+    html: `
+      <div style="text-align: left; margin: 1rem 0;">
+        <p><strong>Al eliminar este usuario:</strong></p>
+        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+          <li>Todos los datos del usuario se eliminarán <strong>PERMANENTEMENTE</strong></li>
+          <li>Esta acción <strong>NO SE PUEDE DESHACER</strong></li>
+          <li>Se perderán todos los registros relacionados</li>
+        </ul>
+        <p style="color: #ef4444; font-weight: bold;"></p>
+      </div>
+    `,
+    icon: 'error',
+    showCancelButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'SÍ, ELIMINAR PERMANENTEMENTE',
+    cancelButtonText: 'No, cancelar',
+    reverseButtons: true,
+    focusCancel: true,
+    showCloseButton: true
+  }).then(async (finalResult) => {
+    if (finalResult.isConfirmed) {
+      try {
+        // Usar email como identificador si no hay id numérico
+        const identifier = usuario.id || usuario.email;
+        console.log('Eliminando usuario con identificador:', identifier);
+        console.log('URL del endpoint:', `http://localhost:8080/api/usuarios/${identifier}`);
+
+        const response = await fetch(`http://localhost:8080/api/usuarios/${identifier}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        console.log('Respuesta del servidor:', response.status, response.statusText);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          throw new Error(`Error al eliminar: ${response.status} - ${errorText}`);
+        }
+
+        // Actualizar el estado eliminando SOLO el usuario específico
+        setUsuariosData(prevData => {
+          console.log('Datos antes de eliminar:', prevData.length);
+          console.log('Usuario a eliminar:', usuario.nombre, 'con identificador:', identifier);
+
+          const newData = prevData.filter(item => {
+            const itemIdentifier = item.id || item.email;
+            return itemIdentifier !== identifier;
+          });
+          console.log('Datos después de eliminar:', newData.length);
+
+          return newData;
+        });
+
         Swal.fire({
-          title: 'ATENCIÓN: Eliminación Permanente',
-          html: `
-            <div style="text-align: left; margin: 1rem 0;">
-              <p><strong>Al eliminar este usuario:</strong></p>
-              <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                <li>Todos los datos del usuario se eliminarán <strong>PERMANENTEMENTE</strong></li>
-                <li>Esta acción <strong>NO SE PUEDE DESHACER</strong></li>
-                <li>Se perderán todos los registros relacionados</li>
-              </ul>
-              <p style="color: #ef4444; font-weight: bold;">¿Estás completamente seguro de que deseas continuar?</p>
-            </div>
-          `,
-          icon: 'error',
-          showCancelButton: true,
-          confirmButtonColor: '#ef4444',
-          cancelButtonColor: '#6b7280',
-          confirmButtonText: 'SÍ, ELIMINAR PERMANENTEMENTE',
-          cancelButtonText: 'No, cancelar',
-          reverseButtons: true,
-          focusCancel: true
-        }).then(async (finalResult) => {
-          if (finalResult.isConfirmed) {
-            try {
-              // Usar email como identificador si no hay id numérico
-              const identifier = usuario.id || usuario.email;
-              console.log('Eliminando usuario con identificador:', identifier);
-              console.log('URL del endpoint:', `http://localhost:8080/api/usuarios/${identifier}`);
-
-              const response = await fetch(`http://localhost:8080/api/usuarios/${identifier}`, {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              });
-
-              console.log('Respuesta del servidor:', response.status, response.statusText);
-
-              if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                throw new Error(`Error al eliminar: ${response.status} - ${errorText}`);
-              }
-
-              // Actualizar el estado eliminando SOLO el usuario específico
-              setUsuariosData(prevData => {
-                console.log('Datos antes de eliminar:', prevData.length);
-                console.log('Usuario a eliminar:', usuario.nombre, 'con identificador:', identifier);
-                
-                const newData = prevData.filter(item => {
-                  const itemIdentifier = item.id || item.email;
-                  return itemIdentifier !== identifier;
-                });
-                console.log('Datos después de eliminar:', newData.length);
-                
-                return newData;
-              });
-
-              Swal.fire({
-                title: 'Eliminado',
-                text: `El usuario "${usuario.nombre}" ha sido eliminado permanentemente`,
-                icon: 'success',
-                confirmButtonColor: '#ff7300'
-              });
-            } catch (err) {
-              console.error('Error al eliminar usuario:', err);
-              Swal.fire({
-                title: 'Error',
-                text: `No se pudo eliminar el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}`,
-                icon: 'error',
-                confirmButtonColor: '#ff7300'
-              });
-            }
+          title: 'Eliminado',
+          text: `El usuario "${usuario.nombre}" ha sido eliminado permanentemente`,
+          icon: 'success',
+          confirmButtonColor: '#ff7300'
+        });
+      } catch (err) {
+        console.error('Error al eliminar usuario:', err);
+        let errorMessage = "Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.";
+        if (err instanceof Error) {
+          if (err.message.includes('500')) {
+            errorMessage = 'Error interno del servidor (Error 500). Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('404')) {
+            errorMessage = 'Usuario no encontrado (Error 404). Es posible que ya haya sido eliminado.';
+          } else if (err.message.includes('403') || err.message.includes('401')) {
+            errorMessage = 'No tiene permisos para eliminar usuarios. Por favor, contacte al administrador del sistema.';
+          } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar con el servidor. Verifique su conexión a internet.';
           }
+        }
+
+        Swal.fire({
+          title: 'Error',
+          text: errorMessage,
+          icon: 'error',
+          confirmButtonColor: '#ff7300'
         });
       }
-    });
-  };
+    }
+  });
+};
 
   // Agregar función para limpiar filtros desde la barra de herramientas
   const handleClearFiltersFromToolbar = () => {
@@ -966,7 +1019,7 @@ export default function GestionUsuariosPage() {
               }} />
               <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando usuarios...</div>
               <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
-                Conectando con el servidor
+                Conectando con el servidor...
               </div>
             </div>
           ) : error ? (
@@ -982,7 +1035,7 @@ export default function GestionUsuariosPage() {
               maxWidth: '600px',
               margin: '0 auto'
             }}>
-              <div style={{ fontSize: '1.1rem', color: '#ef4444', marginBottom: '1rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.1rem', color: '#ef4444', marginBottom: '1rem', textAlign: 'center', fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>
                 Error al cargar usuarios
               </div>
               <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '2rem', textAlign: 'center', whiteSpace: 'pre-line' }}>
@@ -995,7 +1048,7 @@ export default function GestionUsuariosPage() {
                   backgroundColor: '#ef4444'
                 }}
               >
-                Reintentar conexión
+                Reintentar
               </button>
             </div>
           ) : (
@@ -1067,7 +1120,6 @@ export default function GestionUsuariosPage() {
                   color: '#666',
                   fontSize: '1rem'
                 }}>
-                  No se encontraron usuarios que coincidan con los criterios de búsqueda.
                 </div>
               )}
 
@@ -1210,19 +1262,23 @@ export default function GestionUsuariosPage() {
                 />
               </div>
 
+             
               <div style={selectGroupStyle}>
                 <label style={labelStyle}>Email</label>
                 <input
                   type="email"
                   value={editFormData.email || ''}
-                  onChange={(e) => {
-                    const valor = e.target.value;
-                    // Solo permitir caracteres válidos para email
-                    if (valor === '' || /^[a-zA-Z0-9._@-]*$/.test(valor)) {
-                      setEditFormData({...editFormData, email: valor});
-                    }
+                  readOnly
+                  onClick={() => {
+                    Swal.fire({
+                      title: 'No se puede editar el email',
+                      text: 'El email es el identificador único y no puede ser modificado.',
+                      icon: 'info',
+                      confirmButtonColor: '#ff7300',
+                      showCloseButton: true
+                    });
                   }}
-                  style={inputStyle}
+                  style={{ ...inputStyle, backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
                   placeholder="Ej: juan@empresa.com"
                   maxLength={100}
                 />
