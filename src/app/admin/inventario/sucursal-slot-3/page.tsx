@@ -3,8 +3,7 @@
 // =====================
 // 1. IMPORTACIONES
 // =====================
-import React, { useRef, useState, useMemo, useEffect } from "react";
-import Papa from 'papaparse';
+import React, { useState, useMemo, useEffect } from "react";
 import Swal from 'sweetalert2';
 import Image from "next/image";
 import { useSearchParams } from 'next/navigation';
@@ -22,8 +21,6 @@ const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-
 // Headers comunes para las peticiones
 const getHeaders = () => ({
   'Content-Type': 'application/json',
-  // Agrega aquí tokens de autenticación si los usas
-  // 'Authorization': `Bearer ${token}`,
 });
 
 // =====================
@@ -53,7 +50,7 @@ const fetchProducts = async (sucursalId?: string): Promise<ProductData[]> => {
 
     const stockData = await response.json();
     
-    // Transformar la respuesta de la API al formato esperado por el componente
+
     const transformedData: ProductData[] = stockData
       .filter((item: any) => item.sucursal_id.toString() === sucursalId)
       .map((item: any) => ({
@@ -166,18 +163,15 @@ interface ProductData {
   estado: boolean;
 }
 
-interface UploadCsvModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onUploadConfirm: (data: ProductData[]) => void;
-}
-
+//Interfaz de filtros del modal
 interface FiltersModalProps {
   isOpen: boolean;
   onClose: () => void;
   onApplyFilters: (filters: { categoria: string; estado: string }) => void;
+  activeFilters: { categoria: string; estado: string };
 }
 
+// Interfaz para el modal de edición de productos
 interface EditProductModalProps {
   isOpen: boolean;
   product: ProductData | null;
@@ -185,10 +179,20 @@ interface EditProductModalProps {
   onSave: (product: ProductData) => void;
 }
 
-// =====================
-// 3. DEFINICIONES DE ESTILOS PARA SWEETALERT2
-// (Fuera de los componentes para reutilización y generación de CSS en línea)
-// =====================
+
+// ===================== SWEET ALERT2 ESTILOS =====================
+
+// Función auxiliar para convertir un objeto JS de estilos a una cadena CSS en línea
+function objToInlineCss(styleObj: React.CSSProperties): string {
+  return Object.entries(styleObj)
+    .map(([key, value]) => {
+      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      return `${cssKey}: ${value};`;
+    })
+    .join(' ');
+}
+
+// DEFINICIONES DE ESTILOS PARA SWEETALERT2
 
 const estiloSwalTituloObj: React.CSSProperties = {
   fontFamily: "'Montserrat', sans-serif",
@@ -204,676 +208,40 @@ const estiloSwalTextoObj: React.CSSProperties = {
   color: '#333'
 };
 
-// Combinación para el texto que necesita un margen superior
 const estiloSwalTextoConMargenObj: React.CSSProperties = {
   ...estiloSwalTextoObj,
   marginTop: '10px'
 };
 
-// Función auxiliar para convertir un objeto JS de estilos a una cadena CSS en línea
-function objToInlineCss(styleObj: React.CSSProperties): string {
-  return Object.entries(styleObj)
-    .map(([key, value]) => {
-      // Convierte camelCase a kebab-case (ej. 'fontSize' a 'font-size')
-      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-      // Retorna la propiedad CSS en formato "clave: valor;"
-      return `${cssKey}: ${value};`;
-    })
-    .join(' '); // Une todas las propiedades con un espacio
-}
 
-// Genera las cadenas CSS que se usarán directamente en el HTML de SweetAlert2
 const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
 const swalTextoCssString = objToInlineCss(estiloSwalTextoObj);
 const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 
-// =====================
-// 4. FUNCIONES AUXILIARES
-// =====================
-
-// Función para parsear el campo "estado"
-function parseestado(value: string): boolean | null {
-  const lowerCaseValue = value?.toLowerCase().trim();
-  if (lowerCaseValue === 'activo') return true;
-  if (lowerCaseValue === 'inactivo') return false;
-  return null;
-}
 
 // =====================
 // 5. COMPONENTES REACT
 // =====================
 
-const UploadCsvModal: React.FC<UploadCsvModalProps> = ({ isOpen, onClose, onUploadConfirm }) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [parsedData, setParsedData] = useState<ProductData[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [pendingDuplicateError, setPendingDuplicateError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Animación para aparecer/desaparecer el modal
-  const [visible, setVisible] = useState(isOpen);
-
-  useEffect(() => {
-    if (isOpen) {
-      setVisible(true);
-    } else {
-      const timeout = setTimeout(() => setVisible(false), 250);
-      return () => clearTimeout(timeout);
-    }
-  }, [isOpen]);
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files ? event.target.files[0] : null;
-    setSelectedFile(file);
-    setParsedData([]);
-    setErrorMessage(null);
-
-    if (file) {
-      if (file.type !== 'text/csv') {
-        setErrorMessage('Formato de archivo no válido. Por favor, sube un archivo .csv');
-        setSelectedFile(null);
-        // SweetAlert2 para error de formato
-        Swal.fire({
-          icon: 'error',
-          html: `
-            <div style="${swalTituloCssString}">
-              ¡Ups! Parece que hay un <b>Error de Archivo</b>.
-            </div>
-            <div style="${swalTextoConMargenCssString}">
-              Por favor, sube un archivo .csv.
-            </div>
-          `,
-          confirmButtonText: 'ACEPTAR',
-          confirmButtonColor: '#ff7300',
-          cancelButtonText: 'Cancelar',
-          cancelButtonColor: '#5c5c5c',
-        });
-        return;
-      }
-
-      Papa.parse<ProductData>(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results: Papa.ParseResult<ProductData>) => {
-          if (results.errors.length) {
-            const errorMsg = `Error al parsear el CSV: ${results.errors[0].message}`;
-            setErrorMessage(errorMsg);
-            setParsedData([]);
-            // SweetAlert2 para errores de parseo
-            Swal.fire({
-              icon: 'error',
-              html: `
-                <div style="${swalTituloCssString}">
-                  ¡Atención! Se produjo un <b>Error de Parseo CSV</b>.
-                </div>
-                <div style="${swalTextoConMargenCssString}">
-                  ${errorMsg}
-                </div>
-              `,
-              confirmButtonText: 'ACEPTAR',
-              confirmButtonColor: '#ff7300',
-              cancelButtonText: 'Cancelar',
-              cancelButtonColor: '#5c5c5c',
-            });
-            return;
-          }
-
-          if (!results.data.length) {
-            setErrorMessage('El archivo CSV está vacío o no contiene datos válidos.');
-            setParsedData([]);
-            // SweetAlert2 para CSV vacío
-            Swal.fire({
-              icon: 'warning',
-              html: `
-                <div style="${swalTituloCssString}">
-                  El <b>Archivo CSV</b> está vacío o no contiene datos válidos.
-                </div>
-                <div style="${swalTextoConMargenCssString}">
-                  Por favor, revisa el contenido.
-                </div>
-              `,
-              confirmButtonText: 'ACEPTAR',
-              confirmButtonColor: '#ff7300',
-              cancelButtonText: 'Cancelar',
-              cancelButtonColor: '#5c5c5c',
-            });
-            return;
-          }
-
-          const requiredHeaders = [
-            "SKU",
-            "Nombre",
-            "Descripción",
-            "Marca",
-            "Categoría",
-            "Peso (KG)",
-            "Largo (CM)",
-            "Ancho (CM)",
-            "Alto (CM)",
-            "Precio venta (C/U)",
-            "Estado",
-            "Stock"
-          ];
-
-          const headers = results.meta.fields || [];
-          const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
-
-          if (missingHeaders.length > 0) {
-            const errorMsg = `Faltan los siguientes encabezados requeridos: ${missingHeaders.join(', ')}. Por favor, verifica el formato del CSV.`;
-            setErrorMessage(errorMsg);
-            setParsedData([]);
-            // SweetAlert2 para encabezados faltantes
-            Swal.fire({
-              icon: 'error',
-              html: `
-                <div style="${swalTituloCssString}">
-                  ¡Error! Faltan <b>Encabezados</b> importantes en tu CSV.
-                </div>
-                <div style="${swalTextoConMargenCssString}">
-                  ${errorMsg}
-                </div>
-              `,
-              confirmButtonText: 'ACEPTAR',
-              confirmButtonColor: '#ff7300',
-              cancelButtonText: 'Cancelar',
-              cancelButtonColor: '#5c5c5c',
-            });
-            return;
-          }
-
-          const validatedData: ProductData[] = [];
-          let hasRowErrors = false;
-          const allRowErrors: string[] = []; // Para acumular todos los errores de fila
-
-          // (results.data as any[]).forEach((row: any, index: number) => {
-          // Corrige los tipos de PapaParse: usa Record<string, string> para filas CSV genéricas
-          ((results.data as unknown) as Record<string, string>[]).forEach((row, index: number) => {
-            const rowErrors: string[] = [];
-
-            const sku = row["SKU"]?.toString().trim() || '';
-            const nombre = row["Nombre"]?.toString().trim() || '';
-            const descripcion = row["Descripción"]?.toString().trim() || '';
-            const marca = row["Marca"]?.toString().trim() || '';
-            const categoria = row["Categoría"]?.toString().trim() || '';
-            const pesoKg = parseFloat(row["Peso (KG)"]);
-            const largoCm = parseFloat(row["Largo (CM)"]);
-            const anchoCm = parseFloat(row["Ancho (CM)"]);
-            const altoCm = parseFloat(row["Alto (CM)"]);
-            const precioVentaCu = parseFloat(row["Precio venta (C/U)"]);
-
-            const estadoParsed = parseestado(row["Estado"]);
-            const estado = estadoParsed === null ? null : estadoParsed;
-
-            const stock = parseInt(row["Stock"], 10);
-
-            if (!sku) rowErrors.push('SKU no puede estar vacío');
-            if (!nombre) rowErrors.push('Nombre no puede estar vacío');
-            if (!marca) rowErrors.push('Marca no puede estar vacía');
-            if (!categoria) rowErrors.push('Categoría no puede estar vacía');
-
-            if (isNaN(pesoKg) || pesoKg < 0) rowErrors.push('Peso (KG) debe ser un número positivo');
-            if (isNaN(largoCm) || largoCm < 0) rowErrors.push('Largo (CM) debe ser un número positivo');
-            if (isNaN(anchoCm) || anchoCm < 0) rowErrors.push('Ancho (CM) debe ser un número positivo');
-            if (isNaN(altoCm) || altoCm < 0) rowErrors.push('Alto (CM) debe ser un número positivo');
-
-            if (isNaN(precioVentaCu) || precioVentaCu < 0) rowErrors.push('Precio venta (C/U) debe ser un número positivo');
-
-            if (estado === null) rowErrors.push('Estado debe ser "Activo" o "Inactivo"');
-
-            if (isNaN(stock) || stock < 0) rowErrors.push('Stock debe ser un número entero positivo');
-
-            if (rowErrors.length > 0) {
-              allRowErrors.push(`Fila ${index + 2}: ${rowErrors.join(', ')}`);
-              hasRowErrors = true;
-            } else {
-              validatedData.push({
-                sku,
-                nombre,
-                descripcion,
-                marca,
-                categoria,
-                pesoKg,
-                largoCm,
-                anchoCm,
-                altoCm,
-                precioVentaCu,
-                stock,
-                estado: estado as boolean,
-              });
-            }
-          });
-
-          if (hasRowErrors) {
-            setParsedData([]);
-            const errorSummary = `Se encontraron errores en el CSV. Detalles:<br>${allRowErrors.join('<br>')}`; // Usar <br> para saltos de línea en HTML
-            setErrorMessage(errorSummary);
-            
-            Swal.fire({
-              icon: 'error',
-              html: `
-                <div style="${swalTituloCssString}">
-                  ¡Se detectaron <b>Errores en Filas del CSV</b>!
-                </div>
-                <div style="${swalTextoConMargenCssString}">
-                  ${errorSummary}
-                </div>
-              `,
-              buttonsStyling: false,
-              width: 'auto'
-            });
-            return;
-          }
-
-          if (validatedData.length === 0 && results.data.length > 0) {
-            setErrorMessage('Ninguna fila del CSV contiene datos válidos después de la validación.');
-            setParsedData([]);
-           
-            Swal.fire({
-              icon: 'warning',
-              html: `
-                <div style="${swalTituloCssString}">
-                  ¡Advertencia! Sin <b>Datos Válidos</b>.
-                </div>
-                <div style="${swalTextoConMargenCssString}">
-                  Ninguna fila del CSV contiene datos válidos después de la validación.
-                </div>
-              `,
-              confirmButtonText: 'ACEPTAR',
-              confirmButtonColor: '#ff7300',
-              cancelButtonText: 'Cancelar',
-              cancelButtonColor: '#5c5c5c',
-            });
-            return;
-          }
-
-          setParsedData(validatedData);
-          setErrorMessage(null);
-          
-
-        },
-        error: (error: Error /*, file: File*/) => { // <-- Elimina 'file' no usado
-          const errorMsg = `Error al leer el archivo: ${error.message}`;
-          setErrorMessage(errorMsg);
-
-          Swal.fire({
-            icon: 'error',
-            html: `
-              <div style="${swalTituloCssString}">
-                Se produjo un <b>Error de Lectura de Archivo</b>.
-              </div>
-              <div style="${swalTextoConMargenCssString}">
-                ${errorMsg}
-              </div>
-            `,
-            confirmButtonText: 'ACEPTAR',
-            confirmButtonColor: '#ff7300',
-            cancelButtonText: 'Cancelar',
-            cancelButtonColor: '#5c5c5c',
-          });
-        },
-      });
-    }
-  };
-
-  const handleUploadConfirm = async () => {
-    if (parsedData.length > 0 && !errorMessage) {
-
-      // @ts-expect-error: window.__LOADED_PRODUCTS__ es una variable global para comunicación con el modal
-      const loadedProducts: ProductData[] = (window.__LOADED_PRODUCTS__ || []);
-
-      const existingSkus = new Set<string>(loadedProducts.map(p => p.sku));
-
-      const skuCount: Record<string, number> = {};
-      parsedData.forEach(prod => {
-        skuCount[prod.sku] = (skuCount[prod.sku] || 0) + 1;
-      });
-      const duplicatedSkus = Object.keys(skuCount).filter(sku => skuCount[sku] > 1);
-
-      // Duplicados respecto a los productos ya cargados
-      const duplicatedSkusGlobal = parsedData
-        .map(p => p.sku)
-        .filter((sku, idx, arr) => existingSkus.has(sku) && arr.indexOf(sku) === idx);
-
-      
-      if (duplicatedSkus.length > 0 || duplicatedSkusGlobal.length > 0) {
-        let skuMsg: string | null = null;
-        if (duplicatedSkus.length > 0 || duplicatedSkusGlobal.length > 0) {
-          let msg = "No se puede cargar el archivo porque existen productos con ";
-          const parts: string[] = [];
-          if (duplicatedSkus.length > 0) parts.push(`<b>SKU</b> repetido en el archivo: ${duplicatedSkus.join(", ")}`);
-          if (duplicatedSkusGlobal.length > 0) parts.push(`<b>SKU</b> ya existente: ${duplicatedSkusGlobal.join(", ")}`);
-          msg += parts.join(" | ");
-          skuMsg = msg;
-        }
-        if (skuMsg) {
-          Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'error',
-            html: `
-              <div style="${swalTextoCssString}">
-                ${skuMsg}
-              </div>
-            `, 
-            showConfirmButton: false,
-            timer: 3500,
-            timerProgressBar: true,
-            customClass: {
-              popup: 'swal2-toast-success-custom', 
-            },
-            didClose: () => {
-              setTimeout(() => {
-                Swal.fire({
-                  toast: true,
-                  position: 'top-end',
-                  icon: 'error',
-                  html: `
-                    <div style="${swalTextoCssString}">
-                      ${skuMsg!}
-                    </div>
-                  `, 
-                  showConfirmButton: false,
-                  timer: 3500,
-                  timerProgressBar: true,
-                  customClass: {
-                    popup: 'swal2-toast-success-custom', 
-                  }
-                });
-              }, 100);
-            }
-          });
-        } else if (skuMsg) {
-          setTimeout(() => {
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'error',
-              html: `
-                <div style="${swalTextoCssString}">
-                  ${skuMsg!}
-                </div>
-              `, 
-              showConfirmButton: false,
-              timer: 3500,
-              timerProgressBar: true,
-              customClass: {
-                popup: 'swal2-toast-success-custom', 
-              }
-            });
-          }, 100);
-        }
-        onClose(); 
-        return;
-      }
-
-      const result = await Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            <b>¿Estás seguro?</b>
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            Se cargarán <b>${parsedData.length} productos</b>.<br>¿Deseas continuar con la carga masiva?
-          </div>
-        `,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'ACEPTAR',
-        confirmButtonColor: '#ff7300',
-        cancelButtonText: 'Cancelar',
-        cancelButtonColor: '#5c5c5c',
-        // customClass.popup se mantiene por si tiene estilos no relacionados con fuente
-        customClass: {
-          confirmButton: 'my-swal-confirm-button',
-          cancelButton: 'my-swal-cancel-button',
-          popup: 'my-swal-popup', // Puedes mantener esta clase para estilos no tipográficos
-        }
-      });
-
-      if (result.isConfirmed) {
-        onUploadConfirm(parsedData);
-        setSelectedFile(null);
-        setParsedData([]);
-        onClose();
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'success',
-          html: `
-            <div style="${swalTextoCssString}">
-              ¡<b>Carga exitosa</b>! Los productos han sido añadidos.
-            </div>
-          `, 
-          showConfirmButton: false,
-          timer: 3500,
-          timerProgressBar: true,
-          customClass: {
-            popup: 'swal2-toast-success-custom', 
-          }
-        });
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        Swal.fire({
-          html: `
-            <div style="${swalTituloCssString}">
-              <b>Carga Cancelada</b>
-            </div>
-            <div style="${swalTextoConMargenCssString}">
-              La carga masiva de productos ha sido cancelada.
-            </div>
-          `,
-          icon: 'info',
-          confirmButtonText: 'ACEPTAR',
-          confirmButtonColor: '#ff7300',
-          customClass: {
-            confirmButton: 'my-swal-confirm-button',
-            cancelButton: 'my-swal-cancel-button',
-            popup: 'my-swal-popup',
-          }
-        });
-      }
-    }
-  };
-
-  
-  useEffect(() => {
-    if (!isOpen && pendingDuplicateError) {
-      Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'error',
-        html: `
-          <div style="${swalTextoCssString}">
-            ${pendingDuplicateError}
-          </div>
-        `, 
-        showConfirmButton: false,
-        timer: 3500,
-        timerProgressBar: true,
-        customClass: {
-          popup: 'swal2-toast-success-custom', 
-        }
-      });
-      setPendingDuplicateError(null);
-    }
-  }, [isOpen, pendingDuplicateError]);
-
-  if (!visible) return null;
-
-  return (
-    <div style={modalOverlayStyle}>
-      <div style={modalContentStyle}>
-        <div style={modalHeaderStyle}>
-          <h2 style={modalTitleStyle}>Agregar productos mediante CSV</h2>
-          <button style={closeButtonStyle} onClick={onClose}>&times;</button>
-        </div>
-
-        <div
-          style={fileInputContainerStyle}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleFileChange}
-            ref={fileInputRef}
-            style={fileInputStyle}
-          />
-          <p style={arrastraStyle}>Arrastra tu archivo .csv aquí o haz clic para seleccionarlo</p>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <button
-              style={uploadButtonStyle}
-              type="button"
-              onClick={e => {
-                e.stopPropagation();
-                fileInputRef.current?.click();
-              }}
-            >
-              SELECCIONAR ARCHIVO
-            </button>
-            {selectedFile && (
-              <button
-                type="button"
-                style={{
-                  ...removeButtonStyle,
-                  backgroundColor: '#5c5c5c',
-                  color: 'white',
-                }}
-                onClick={e => {
-                  e.stopPropagation();
-                  setSelectedFile(null);
-                  setParsedData([]);
-                  setErrorMessage(null);
-                  if (fileInputRef.current) fileInputRef.current.value = '';
-                }}
-              >
-                Quitar Archivo
-              </button>
-            )}
-          </div>
-          {selectedFile && (
-            <p style={fileNameDisplayStyle}>Archivo seleccionado: <strong>{selectedFile.name}</strong></p>
-          )}
-        </div>
-
-        {errorMessage && <p style={errorTextStyle}>{errorMessage}</p>}
-
-        {parsedData.length > 0 && (
-          <div>
-            <h3 style={preVisualTextStyle}>Previsualización de productos ({parsedData.length} encontrados):</h3>
-            <div style={{ maxHeight: '250px', overflowY: 'auto', border: '1px solid #ddd', borderRadius: '5px' }}>
-              <table style={previewTableStyle}>
-                <thead>
-                  <tr>
-                    {Object.keys(parsedData[0] || {}).map((key) => (
-                      <th style={tableHeaderStyle} key={key}>{key}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {parsedData.map((product, index) => (
-                    <tr key={index}>
-                      <td style={tdModalStyle}>{product.sku}</td>
-                      <td style={tdModalStyle}>{product.nombre}</td>
-                      <td style={tdModalStyle}>{product.descripcion}</td>
-                      <td style={tdModalStyle}>{product.marca}</td>
-                      <td style={tdModalStyle}>{product.categoria}</td>
-                      <td style={tdModalStyle}>{product.pesoKg}</td>
-                      <td style={tdModalStyle}>{product.largoCm}</td>
-                      <td style={tdModalStyle}>{product.anchoCm}</td>
-                      <td style={tdModalStyle}>{product.altoCm}</td>
-                      <td style={tdModalStyle}>${product.precioVentaCu}</td>
-                      <td style={tdModalStyle}>
-                        <span style={{
-                          backgroundColor: product.estado ? '#10b981' : '#ef4444',
-                          color: 'white',
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '12px',
-                          fontSize: '0.75rem',
-                          fontWeight: '500'
-                        }}>
-                          {product.estado ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </td>
-                      <td style={tdModalStyle}>{product.stock}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '30px' }}>
-              <button
-                style={{
-                  ...confirmButtonStyle,
-                  ...(parsedData.length === 0 || errorMessage ? confirmButtonDisabledStyle : {}),
-                }}
-                onClick={handleUploadConfirm}
-                disabled={parsedData.length === 0 || !!errorMessage}
-              >
-                Confirmar carga masiva
-              </button>
-              <button
-                style={{
-                  ...confirmButtonStyle,
-                  backgroundColor: '#5c5c5c',
-                  // Aplica el estilo de deshabilitado si no hay datos o hay error, pero usa el color de fondo para "Cancelar"
-                  opacity: (parsedData.length === 0 || errorMessage) ? 0.6 : 1, // Opacidad para deshabilitado
-                  cursor: (parsedData.length === 0 || errorMessage) ? 'not-allowed' : 'pointer', // Cursor para deshabilitado
-                }}
-                onClick={() => {
-                  Swal.fire({
-                    html: `
-                      <div style="${swalTituloCssString}">
-                        ¿<b>Deseas cancelar la carga</b>?
-                      </div>
-                      <div style="${swalTextoConMargenCssString}">
-                        No se guardarán los productos previsualizados.
-                      </div>
-                    `,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'ACEPTAR',
-                    confirmButtonColor: '#ff7300',
-                    cancelButtonText: 'Cancelar',
-                    cancelButtonColor: '#5c5c5c',
-                  }).then((result) => {
-                    if (result.isConfirmed) {
-                      setParsedData([]);
-                      setSelectedFile(null);
-                      setErrorMessage(null);
-                      if (fileInputRef.current) fileInputRef.current.value = '';
-                      onClose(); // Cierra el modal
-                      Swal.fire({
-                        html: `
-                          <div style="${swalTituloCssString}">
-                            ¡<b>Cancelado</b>!
-                          </div>
-                          <div style="${swalTextoConMargenCssString}">
-                            Carga masiva de productos cancelada.
-                          </div>
-                        `,
-                        icon: 'info',
-                        confirmButtonText: 'ACEPTAR',
-                        confirmButtonColor: '#ff7300',
-                      });
-                    }
-                  });
-                }}
-                // Solo deshabilitar si la lógica interna del botón de confirmar lo requeriría
-                disabled={parsedData.length === 0 || !!errorMessage}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFilters }) => {
+const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFilters, activeFilters }) => {
   const [categoria, setCategoria] = useState("");
   const [estado, setEstado] = useState("");
   const [visible, setVisible] = useState(isOpen);
+
+  // Sincronizar los filtros del modal con los filtros activos cuando se abre el modal
+  useEffect(() => {
+    if (isOpen) {
+      setCategoria(activeFilters.categoria);
+      setEstado(activeFilters.estado);
+    }
+  }, [isOpen, activeFilters]);
+
+  // Nuevo efecto: Sincronizar cuando activeFilters cambia (incluso si el modal está cerrado)
+  useEffect(() => {
+    setCategoria(activeFilters.categoria);
+    setEstado(activeFilters.estado);
+  }, [activeFilters]);
 
   useEffect(() => {
     if (isOpen) {
@@ -903,6 +271,9 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
       icon: 'success',
       confirmButtonText: 'ACEPTAR',
       confirmButtonColor: '#ff7300',
+      showCloseButton: true,
+      timer: 3000,
+      timerProgressBar: true,
     });
   };
 
@@ -912,7 +283,6 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
     onApplyFilters({ categoria: "", estado: "" });
     onClose();
 
-    // Mostrar mensaje de éxito al limpiar filtros
     Swal.fire({
       html: `
         <div style="${swalTituloCssString}">
@@ -925,6 +295,9 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
       icon: 'info',
       confirmButtonText: 'ACEPTAR',
       confirmButtonColor: '#ff7300',
+      timer: 5000,
+      timerProgressBar: true,
+      showCloseButton: true
     });
   };
 
@@ -1005,6 +378,7 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
   );
 };
 
+// Modal para editar productos
 const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, onClose, onSave }) => {
   const [formData, setFormData] = useState<ProductData | null>(null);
 
@@ -1066,8 +440,13 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
       <div style={{...modalContentStyle, maxWidth: '650px', padding: '2rem'}}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
           <h2 style={{...modalTitleStyle, margin: 0}}>Editar Producto</h2>
-          <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
-            SKU: <strong>{formData.sku}</strong>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={skuContainerStyle}>
+              SKU: <strong>{formData.sku}</strong>
+            </div>
+            <button onClick={onClose} style={closeButtonStyle}>
+              ×
+            </button>
           </div>
         </div>
         
@@ -1090,7 +469,9 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
               onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
               style={{...selectStyle, height: '80px', resize: 'vertical'}}
               placeholder="Descripción del producto"
+              maxLength={50}
             />
+            <p style={writtenCharactersStyle}>{formData.descripcion.length}/50 caracteres escritos</p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -1180,7 +561,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
   );
 };
 
-// Modificar el hook useWindowSize para incluir más breakpoints
+// Esta función obtiene el tamaño de la ventana y proporciona información sobre los breakpoints
 function useWindowSize() {
   const [windowSize, setWindowSize] = useState({
     width: typeof window !== 'undefined' ? window.innerWidth : 0,
@@ -1211,6 +592,8 @@ function useWindowSize() {
     isMobile: windowSize.width <= 768
   };
 }
+
+// ===================== FUNCIÓN PRINCIPAL DEL COMPONENTE =====================
 
 export default function SucursalSlot1Page() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
@@ -1267,7 +650,6 @@ export default function SucursalSlot1Page() {
     };
   };
 
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductData | null>(null);
@@ -1282,7 +664,7 @@ export default function SucursalSlot1Page() {
 
   // --- ESTADOS DE PAGINACIÓN ---
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15; // 15 resultados por página
+  const itemsPerPage = 15; // <- Setear número de productos por página
 
   // Agregar CSS para la animación de carga
   useEffect(() => {
@@ -1322,6 +704,7 @@ export default function SucursalSlot1Page() {
           `,
           confirmButtonText: 'ACEPTAR',
           confirmButtonColor: '#ff7300',
+          showCloseButton: true,
         });
       } finally {
         setLoading(false);
@@ -1356,17 +739,15 @@ export default function SucursalSlot1Page() {
   // Función para aplicar filtros
   const handleApplyFilters = (filters: { categoria: string; estado: string }) => {
     setActiveFilters(filters);
-    setCurrentPage(1); // Reset a la primera página cuando se aplican filtros
+    setCurrentPage(1);
 
-    // Calcular resultados con los nuevos filtros
     const newFilteredProducts = loadedProducts.filter(product => {
       const matchesCategoria = !filters.categoria || product.categoria === filters.categoria;
-      const matchesEstado = !filters.estado || 
-        (filters.estado === "activo" ? product.estado : !product.estado);
+      const matchesEstado = !filters.estado || (filters.estado === "activo" ? product.estado : !product.estado);
       return matchesCategoria && matchesEstado;
     });
 
-    // Mostrar mensaje según los resultados
+    // Mensajes con sweetalert2 según los resultados
     if (newFilteredProducts.length === 0 && (filters.categoria || filters.estado)) {
       Swal.fire({
         html: `
@@ -1382,6 +763,9 @@ export default function SucursalSlot1Page() {
         icon: 'warning',
         confirmButtonText: 'ACEPTAR',
         confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true,
       });
     } else if (filters.categoria || filters.estado) {
       Swal.fire({
@@ -1398,6 +782,8 @@ export default function SucursalSlot1Page() {
         icon: 'success',
         confirmButtonText: 'ACEPTAR',
         confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
       });
     }
   };
@@ -1428,32 +814,7 @@ export default function SucursalSlot1Page() {
     return Math.ceil(filteredProducts.length / itemsPerPage);
   }, [filteredProducts]);
 
-  const handleConfirmBulkUpload = async (data: ProductData[]) => {
-    try {
-
-      // Aquí podrías implementar la carga masiva real al backend
-      // const newProducts = await bulkCreateProducts(data);
-      
-      // Por ahora, agregamos los productos localmente
-      setLoadedProducts(prev => [...prev, ...data]);
-      setCurrentPage(1); // Reset a la primera página cuando se cargan nuevos datos
-    } catch (error) {
-
-      Swal.fire({
-        icon: 'error',
-        html: `
-          <div style="${swalTituloCssString}">
-            Error en carga masiva
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            No se pudieron cargar los productos al servidor.
-          </div>
-        `,
-        confirmButtonText: 'ACEPTAR',
-        confirmButtonColor: '#ff7300',
-      });
-    }
-  };
+  
 
   // Función para el botón MODIFICAR
   const handleModifyProduct = async (sku: string) => {
@@ -1474,6 +835,9 @@ export default function SucursalSlot1Page() {
         imageAlt: "Funcionalidad en Mantenimiento",
         confirmButtonText: 'ACEPTAR',
         confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true,
       });
       return;
     }
@@ -1508,7 +872,6 @@ export default function SucursalSlot1Page() {
       // Actualizar en el backend
       await updateProduct(updatedProduct.sku, updatedProduct);
       
-      // Actualizar en el estado local
       setLoadedProducts(prev => 
         prev.map(p => 
           p.sku === updatedProduct.sku 
@@ -1521,8 +884,6 @@ export default function SucursalSlot1Page() {
       setEditingProduct(null);
 
       Swal.fire({
-        toast: true,
-        position: 'top-end',
         icon: 'success',
         html: `
           <div style="${swalTextoCssString}">
@@ -1530,8 +891,10 @@ export default function SucursalSlot1Page() {
           </div>
         `,
         showConfirmButton: false,
-        timer: 3000,
+        timer: 5000,
         timerProgressBar: true,
+        showCloseButton: true,
+
       });
     } catch (error) {
 
@@ -1574,12 +937,10 @@ export default function SucursalSlot1Page() {
     if (result.isConfirmed) {
       try {
         await deleteProduct(sku);
-        // Actualizar la lista local removiendo el producto eliminado
+
         setLoadedProducts(prev => prev.filter(p => p.sku !== sku));
         
         Swal.fire({
-          toast: true,
-          position: 'top-end',
           icon: 'success',
           html: `
             <div style="${swalTextoCssString}">
@@ -1625,13 +986,14 @@ export default function SucursalSlot1Page() {
     setCurrentPage(pageNumber);
   };
 
-  // Generar los botones de paginación
+
+  // PAGINACIÓN
   const renderPaginationButtons = () => {
     const buttons = [];
     // Lógica para mostrar un rango limitado de botones de página si hay muchas páginas
     const maxButtonsToShow = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
-    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1); // Usa const
+    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
 
     if (endPage - startPage + 1 < maxButtonsToShow) {
       startPage = Math.max(1, endPage - maxButtonsToShow + 1);
@@ -1677,36 +1039,6 @@ export default function SucursalSlot1Page() {
     return buttons;
   };
 
-  // --- ANIMACIÓN PARA PAGINACIÓN FLOTANTE ---
-  const [, setShowFloatingPagination] = useState(false);
-  const [, setIsAtBottom] = useState(false);
-  const lastScrollY = useRef(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY || window.pageYOffset;
-      const windowHeight = window.innerHeight;
-      const docHeight = document.documentElement.scrollHeight;
-
-      // Detecta si el usuario está cerca del final de la página (por ejemplo, a 40px del fondo)
-      if (windowHeight + scrollY >= docHeight - 40) {
-        setIsAtBottom(true);
-        setShowFloatingPagination(false);
-      } else {
-        setIsAtBottom(false);
-        // Detecta dirección de scroll: si sube, muestra la paginación flotante; si baja, oculta
-        if (scrollY < lastScrollY.current) {
-          setShowFloatingPagination(true);
-        } else if (scrollY > lastScrollY.current) {
-          setShowFloatingPagination(false);
-        }
-      }
-      lastScrollY.current = scrollY;
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Guardar los productos cargados en window para que el modal los pueda leer
   useEffect(() => {
@@ -1714,38 +1046,6 @@ export default function SucursalSlot1Page() {
     window.__LOADED_PRODUCTS__ = loadedProducts;
   }, [loadedProducts]);
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    flexGrow: 1,
-    padding: "0.3rem 2.5rem 0.3rem 1rem",
-    borderTop: "1px solid #ccc",
-    borderRight: "1px solid #ccc",
-    borderBottom: "1px solid #ccc",
-    borderLeft: "1px solid #ccc",
-    outline: "none",
-    height: '40px',
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    boxSizing: 'border-box',
-    fontSize: '0.875rem',
-    fontFamily: 'Roboto, sans-serif',
-    fontWeight: 400,
-  };
-
-  const lupaButtonStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    height: '40px',
-    width: '2.2rem',
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-  };
 
   // Función para verificar si hay filtros activos
   const hasActiveFilters = useMemo(() => {
@@ -1754,10 +1054,10 @@ export default function SucursalSlot1Page() {
 
   // Función para limpiar filtros desde la barra de herramientas
   const handleClearFiltersFromToolbar = () => {
+
     setActiveFilters({ categoria: "", estado: "" });
     setCurrentPage(1);
 
-    // Mostrar mensaje de éxito al limpiar filtros
     Swal.fire({
       html: `
         <div style="${swalTituloCssString}">
@@ -1770,6 +1070,9 @@ export default function SucursalSlot1Page() {
       icon: 'info',
       confirmButtonText: 'ACEPTAR',
       confirmButtonColor: '#ff7300',
+      timer: 5000,
+      timerProgressBar: true,
+      showCloseButton: true
     });
   };
 
@@ -1779,18 +1082,13 @@ export default function SucursalSlot1Page() {
   };
 
   return (
-    <div style={{
-      ...containerStyle
-    }}>
-      <div style={{
-        ...cardStyle
-      }}>
-        <h1 style={{
-          ...titleStyle,
+    <div style={containerStyle}>
+      <div style={cardStyle}>
+        <h1 style={{...titleStyle,
           fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
-          marginBottom: "1.5rem"
-        }}>Inventario de Productos ({sucursalNombre})</h1>
-        
+          marginBottom: "1.5rem"}}>
+            Inventario de Productos ({sucursalNombre})
+        </h1>
         <div style={{
           ...toolbarStyle,
           ...getToolbarLayout(),
@@ -1800,28 +1098,30 @@ export default function SucursalSlot1Page() {
           width: "100%",
           boxSizing: "border-box"
         }}>
-          <div style={{
-            ...leftControlsGroupStyle,
-            ...getControlsLayout(),
-            gap: isMobile ? "1rem" : "0.75rem",
-            boxSizing: "border-box"
+
+        <div style={{
+          ...leftControlsGroupStyle,
+          ...getControlsLayout(),
+          gap: isMobile ? "1rem" : "0.75rem",
+          boxSizing: "border-box"
+        }}>
+
+        <div style={{
+          ...searchContainerStyle,
+          width: getSearchWidth(),
+          minWidth: isMobile ? "unset" : "300px",
+          marginBottom: isMobile ? "1rem" : "0",
+          boxSizing: "border-box"
           }}>
-            <div style={{
-              ...searchContainerStyle,
-              width: getSearchWidth(),
-              minWidth: isMobile ? "unset" : "300px",
-              marginBottom: isMobile ? "1rem" : "0",
-              boxSizing: "border-box"
-            }}>
-              <input
-                type="text"
-                placeholder="Buscar por nombre del producto..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  ...inputStyle,
-                  fontSize: isMobile ? "0.875rem" : "1rem"
-                }}
+            <input
+              type="text"
+              placeholder="Buscar por nombre del producto..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                ...inputStyle,
+                fontSize: isMobile ? "0.875rem" : "1rem"
+              }}
               />
               <button style={lupaButtonStyle}>
                 <Image
@@ -1832,59 +1132,70 @@ export default function SucursalSlot1Page() {
                   style={searchIconStyle}
                 />
               </button>
-            </div>
+        </div>
             
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button style={{
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {!hasActiveFilters ? (
+          // Botón de una pieza cuando no hay filtros
+          <button style={{
+            ...filterButtonStyle, 
+            ...entirePieceFilterButtonStyle,
+            width: isMobile ? "100%" : "auto",
+            fontSize: isMobile ? "0.875rem" : "1rem",
+            padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+            }}
+            onClick={handleFiltersProduct}>
+              <Image
+                src={filtrosImg.src}
+                alt="Filtros"
+                width={20}
+                height={20}
+                style={filterIconStyle}
+              />
+              Filtros
+            </button>
+          ) : (
+            
+          // División de botones cuando hay filtros aplicados
+          <div style={{ display: 'flex' }}>
+            <button style={{
+              ...filterButtonStyle,
+              ...firstPieceFilterButtonStyle,
+              width: isMobile ? "calc(100% - 80px)" : "auto",
+              fontSize: isMobile ? "0.875rem" : "1rem",
+              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+            }} onClick={handleFiltersProduct}>
+              <Image
+                src={filtrosImg.src}
+                alt="Filtros"
+                width={20}
+                height={20}
+                style={filterIconStyle}
+              />
+              Filtros
+            </button>
+            <button
+              onClick={handleClearFiltersFromToolbar}
+              style={{
                 ...filterButtonStyle,
-                width: isMobile ? "100%" : "auto",
-                fontSize: isMobile ? "0.875rem" : "1rem",
-                padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
-                backgroundColor: hasActiveFilters ? '#ff7300' : '#5c5c5c',
-                position: 'relative'
-              }} onClick={handleFiltersProduct}>
-                <Image
-                  src={filtrosImg.src}
-                  alt="Filtros"
-                  width={20}
-                  height={20}
-                  style={filterIconStyle}
-                />
-                Filtros
-                {hasActiveFilters && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '-5px',
-                    right: '-5px',
-                    width: '10px',
-                    height: '10px',
-                    backgroundColor: '#10b981',
-                    borderRadius: '50%',
-                    border: '2px solid white'
-                  }} />
-                )}
-              </button>
-
-              {hasActiveFilters && (
-                <button 
-                  onClick={handleClearFiltersFromToolbar}
-                  style={{
-                    ...filterButtonStyle,
-                    backgroundColor: '#ef4444',
-                    width: isMobile ? "100%" : "auto",
-                    fontSize: isMobile ? "0.875rem" : "1rem",
-                    padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
-                  }}
-                >
-                  Limpiar
-                </button>
-              )}
-            </div>
+                ...secondPieceFilterButtonStyle,
+                width: isMobile ? "80px" : "auto",
+                fontSize: isMobile ? "0.75rem" : "0.875rem",
+                padding: isMobile ? "0.75rem 0.5rem" : "0.5rem 1rem",
+              }}
+              title="Limpiar Filtros"
+            >
+              <span style={xClosebuttonStyle}>×</span>
+              {!isMobile && 'Limpiar'}
+            </button>
+          </div>
+        )}
+      </div>
           </div>
 
           <div style={{
             ...rightControlsWrapperStyle,
-            width: isMobile ? "100%" : "auto",
+            width: isMobile ? "100%" : "auto", 
             marginTop: isMobile ? "1rem" : isSmall ? "1rem" : "0"
           }}>
             <button style={{
@@ -1931,10 +1242,7 @@ export default function SucursalSlot1Page() {
               <col style={{ width: isMobile ? "18%" : "16%" }} />
             </colgroup>
             <thead style={{ 
-              position: "sticky", 
-              top: 0, 
-              zIndex: 2, 
-              background: "#5C5C5C",
+              ...theadStyle,
               fontSize: isMobile ? "0.75rem" : "0.875rem"
             }}>
               <tr>
@@ -1962,23 +1270,16 @@ export default function SucursalSlot1Page() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={14} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px" }}>
-                      <div style={{ 
-                        width: "20px", 
-                        height: "20px", 
-                        border: "2px solid #f3f3f3", 
-                        borderTop: "2px solid #ff7300", 
-                        borderRadius: "50%", 
-                        animation: "spin 1s linear infinite" 
-                      }}></div>
+                  <td colSpan={14} style={{ ...tdStyle, ...colSpanStyle}}>
+                    <div style={loadingStyle}>
+                      <div style={loadingSpinnerStyle}></div>
                       Cargando productos...
                     </div>
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={14} style={{ ...tdStyle, textAlign: "center", padding: "2rem", color: "#d33" }}>
+                  <td colSpan={14} style={{ ...tdStyle, ...colSpanStyle, color: "#d33" }}>
                     {error}
                   </td>
                 </tr>
@@ -1996,50 +1297,20 @@ export default function SucursalSlot1Page() {
                     <td style={tdStyle}>{product.altoCm}</td>
                     <td style={tdStyle}>${formatPrice(product.precioVentaCu)}</td>
                     <td style={tdStyle}>
-                      <span style={{
-                        backgroundColor: product.estado ? '#10b981' : '#ef4444',
-                        color: 'white',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '12px',
-                        fontSize: '0.75rem',
-                        fontWeight: '500'
-                      }}>
-                        {product.estado ? 'Activo' : 'Inactivo'}
-                      </span>
+                      <span style={{...productStatusStyle, backgroundColor: product.estado ? '#4ade80' : '#f87171', color: product.estado ? '#f7f7f7' : '#f7f7f7'}}>{product.estado ? 'Activo' : 'Inactivo'}</span>
                     </td>
                     <td style={tdStyle}>{product.stock}</td>
                     <td style={tdStyle}>
-                      <div style={{ display: "flex", justifyContent: "center", gap: "5px" }}>
-                        <button
-                          style={{
-                            ...modifyProductButtonStyle,
-                            fontSize: '0.75rem',
-                            padding: '0.25rem 0.5rem',
-                            maxWidth: '60px'
-                          }}
-                          onClick={() => handleModifyProduct(product.sku)}
-                        >
-                          EDITAR
-                        </button>
-                        <button
-                          style={{
-                            ...modifyProductButtonStyle,
-                            backgroundColor: '#ef4444',
-                            fontSize: '0.75rem',
-                            padding: '0.25rem 0.5rem',
-                            maxWidth: '60px'
-                          }}
-                          onClick={() => handleDeleteProduct(product.sku)}
-                        >
-                          ELIMINAR
-                        </button>
+                      <div style={containerEditDeletebuttonsStyle}>
+                        <button style={handleModifyProductButtonStyle} onClick={() => handleModifyProduct(product.sku)}>EDITAR</button>
+                        <button style={handleDeleteProductButtonStyle} onClick={() => handleDeleteProduct(product.sku)}>ELIMINAR</button>
                       </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={14} style={{ ...tdStyle, textAlign: 'center', color: '#888', padding: "2rem" }}>
+                  <td colSpan={14} style={unavailableProductsStyle}>
                     No hay productos disponibles. Usa &quot;AGREGAR PRODUCTOS&quot; para cargar productos desde CSV o contacta al administrador.
                   </td>
                 </tr>
@@ -2050,39 +1321,75 @@ export default function SucursalSlot1Page() {
 
         {loadedProducts.length > 0 && (
           <div style={paginationContainerStyle}>
-            <div style={paginationControlsStyle}>
-              <button 
-                onClick={handlePrevPage} 
-                disabled={currentPage === 1} 
-                style={paginationButtonBaseStyle}
-              >
-                Anterior
-              </button>
-              <div style={paginationButtonsWrapperStyle}>
-                {renderPaginationButtons()}
+            <div style={{
+              ...paginationControlsStyle,
+              flexDirection: isMobile ? "column" : "row",
+              gap: isMobile ? "1rem" : "1rem",
+              padding: isMobile ? "1rem" : "0.5rem 1rem"
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: isMobile ? "100%" : "auto",
+                gap: "1rem"
+              }}>
+                <button 
+                  onClick={handlePrevPage} 
+                  disabled={currentPage === 1} 
+                  style={{
+                    ...paginationButtonBaseStyle,
+                    ...(currentPage === 1 ? paginationButtonDisabledStyle : {}),
+                    flex: isMobile ? "1" : "none",
+                    minWidth: isMobile ? "auto" : "80px"
+                  }}
+                >
+                  Anterior
+                </button>
+                
+                <div style={{
+                  ...pageIndicatorStyle,
+                  margin: isMobile ? "0" : "0",
+                  flex: isMobile ? "0 0 auto" : "none"
+                }}>
+                  {currentPage} de {totalPages}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
+                </div>
+                
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    ...paginationButtonBaseStyle,
+                    ...(currentPage === totalPages ? paginationButtonDisabledStyle : {}),
+                    flex: isMobile ? "1" : "none",
+                    minWidth: isMobile ? "auto" : "80px"
+                  }}
+                >
+                  Siguiente
+                </button>
               </div>
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
-              >
-                Siguiente
-              </button>
+              
+              {totalPages > 1 && (
+                <div style={{
+                  ...paginationButtonsWrapperStyle,
+                  justifyContent: isMobile ? "center" : "flex-start",
+                  flexWrap: isMobile ? "wrap" : "nowrap",
+                  width: isMobile ? "100%" : "auto"
+                }}>
+                  {renderPaginationButtons()}
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
 
-      <UploadCsvModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-        onUploadConfirm={handleConfirmBulkUpload}
-      />
-
       <FiltersModal
         isOpen={isFiltersModalOpen}
         onClose={() => setIsFiltersModalOpen(false)}
         onApplyFilters={handleApplyFilters}
+        activeFilters={activeFilters}
       />
 
       <EditProductModal
@@ -2102,7 +1409,7 @@ export default function SucursalSlot1Page() {
 // 6. ESTILOS DE COMPONENTES
 // =====================
 
-// Estilos para UploadCsvModal
+
 const modalOverlayStyle: React.CSSProperties = {
   position: 'fixed',
   top: 0,
@@ -2151,91 +1458,6 @@ const closeButtonStyle: React.CSSProperties = {
   padding: '0.5rem',
   color: '#6b7280',
   transition: 'color 0.2s ease',
-};
-
-const arrastraStyle: React.CSSProperties = {
-  fontSize: '0.875rem',
-  color: '#555',
-  textAlign: 'center' as const,
-  marginBottom: '10px',
-  fontFamily: 'Roboto, sans-serif',
-  fontWeight: 400,
-};
-
-const fileInputContainerStyle: React.CSSProperties = {
-  display: 'flex', flexDirection: 'column' as const, alignItems: 'center',
-  gap: '10px', padding: '20px', border: '2px dashed #ccc', borderRadius: '8px',
-  cursor: 'pointer', backgroundColor: '#f9f9f9',
-};
-
-const fileInputStyle: React.CSSProperties = { display: 'none' };
-
-const uploadButtonStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  color: 'white',
-  padding: '10px 20px',
-  borderRadius: '5px',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: '1rem',
-  fontFamily: 'Montserrat, sans-serif',
-  fontWeight: 'semibold',
-  transition: 'background-color 0.2s ease',
-  marginTop: '10px',
-};
-
-const removeButtonStyle: React.CSSProperties = {
-  backgroundColor: '#5c5c5c',
-  color: 'white',
-  padding: '10px 20px',
-  borderRadius: '5px',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: '0.9375rem',
-  fontFamily: 'Roboto, sans-serif',
-  fontWeight: 'medium',
-  transition: 'background-color 0.2s ease',
-  marginTop: '10px',
-};
-
-const preVisualTextStyle: React.CSSProperties = {
-  fontSize: '1.5rem', fontFamily: 'Montserrat, sans-serif', fontWeight: 'semibold',
-  color: '#333', marginBottom: '10px',
-};
-
-const previewTableStyle: React.CSSProperties = {
-  width: '100%', borderCollapse: 'collapse' as const, marginTop: '20px',
-};
-
-const tableHeaderStyle: React.CSSProperties = {
-  backgroundColor: '#f2f2f2', padding: '10px', borderBottom: '1px solid #ddd',
-  textAlign: 'left' as const,
-};
-
-const tdModalStyle: React.CSSProperties = {
-  padding: '10px', borderBottom: '1px solid #eee', textAlign: 'left' as const,
-};
-
-const confirmButtonStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300', color: 'white', padding: '12px 25px',
-  borderRadius: '5px', border: 'none', cursor: 'pointer', fontSize: '1.1em',
-  marginTop: '20px', transition: 'background-color 0.2s ease',
-};
-
-const confirmButtonDisabledStyle: React.CSSProperties = {
-  backgroundColor: '#cccccc', cursor: 'not-allowed',
-};
-
-const errorTextStyle: React.CSSProperties = {
-  color: 'red', marginTop: '10px', fontSize: '0.9em',
-};
-
-const fileNameDisplayStyle: React.CSSProperties = {
-  marginTop: '10px',
-  fontSize: '1rem',
-  fontFamily: 'Roboto, sans-serif',
-  fontWeight: 400,
-  color: '#555',
 };
 
 // Estilos para Sucursal1Page (y compartidos)
@@ -2384,7 +1606,7 @@ const paginationButtonsWrapperStyle: React.CSSProperties = {
 const paginationButtonBaseStyle: React.CSSProperties = {
   backgroundColor: '#ff7300',
   color: '#fff',
-  padding: '0.5rem 1rem',
+  padding: '0.5rem',
   borderRadius: '8px',
   border: 'none',
   cursor: 'pointer',
@@ -2519,7 +1741,6 @@ const buttonContainerStyle: React.CSSProperties = {
   justifyContent: "flex-end",
 };
 
-// Estilos adicionales para el modal de edición (copiados exactamente de sucursales)
 const modalFormStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
@@ -2544,3 +1765,173 @@ const modalButtonStyle: React.CSSProperties = {
   fontWeight: '500',
 };
 
+const writtenCharactersStyle: React.CSSProperties = {
+  fontSize: '0.8rem',
+  textAlign: 'right',
+  color: '#000',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    flexGrow: 1,
+    padding: "0.3rem 2.5rem 0.3rem 1rem",
+    borderTop: "1px solid #ccc",
+    borderRight: "1px solid #ccc",
+    borderBottom: "1px solid #ccc",
+    borderLeft: "1px solid #ccc",
+    outline: "none",
+    height: '40px',
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    boxSizing: 'border-box',
+    fontSize: '0.875rem',
+    fontFamily: 'Roboto, sans-serif',
+    fontWeight: 400,
+  };
+
+  const lupaButtonStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    height: '40px',
+    width: '2.2rem',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+  };
+
+  const loadingSpinnerStyle: React.CSSProperties = { 
+   width: "20px", 
+   height: "20px", 
+   border: "2px solid #f3f3f3", 
+   borderTop: "2px solid #ff7300", 
+   borderRadius: "50%", 
+   animation: "spin 1s linear infinite" 
+  };
+
+  // Estilos para los botones de modificar y eliminar productos
+  const handleModifyProductButtonStyle: React.CSSProperties = {
+    ...modifyProductButtonStyle,
+    fontSize: '0.75rem',
+    padding: '0.25rem 0.5rem',
+    maxWidth: '60px'
+  };
+
+  const handleDeleteProductButtonStyle: React.CSSProperties = {
+   ...modifyProductButtonStyle,
+    backgroundColor: '#ef4444',
+    fontSize: '0.75rem',
+    padding: '0.25rem 0.5rem',
+    maxWidth: '60px'
+  };
+
+  const productStatusStyle: React.CSSProperties = {
+    color: 'white',
+    padding: '0.25rem 0.5rem',
+    borderRadius: '12px',
+    fontSize: '0.75rem',
+    fontWeight: '500'
+  };
+
+  const containerEditDeletebuttonsStyle: React.CSSProperties = {
+    display: "flex",
+    justifyContent: "center",
+    gap: "5px"
+  };
+
+  const unavailableProductsStyle: React.CSSProperties = {
+     ...tdStyle, 
+     textAlign: 'center', 
+     color: '#888', 
+     padding: "2rem" 
+  };
+
+  const entirePieceFilterButtonStyle: React.CSSProperties = {
+    backgroundColor: '#5c5c5c',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  };
+
+  const firstPieceFilterButtonStyle: React.CSSProperties = {
+    backgroundColor: '#ff7300',
+    borderTopRightRadius: '0',
+    borderBottomRightRadius: '0',
+    borderRight: '1px solid rgba(255, 255, 255, 0.3)',
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  };
+  
+  const secondPieceFilterButtonStyle: React.CSSProperties = {
+    backgroundColor: '#ef4444',
+    borderTopLeftRadius: '0',
+    borderBottomLeftRadius: '0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.25rem'
+  };
+
+  const xClosebuttonStyle: React.CSSProperties = {
+    fontSize: '1rem',
+    lineHeight: '1' 
+  };
+
+  const theadStyle: React.CSSProperties = {
+    position: "sticky", 
+    top: 0, 
+    zIndex: 2, 
+    background: "#5C5C5C",
+  };
+
+  const colSpanStyle: React.CSSProperties = {
+    textAlign: "center",
+    padding: "2rem"
+  };
+  
+  const loadingStyle: React.CSSProperties = {
+    display: "flex", 
+    justifyContent: "center", 
+    alignItems: "center", 
+    gap: "10px" 
+  };
+
+  const skuContainerStyle: React.CSSProperties = {
+    fontSize: '0.9rem', 
+    color: '#666', 
+    backgroundColor: '#f3f4f6', 
+    padding: '0.5rem 0.75rem', 
+    borderRadius: '6px', 
+    border: '1px solid #d1d5db' 
+  };
+
+  const paginationButtonDisabledStyle: React.CSSProperties = {
+    backgroundColor: '#d1d5db',
+    color: '#9ca3af',
+    cursor: 'not-allowed',
+    opacity: 0.6
+  };
+
+  const pageIndicatorStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    color: '#f7f7f7',
+    fontFamily: 'Montserrat, sans-serif',
+    display: 'flex',
+    alignItems: 'center',
+    padding: '0 1rem',
+    backgroundColor: '#5c5c5c',
+    borderRadius: '6px',
+    border: '1px solid #e5e7eb',
+    minWidth: 'fit-content',
+    whiteSpace: 'nowrap',
+    paddingTop: '0.5rem',
+    paddingBottom: '0.5rem',
+  };

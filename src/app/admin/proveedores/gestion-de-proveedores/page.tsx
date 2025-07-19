@@ -231,6 +231,9 @@ export default function GestionProveedoresPage() {
       imageAlt: "Funcionalidad en Mantenimiento",
       confirmButtonText: 'ACEPTAR',
       confirmButtonColor: '#ff7300',
+      timer: 5000,
+      timerProgressBar: true,
+      showCloseButton: true
     });
   };
 
@@ -248,13 +251,14 @@ export default function GestionProveedoresPage() {
 
   // Función para guardar el nuevo proveedor
   const handleSaveNewProveedor = async () => {
-    // Validaciones
+    // Validaciones requeridas
     if (!addFormData.marca.trim()) {
       Swal.fire({
         title: 'Error',
-        text: 'La marca es requerida',
+        text: 'El nombre de la marca es requerido',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true
       });
       return;
     }
@@ -262,19 +266,10 @@ export default function GestionProveedoresPage() {
     if (!addFormData.email.trim()) {
       Swal.fire({
         title: 'Error',
-        text: 'El email es requerido',
+        text: 'El correo electrónico es requerido',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
-      });
-      return;
-    }
-
-    if (!addFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Email inválido',
-        icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true
       });
       return;
     }
@@ -284,7 +279,8 @@ export default function GestionProveedoresPage() {
         title: 'Error',
         text: 'El teléfono es requerido',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true
       });
       return;
     }
@@ -294,7 +290,20 @@ export default function GestionProveedoresPage() {
         title: 'Error',
         text: 'La dirección es requerida',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true
+      });
+      return;
+    }
+
+    //Validación del email
+    if (!addFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      Swal.fire({
+        title: 'Error',
+        text: 'El formato de email es inválido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true
       });
       return;
     }
@@ -316,21 +325,23 @@ export default function GestionProveedoresPage() {
       setShowAddModal(false);
       
       Swal.fire({
-        toast: true,
-        position: 'top-end',
         icon: 'success',
         title: '¡Proveedor agregado exitosamente!',
         showConfirmButton: false,
-        timer: 3000,
+        timer: 5000,
         timerProgressBar: true,
+        showCloseButton: true
       });
     } catch (error) {
 
       Swal.fire({
         title: 'Error',
-        text: 'No se pudo agregar el proveedor',
+        text: 'No se ha podido agregar el proveedor',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
     }
   };
@@ -346,13 +357,15 @@ export default function GestionProveedoresPage() {
   const handleSaveEditChanges = async () => {
     if (!editFormData || !editingProveedor) return;
 
-    // Validaciones
+    // Validaciones requeridas
     if (!editFormData.marca.trim()) {
       Swal.fire({
         title: 'Error',
-        text: 'La marca es requerida',
+        text: 'El nombre de la marca es requerido',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        confirmButtonText: 'OK',
+        showCloseButton: true
       });
       return;
     }
@@ -360,19 +373,11 @@ export default function GestionProveedoresPage() {
     if (!editFormData.email.trim()) {
       Swal.fire({
         title: 'Error',
-        text: 'El email es requerido',
+        text: 'El correo electrónico es requerido',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
-      });
-      return;
-    }
-
-    if (!editFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Email inválido',
-        icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        confirmButtonText: 'OK',
+        showCloseButton: true
       });
       return;
     }
@@ -382,7 +387,9 @@ export default function GestionProveedoresPage() {
         title: 'Error',
         text: 'El teléfono es requerido',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        confirmButtonText: 'OK',
+        showCloseButton: true
       });
       return;
     }
@@ -392,7 +399,19 @@ export default function GestionProveedoresPage() {
         title: 'Error',
         text: 'La dirección es requerida',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true
+      });
+      return;
+    }
+
+    if (!editFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Email inválido',
+        icon: 'error',
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true
       });
       return;
     }
@@ -420,13 +439,14 @@ export default function GestionProveedoresPage() {
       setEditFormData(null);
 
       Swal.fire({
-        toast: true,
-        position: 'top-end',
         icon: 'success',
-        title: '¡Proveedor actualizado exitosamente!',
+        title: '¡Proveedor editado con éxito!',
         showConfirmButton: false,
-        timer: 3000,
+        timer: 5000,
         timerProgressBar: true,
+        showCloseButton: true,
+        confirmButtonColor: '#ff7300',
+        confirmButtonText: 'Aceptar'
       });
     } catch (error) {
 
@@ -434,7 +454,12 @@ export default function GestionProveedoresPage() {
         title: 'Error',
         text: 'No se pudo actualizar el proveedor',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        confirmButtonText: 'Aceptar',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true,
+
       });
     }
   };
@@ -449,7 +474,8 @@ export default function GestionProveedoresPage() {
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
+      showCloseButton: true,
     });
 
     if (result.isConfirmed) {
@@ -466,7 +492,10 @@ export default function GestionProveedoresPage() {
           title: '¡Eliminado!',
           text: 'El proveedor ha sido eliminado correctamente',
           icon: 'success',
-          confirmButtonColor: '#ff7300'
+          confirmButtonColor: '#ff7300',
+          timer: 5000,
+          timerProgressBar: true,
+          showCloseButton: true
         });
       } catch (error) {
 
@@ -474,7 +503,10 @@ export default function GestionProveedoresPage() {
           title: 'Error',
           text: 'No se pudo eliminar el proveedor',
           icon: 'error',
-          confirmButtonColor: '#ff7300'
+          confirmButtonColor: '#ff7300',
+          timer: 5000,
+          timerProgressBar: true,
+          showCloseButton: true
         });
       }
     }
@@ -993,45 +1025,57 @@ export default function GestionProveedoresPage() {
             
             <div style={{...modalFormStyle, padding: '0 1rem'}}>
               <div style={selectGroupStyle}>
-                <label style={labelStyle}>Marca</label>
+                <label style={labelStyle}>Marca *</label>
                 <input
                   type="text"
                   value={editFormData.marca}
                   onChange={(e) => setEditFormData({...editFormData, marca: e.target.value})}
-                  style={selectStyle}
+                  style={{
+                    ...selectStyle,
+                    borderColor: !editFormData.marca.trim() ? '#ef4444' : '#ddd'
+                  }}
                   placeholder="Nombre de la marca"
                 />
               </div>
 
               <div style={selectGroupStyle}>
-                <label style={labelStyle}>Email</label>
+                <label style={labelStyle}>Email *</label>
                 <input
                   type="email"
                   value={editFormData.email}
                   onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
-                  style={selectStyle}
+                  style={{
+                    ...selectStyle,
+                    borderColor: !editFormData.email.trim() ? '#ef4444' : '#ddd'
+                  }}
                   placeholder="correo@ejemplo.com"
                 />
               </div>
 
               <div style={selectGroupStyle}>
-                <label style={labelStyle}>Teléfono</label>
+                <label style={labelStyle}>Teléfono *</label>
                 <input
                   type="tel"
                   value={editFormData.telefono}
                   onChange={(e) => setEditFormData({...editFormData, telefono: e.target.value})}
-                  style={selectStyle}
+                  style={{
+                    ...selectStyle,
+                    borderColor: !editFormData.telefono.trim() ? '#ef4444' : '#ddd'
+                  }}
                   placeholder="+56 9 1234 5678"
                 />
               </div>
 
               <div style={selectGroupStyle}>
-                <label style={labelStyle}>Dirección</label>
+                <label style={labelStyle}>Dirección *</label>
                 <input
                   type="text"
                   value={editFormData.direccion}
                   onChange={(e) => setEditFormData({...editFormData, direccion: e.target.value})}
-                  style={selectStyle}
+                  style={{
+                    ...selectStyle,
+                    borderColor: !editFormData.direccion.trim() ? '#ef4444' : '#ddd'
+                  }}
                   placeholder="Dirección completa"
                 />
               </div>
@@ -1075,45 +1119,57 @@ export default function GestionProveedoresPage() {
             
             <div style={{...modalFormStyle, padding: '0 1rem'}}>
               <div style={selectGroupStyle}>
-                <label style={labelStyle}>Marca</label>
+                <label style={labelStyle}>Marca *</label>
                 <input
                   type="text"
                   value={addFormData.marca}
                   onChange={(e) => setAddFormData({...addFormData, marca: e.target.value})}
-                  style={selectStyle}
+                  style={{
+                    ...selectStyle,
+                    borderColor: !addFormData.marca.trim() ? '#ef4444' : '#ddd'
+                  }}
                   placeholder="Nombre de la marca"
                 />
               </div>
 
               <div style={selectGroupStyle}>
-                <label style={labelStyle}>Email</label>
+                <label style={labelStyle}>Email *</label>
                 <input
                   type="email"
                   value={addFormData.email}
                   onChange={(e) => setAddFormData({...addFormData, email: e.target.value})}
-                  style={selectStyle}
+                  style={{
+                    ...selectStyle,
+                    borderColor: !addFormData.email.trim() ? '#ef4444' : '#ddd'
+                  }}
                   placeholder="correo@ejemplo.com"
                 />
               </div>
 
               <div style={selectGroupStyle}>
-                <label style={labelStyle}>Teléfono</label>
+                <label style={labelStyle}>Teléfono *</label>
                 <input
                   type="tel"
                   value={addFormData.telefono}
                   onChange={(e) => setAddFormData({...addFormData, telefono: e.target.value})}
-                  style={selectStyle}
+                  style={{
+                    ...selectStyle,
+                    borderColor: !addFormData.telefono.trim() ? '#ef4444' : '#ddd'
+                  }}
                   placeholder="+56 9 1234 5678"
                 />
               </div>
 
               <div style={selectGroupStyle}>
-                <label style={labelStyle}>Dirección</label>
+                <label style={labelStyle}>Dirección *</label>
                 <input
                   type="text"
                   value={addFormData.direccion}
                   onChange={(e) => setAddFormData({...addFormData, direccion: e.target.value})}
-                  style={selectStyle}
+                  style={{
+                    ...selectStyle,
+                    borderColor: !addFormData.direccion.trim() ? '#ef4444' : '#ddd'
+                  }}
                   placeholder="Dirección completa"
                 />
               </div>

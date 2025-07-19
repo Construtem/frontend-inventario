@@ -7,7 +7,6 @@ import {
   FaHome,
   FaBoxes,
   FaStore,
-  FaCog,
   FaChevronDown,
   FaChevronUp,
   FaTruck,
@@ -42,12 +41,7 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
     setBodegaAbierta(false);
     setProveedorAbierto(false);
   };
-
-  const toggleBodegas = () => {
-    closeAllMenus();
-    setBodegaAbierta(!bodegaAbierta);
-  };
-
+  
   const toggleProveedores = () => {
     closeAllMenus();
     setProveedorAbierto(!proveedoresAbierto);
@@ -149,47 +143,6 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
         <FaBoxes />
         <span>Inventario</span>
       </Link>
-
-
-      <div
-        style={getMenuItemStyle('bodega', '/admin/bodega', true)}
-        onClick={toggleBodegas}
-        onMouseEnter={() => handleMouseEnter('bodega')}
-        onMouseLeave={handleMouseLeave}
-      >
-        <FaBoxes />
-        <span style={{ flex: 1 }}>Bodega</span>
-        {bodegaAbierta ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
-      </div>
-
-      <div style={{
-        ...styles.subMenu,
-        ...(bodegaAbierta ? styles.subMenuOpen : {}),
-      }}>
-        {[
-          { name: 'Bodega general', path: '/admin/bodega/bodega-general' },
-        ].map((item) => (
-          <Link
-            key={item.name}
-            href={item.path}
-            style={{
-              ...getSubMenuItemStyle(item.path),
-              backgroundColor: hoveredItem === item.path 
-                ? '#FF7A00' 
-                : isRouteActive(item.path)
-                  ? '#FF7A00' 
-                  : 'transparent',
-              color: (hoveredItem === item.path || isRouteActive(item.path))
-                ? '#000000'
-                : '#bdbdbd',
-            }}
-            onMouseEnter={() => handleMouseEnter(item.path)}
-            onMouseLeave={handleMouseLeave}
-          >
-            {item.name}
-          </Link>
-        ))}
-      </div>
 
       <div
         style={getMenuItemStyle('proveedores', '/admin/proveedores', true)}

@@ -80,8 +80,6 @@ export default function GestionUsuariosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usuariosData, setUsuariosData] = useState<Usuario[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedRol, setSelectedRol] = useState("");
   const [selectedEstado, setSelectedEstado] = useState("");
@@ -91,6 +89,11 @@ export default function GestionUsuariosPage() {
   const [tempEstado, setTempEstado] = useState("");
 
   const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'http://localhost:8080';
+
+  // --- ESTADOS DE PAGINACIÓN ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // <- Setear número de productos por página
+
   // =====================
   // 2. LLAMADA A LA API
   // =====================
@@ -288,60 +291,9 @@ export default function GestionUsuariosPage() {
     if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
-  const handlePageClick = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-  };
 
   // Renderizar botones de paginación
-  const renderPaginationButtons = () => {
-    const buttons = [];
-    const maxButtonsToShow = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
-    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
 
-    if (endPage - startPage + 1 < maxButtonsToShow) {
-      startPage = Math.max(1, endPage - maxButtonsToShow + 1);
-    }
-
-    if (startPage > 1) {
-      buttons.push(
-        <button key="1" onClick={() => handlePageClick(1)} style={paginationButtonBaseStyle}>
-          1
-        </button>
-      );
-      if (startPage > 2) {
-        buttons.push(<span key="dots-start" style={paginationDotsStyle}>...</span>);
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      buttons.push(
-        <button
-          key={i}
-          onClick={() => handlePageClick(i)}
-          style={{
-            ...paginationButtonBaseStyle,
-            ...(currentPage === i ? paginationButtonActiveStyle : {}),
-          }}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        buttons.push(<span key="dots-end" style={paginationDotsStyle}>...</span>);
-      }
-      buttons.push(
-        <button key={totalPages} onClick={() => handlePageClick(totalPages)} style={paginationButtonBaseStyle}>
-          {totalPages}
-        </button>
-      );
-    }
-
-    return buttons;
-  };
 
   // Calcular ancho de búsqueda basado en el tamaño de la ventana
   const getSearchWidth = () => {
@@ -401,7 +353,10 @@ export default function GestionUsuariosPage() {
         title: 'Sin filtros',
         text: 'No has seleccionado ningún filtro',
         icon: 'info',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCancelButton: true,
       });
       return;
     }
@@ -419,7 +374,10 @@ export default function GestionUsuariosPage() {
         ${tempEstado ? `<p>Estado: ${tempEstado}</p>` : ''}
       `,
       icon: 'success',
-      confirmButtonColor: '#ff7300'
+      confirmButtonColor: '#ff7300',
+      showCloseButton: true,
+      timer: 5000,
+      timerProgressBar: true
     });
   };
 
@@ -494,14 +452,20 @@ export default function GestionUsuariosPage() {
         title: 'Éxito',
         text: 'Usuario actualizado correctamente',
         icon: 'success',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true,
       });
     } catch (err) {
       Swal.fire({
         title: 'Error',
-        text: `No se pudo actualizar el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+        text:'Ha ocurrido un error inesperado: Error al actualizar el usuario',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
     }
   };
@@ -514,7 +478,10 @@ export default function GestionUsuariosPage() {
         title: 'Error',
         text: 'El nombre es requerido',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
@@ -524,7 +491,10 @@ export default function GestionUsuariosPage() {
         title: 'Error',
         text: 'El email es requerido',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
@@ -536,7 +506,10 @@ export default function GestionUsuariosPage() {
         title: 'Error',
         text: 'Por favor ingrese un email válido',
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
@@ -621,7 +594,8 @@ export default function GestionUsuariosPage() {
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
       confirmButtonText: 'Sí, continuar',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
+      showCloseButton: true,
     }).then((result) => {
       if (result.isConfirmed) {
         // Segunda confirmación
@@ -640,12 +614,14 @@ export default function GestionUsuariosPage() {
           `,
           icon: 'error',
           showCancelButton: true,
-          confirmButtonColor: '#ef4444',
-          cancelButtonColor: '#6b7280',
+          confirmButtonColor: '#ff7300',
+          cancelButtonColor: '#5c5c5c',
           confirmButtonText: 'SÍ, ELIMINAR PERMANENTEMENTE',
           cancelButtonText: 'No, cancelar',
           reverseButtons: true,
-          focusCancel: true
+          focusCancel: true,
+          showCloseButton: true,
+
         }).then(async (finalResult) => {
           if (finalResult.isConfirmed) {
             try {
@@ -699,7 +675,10 @@ export default function GestionUsuariosPage() {
                 title: 'Error',
                 text: `No se pudo eliminar el usuario: ${err instanceof Error ? err.message : 'Error desconocido'}`,
                 icon: 'error',
-                confirmButtonColor: '#ff7300'
+                confirmButtonColor: '#ff7300',
+                timer: 5000,
+                timerProgressBar: true,
+                showCloseButton: true
               });
             }
           }
@@ -719,7 +698,10 @@ export default function GestionUsuariosPage() {
       title: 'Filtros reiniciados',
       text: 'Se han eliminado todos los filtros',
       icon: 'info',
-      confirmButtonColor: '#ff7300'
+      confirmButtonColor: '#ff7300',
+      showCloseButton: true,
+      timer: 3000,
+      timerProgressBar: true,
     });
   };
 
@@ -984,48 +966,72 @@ export default function GestionUsuariosPage() {
                 </div>
               )}
 
-              {totalPages > 1 && (
-                <div style={paginationContainerStyle}>
-                  <div style={paginationControlsStyle}>
-                    <button 
-                      onClick={handlePrevPage} 
-                      disabled={currentPage === 1}
-                      style={{
-                        ...paginationButtonBaseStyle,
-                        opacity: currentPage === 1 ? 0.5 : 1,
-                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      Anterior
-                    </button>
-                    
-                    <div style={paginationButtonsWrapperStyle}>
-                      {renderPaginationButtons()}
-                    </div>
-                    
-                    <button 
-                      onClick={handleNextPage} 
-                      disabled={currentPage === totalPages}
-                      style={{
-                        ...paginationButtonBaseStyle,
-                        opacity: currentPage === totalPages ? 0.5 : 1,
-                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      Siguiente
-                    </button>
-                  </div>
-                  
-                  <div style={{ 
-                    textAlign: 'center', 
-                    marginTop: '1rem', 
-                    color: '#666',
-                    fontSize: '0.875rem'
-                  }}>
-                    Página {currentPage} de {totalPages} | Total: {filteredData.length} usuarios
-                  </div>
+          {filteredData.length > 0 && (
+          <div style={paginationContainerStyle}>
+            <div style={{
+              ...paginationControlsStyle,
+              flexDirection: isMobile ? "column" : "row",
+              gap: isMobile ? "1rem" : "1rem",
+              padding: isMobile ? "1rem" : "0.5rem 1rem"
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: isMobile ? "100%" : "auto",
+                gap: "1rem"
+              }}>
+                <button 
+                  onClick={handlePrevPage} 
+                  disabled={currentPage === 1} 
+                  style={{
+                    ...paginationButtonBaseStyle,
+                    ...(currentPage === 1 ? paginationButtonDisabledStyle : {}),
+                    flex: isMobile ? "1" : "none",
+                    minWidth: isMobile ? "auto" : "80px"
+                  }}
+                >
+                  Anterior
+                </button>
+                
+                <div style={{
+                  ...pageIndicatorStyle,
+                  margin: isMobile ? "0" : "0",
+                  flex: isMobile ? "0 0 auto" : "none"
+                }}>
+                  {currentPage} de {totalPages}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
+                </div>
+                
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    ...paginationButtonBaseStyle,
+                    ...(currentPage === totalPages ? paginationButtonDisabledStyle : {}),
+                    flex: isMobile ? "1" : "none",
+                    minWidth: isMobile ? "auto" : "80px"
+                  }}
+                >
+                  Siguiente
+                </button>
+              </div>
+              
+
+
+                {totalPages > 1 && (
+                <div style={{
+                  ...paginationButtonsWrapperStyle,
+                  justifyContent: isMobile ? "center" : "flex-start",
+                  flexWrap: isMobile ? "wrap" : "nowrap",
+                  width: isMobile ? "100%" : "auto"
+                }}>
                 </div>
               )}
+            </div>
+          </div>
+              
+          )}
             </>
           )}
         </div>
@@ -1098,6 +1104,15 @@ export default function GestionUsuariosPage() {
                   value={editFormData.nombre || ''}
                   onChange={(e) => setEditFormData({...editFormData, nombre: e.target.value})}
                   style={inputStyle}
+                  placeholder="Nombre de usuario"
+                  maxLength={50}
+                  title="El nombre solo puede contener letras y espacios"
+                  onKeyPress={(e) => {
+                    const regex = /^[a-zA-ZñÑáÁéÉíÍóÓúÚ\s]$/;
+                    if (!regex.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
 
@@ -1108,6 +1123,22 @@ export default function GestionUsuariosPage() {
                   value={editFormData.email || ''}
                   onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
                   style={inputStyle}
+                  placeholder="Email de usuario"
+                  maxLength={100}
+                  onKeyPress={(e) => {
+                    const key = e.key;
+                    const regex = /^[a-zA-Z0-9ñÑ@._-]$/;
+                    if (!regex.test(key)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData('text');
+                    const regex = /^[a-zA-Z0-9ñÑ@._-]+$/;
+                    if (!regex.test(pasted)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
 
@@ -1123,21 +1154,23 @@ export default function GestionUsuariosPage() {
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div style={modalButtonsStyle}>
-              <button 
-                onClick={() => setShowEditModal(false)} 
-                style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleSaveChanges}
-                style={modalButtonStyle}
-              >
-                Guardar Cambios
-              </button>
+              <div style={modalButtonsStyle}>
+                <button 
+                  type="button"
+                  onClick={() => setShowEditModal(false)} 
+                  style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleSaveChanges}
+                  style={modalButtonStyle}
+                >
+                  Guardar Cambios
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1401,7 +1434,6 @@ const searchIconStyle: React.CSSProperties = {
 
 const paginationContainerStyle: React.CSSProperties = {
   display: 'flex',
-  flexDirection: 'column',
   justifyContent: 'center',
   marginTop: '2rem',
   padding: '1rem',
@@ -1418,7 +1450,6 @@ const paginationControlsStyle: React.CSSProperties = {
   borderRadius: '8px',
   padding: '0.5rem 1rem',
   boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-  justifyContent: 'center',
 };
 
 const paginationButtonsWrapperStyle: React.CSSProperties = {
@@ -1430,7 +1461,7 @@ const paginationButtonsWrapperStyle: React.CSSProperties = {
 const paginationButtonBaseStyle: React.CSSProperties = {
   backgroundColor: '#ff7300',
   color: '#fff',
-  padding: '0.5rem 1rem',
+  padding: '0.5rem',
   borderRadius: '8px',
   border: 'none',
   cursor: 'pointer',
@@ -1548,4 +1579,26 @@ const closeButtonStyle: React.CSSProperties = {
   justifyContent: 'center',
   padding: '0',
   margin: '0'
+};
+
+const paginationButtonDisabledStyle: React.CSSProperties = {
+  backgroundColor: '#d1d5db',
+  color: '#9ca3af',
+  cursor: 'not-allowed',
+  opacity: 0.6
+};
+
+const pageIndicatorStyle: React.CSSProperties = {
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  color: '#f7f7f7',
+  fontFamily: 'Montserrat, sans-serif',
+  display: 'flex',
+  alignItems: 'center',
+  padding: '0.5rem',
+  backgroundColor: '#5c5c5c',
+  borderRadius: '6px',
+  border: '1px solid #e5e7eb',
+  minWidth: 'fit-content',
+  whiteSpace: 'nowrap',
 };
