@@ -1275,6 +1275,19 @@ if (card.subText === 'Bodegas') {
             </tbody>
           </table>
         </div>
+
+        {/* Información adicional */}
+        <div style={{ 
+          marginTop: '1rem', 
+          padding: '1rem', 
+          backgroundColor: '#f8f9fa', 
+          borderRadius: '8px',
+          flexShrink: 0
+        }}>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>
+            Total de registros: {dataToShow.length} | Mostrando: {filteredData.length}
+          </p>
+        </div>
       </div>
     </div>
   );

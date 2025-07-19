@@ -86,6 +86,47 @@ const COMUNAS_POR_CIUDAD: { [key: string]: string[] } = {
   ]
 };
 
+// ===================== SWEET ALERT2 ESTILOS =====================
+
+// Función auxiliar para convertir un objeto JS de estilos a una cadena CSS en línea
+function objToInlineCss(styleObj: React.CSSProperties): string {
+  return Object.entries(styleObj)
+    .map(([key, value]) => {
+      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      return `${cssKey}: ${value};`;
+    })
+    .join(' ');
+}
+
+// DEFINICIONES DE ESTILOS PARA SWEETALERT2
+
+const estiloSwalTituloObj: React.CSSProperties = {
+  fontFamily: "'Montserrat', sans-serif",
+  fontSize: '1.5rem',
+  fontWeight: '600',
+  color: '#222'
+};
+
+const estiloSwalTextoObj: React.CSSProperties = {
+  fontFamily: "'Roboto', sans-serif",
+  fontSize: '1rem',
+  fontWeight: '400',
+  color: '#333'
+};
+
+const estiloSwalTextoConMargenObj: React.CSSProperties = {
+  ...estiloSwalTextoObj,
+  marginTop: '10px'
+};
+
+
+const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
+const swalTextoCssString = objToInlineCss(estiloSwalTextoObj);
+const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
+
+
+
+
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
   const [windowSize, setWindowSize] = useState({
@@ -142,6 +183,54 @@ export default function SucursalesPage() {
   const [tempTipo, setTempTipo] = useState("");
 
   const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
+
+  // =====================
+// 2. FUNCIONES DE VALIDACIÓN
+// =====================
+
+// Función para validar nombre y dirección (sin caracteres especiales)
+const validateTextInput = (value: string): { isValid: boolean; message: string } => {
+  // Caracteres prohibidos: ; % $ @ # & * ( ) [ ] { } | \ / ? < > " ' ` ~ ! ^ = 
+  const forbiddenChars = /[;%$@#&*()[\]{}|\\/?<>"'`~!^=]/;
+  
+  if (forbiddenChars.test(value)) {
+    const foundChars = value.match(forbiddenChars);
+    return {
+      isValid: false,
+      message: `Caracteres no permitidos encontrados: ${foundChars?.join(', ')}`
+    };
+  }
+  
+  return { isValid: true, message: '' };
+};
+
+// Función para validar teléfono (solo números, espacios, guiones y +)
+const validatePhoneInput = (value: string): { isValid: boolean; message: string } => {
+  // Solo permitir números, espacios, guiones y el símbolo +
+  const validChars = /^[0-9\s\-+]*$/;
+  
+  if (!validChars.test(value)) {
+    return {
+      isValid: false,
+      message: 'Solo se permiten números, espacios, guiones (-) y el símbolo +'
+    };
+  }
+  
+  return { isValid: true, message: '' };
+};
+
+// Función para filtrar caracteres en tiempo real
+const filterTextInput = (value: string): string => {
+  // Remover caracteres prohibidos automáticamente
+  return value.replace(/[;%$@#&*()[\]{}|\\/?<>"'`~!^=]/g, '');
+};
+
+// Función para filtrar teléfono en tiempo real
+const filterPhoneInput = (value: string): string => {
+  // Solo mantener números, espacios, guiones y +
+  return value.replace(/[^0-9\s\-+]/g, '');
+};
+
   // =====================
   // 2. LLAMADA A LA API
   // =====================
@@ -334,56 +423,6 @@ export default function SucursalesPage() {
     setCurrentPage(pageNumber);
   };
 
-  // Renderizar botones de paginación
-  const renderPaginationButtons = () => {
-    const buttons = [];
-    const maxButtonsToShow = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
-    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
-
-    if (endPage - startPage + 1 < maxButtonsToShow) {
-      startPage = Math.max(1, endPage - maxButtonsToShow + 1);
-    }
-
-    if (startPage > 1) {
-      buttons.push(
-        <button key="1" onClick={() => handlePageClick(1)} style={paginationButtonBaseStyle}>
-          1
-        </button>
-      );
-      if (startPage > 2) {
-        buttons.push(<span key="dots-start" style={paginationDotsStyle}>...</span>);
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      buttons.push(
-        <button
-          key={i}
-          onClick={() => handlePageClick(i)}
-          style={{
-            ...paginationButtonBaseStyle,
-            ...(currentPage === i ? paginationButtonActiveStyle : {}),
-          }}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        buttons.push(<span key="dots-end" style={paginationDotsStyle}>...</span>);
-      }
-      buttons.push(
-        <button key={totalPages} onClick={() => handlePageClick(totalPages)} style={paginationButtonBaseStyle}>
-          {totalPages}
-        </button>
-      );
-    }
-
-    return buttons;
-  };
 
   // Calcular ancho de búsqueda basado en el tamaño de la ventana
   const getSearchWidth = () => {
@@ -440,10 +479,19 @@ export default function SucursalesPage() {
     
     if (!filtersApplied) {
       Swal.fire({
-        title: 'Sin filtros',
-        text: 'No has seleccionado ningún filtro',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Sin filtros</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No has seleccionado ningún filtro
+          </div>
+        `,
         icon: 'info',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
@@ -456,14 +504,21 @@ export default function SucursalesPage() {
     
     // Mostrar mensaje de éxito con los filtros aplicados
     Swal.fire({
-      title: 'Filtros aplicados',
       html: `
-        ${tempCiudad ? `<p>Ciudad: ${tempCiudad}</p>` : ''}
-        ${tempComuna ? `<p>Comuna: ${tempComuna}</p>` : ''}
-        ${tempTipo ? `<p>Tipo: ${tempTipo}</p>` : ''}
+        <div style="${swalTituloCssString}">
+          ¡<b>Filtros aplicados</b>!
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          ${tempCiudad ? `<p>Ciudad: ${tempCiudad}</p>` : ''}
+          ${tempComuna ? `<p>Comuna: ${tempComuna}</p>` : ''}
+          ${tempTipo ? `<p>Tipo: ${tempTipo}</p>` : ''}
+        </div>
       `,
       icon: 'success',
-      confirmButtonColor: '#ff7300'
+      confirmButtonColor: '#ff7300',
+      timer: 5000,
+      timerProgressBar: true,
+      showCloseButton: true
     });
   };
 
@@ -529,18 +584,36 @@ export default function SucursalesPage() {
 
       setShowEditModal(false);
       Swal.fire({
-        title: 'Éxito',
-        text: 'Sucursal actualizada correctamente',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Éxito</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Sucursal actualizada correctamente
+          </div>
+        `,
         icon: 'success',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
     } catch (err) {
 
       Swal.fire({
-        title: 'Error',
-        text: `No se pudo actualizar la sucursal: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No se pudo actualizar la sucursal: ${err instanceof Error ? err.message : 'Error desconocido'}
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
     }
   };
@@ -552,20 +625,38 @@ export default function SucursalesPage() {
     // Validar límites antes de crear
     if (addFormData.tipo === '2' && sucursales >= 3) {
       Swal.fire({
-        title: 'Límite alcanzado',
-        text: 'Ya tienes el máximo de 3 sucursales permitidas.',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Límite alcanzado</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Ya tienes el máximo de 3 sucursales permitidas.
+          </div>
+        `,
         icon: 'warning',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
     
     if (addFormData.tipo === '1' && bodegas >= 3) {
       Swal.fire({
-        title: 'Límite alcanzado',
-        text: 'Ya tienes el máximo de 3 bodegas permitidas.',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Límite alcanzado</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Ya tienes el máximo de 3 bodegas permitidas.
+          </div>
+        `,
         icon: 'warning',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
@@ -573,50 +664,95 @@ export default function SucursalesPage() {
     // Validaciones
     if (!addFormData.nombre.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El nombre es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El nombre es requerido
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
 
     if (!addFormData.direccion.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'La dirección es requerida',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            La dirección es requerida
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
 
     if (!addFormData.telefono.trim()) {
       Swal.fire({
-        title: 'Error',
-        text: 'El teléfono es requerido',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            El teléfono es requerido
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
 
     if (!addFormData.ciudad) {
       Swal.fire({
-        title: 'Error',
-        text: 'La ciudad es requerida',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            La ciudad es requerida
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
 
     if (!addFormData.comuna) {
       Swal.fire({
-        title: 'Error',
-        text: 'La comuna es requerida',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            La comuna es requerida
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
@@ -657,18 +793,36 @@ export default function SucursalesPage() {
 
       setShowAddModal(false);
       Swal.fire({
-        title: 'Éxito',
-        text: 'Sucursal creada correctamente',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Éxito</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Sucursal creada correctamente
+          </div>
+        `,
         icon: 'success',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
     } catch (err) {
 
       Swal.fire({
-        title: 'Error',
-        text: `No se pudo crear la sucursal: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Error</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            No se pudo crear la sucursal: ${err instanceof Error ? err.message : 'Error desconocido'}
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
     }
   };
@@ -700,17 +854,18 @@ export default function SucursalesPage() {
     sucursal.nombre?.toLowerCase()?.includes('bodega')) ? 'bodega' : 'sucursal';
 
   Swal.fire({
-    title: 'ATENCIÓN: Eliminación Permanente',
-    html:
-      `<div style='text-align: left; margin: 1rem 0;'>
-        <p><strong>Al eliminar esta ${tipo}:</strong></p>
-        <ul style='margin: 0.5rem 0; padding-left: 1.5rem;'>
-          <li>Todos los productos asociados se eliminarán <strong>PERMANENTEMENTE</strong></li>
-          <li>Esta acción <strong>NO SE PUEDE DESHACER</strong></li>
-          <li>Se perderán todos los datos relacionados</li>
-        </ul>
-        <p style='color: #ef4444; font-weight: bold;'></p>
-      </div>`,
+
+    html: `
+      <div style="${swalTituloCssString}">
+        ¡<b>ATENCIÓN: Eliminación Permanente</b>!
+      </div>
+      <div style="${swalTextoConMargenCssString}">
+        ¿Estás seguro de eliminar la ${tipo} <b>${sucursal.nombre}</b>?
+      </div>
+      <div style="${swalTextoConMargenCssString}">
+        Esta acción eliminará permanentemente la ${tipo} y todos sus productos asociados.
+      </div>
+    `,
     icon: 'error',
     showCancelButton: true,
     confirmButtonColor: '#ef4444',
@@ -737,16 +892,36 @@ export default function SucursalesPage() {
 
         Swal.fire({
           title: 'Eliminado',
-          text: `La ${tipo} y todos sus productos asociados han sido eliminados permanentemente`,
+          html: `
+            <div style="${swalTituloCssString}">
+              ¡<b>Eliminado</b>!
+            </div>
+            <div style="${swalTextoConMargenCssString}">
+              La ${tipo} y todos sus productos asociados han sido eliminados permanentemente
+            </div>
+          `,
           icon: 'success',
-          confirmButtonColor: '#ff7300'
+          confirmButtonColor: '#ff7300',
+          timer: 5000,
+          timerProgressBar: true,
+          showCloseButton: true
         });
       } catch (err) {
         Swal.fire({
           title: 'Error',
-          text: `No se pudo eliminar la ${tipo}`,
+          html: `
+            <div style="${swalTituloCssString}">
+              ¡<b>Error</b>!
+            </div>
+            <div style="${swalTextoConMargenCssString}">
+              No se pudo eliminar la ${tipo}
+            </div>
+          `,
           icon: 'error',
-          confirmButtonColor: '#ff7300'
+          confirmButtonColor: '#ff7300',
+          timer: 5000,
+          timerProgressBar: true,
+          showCloseButton: true
         });
       }
     }
@@ -760,10 +935,19 @@ export default function SucursalesPage() {
     // Verificar si se puede agregar algo
     if (sucursales >= 3 && bodegas >= 3) {
       Swal.fire({
-        title: 'Límite alcanzado',
-        text: 'Ya tienes el máximo permitido de 3 sucursales y 3 bodegas.',
+        html: `
+          <div style="${swalTituloCssString}">
+            ¡<b>Límite alcanzado</b>!
+          </div>
+          <div style="${swalTextoConMargenCssString}">
+            Ya tienes el máximo permitido de 3 sucursales y 3 bodegas.
+          </div>
+        `,
         icon: 'warning',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
@@ -798,10 +982,19 @@ export default function SucursalesPage() {
     setTempTipo('');
     setCurrentPage(1);
     Swal.fire({
-      title: 'Filtros reiniciados',
-      text: 'Se han eliminado todos los filtros',
+      html: `
+        <div style="${swalTituloCssString}">
+          ¡<b>Filtros reiniciados</b>!
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          Se han eliminado todos los filtros
+        </div>
+      `,
       icon: 'info',
-      confirmButtonColor: '#ff7300'
+      confirmButtonColor: '#ff7300',
+      timer: 5000,
+      timerProgressBar: true,
+      showCloseButton: true
     });
   };
 
@@ -1133,37 +1326,73 @@ export default function SucursalesPage() {
           )}
         </div>
 
-        {!loading && !error && filteredData.length > 0 && (
-          <div style={{
-            ...paginationContainerStyle,
-            flexDirection: isMobile ? "column" : "row",
-            padding: "1rem",
-            marginTop: "1rem",
-            width: "100%",
-            boxSizing: "border-box"
-          }}>
+      </div>
+
+
+
+      {filteredData.length > 0 && (
+          <div style={paginationContainerStyle}>
             <div style={{
               ...paginationControlsStyle,
-              flexWrap: "wrap",
-              gap: isMobile ? "0.5rem" : "0.75rem"
+              flexDirection: isMobile ? "column" : "row",
+              gap: isMobile ? "1rem" : "1rem",
+              padding: isMobile ? "1rem" : "0.5rem 1rem"
             }}>
-              <button onClick={handlePrevPage} disabled={currentPage === 1} style={paginationButtonBaseStyle}>
-                Anterior
-              </button>
-              <div style={paginationButtonsWrapperStyle}>
-                {renderPaginationButtons()}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: isMobile ? "100%" : "auto",
+                gap: "1rem"
+              }}>
+                <button 
+                  onClick={handlePrevPage} 
+                  disabled={currentPage === 1} 
+                  style={{
+                    ...paginationButtonBaseStyle,
+                    ...(currentPage === 1 ? paginationButtonDisabledStyle : {}),
+                    flex: isMobile ? "1" : "none",
+                    minWidth: isMobile ? "auto" : "80px"
+                  }}
+                >
+                  Anterior
+                </button>
+                
+                <div style={{
+                  ...pageIndicatorStyle,
+                  margin: isMobile ? "0" : "0",
+                  flex: isMobile ? "0 0 auto" : "none"
+                }}>
+                  {currentPage} de {totalPages}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
+                </div>
+                
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    ...paginationButtonBaseStyle,
+                    ...(currentPage === totalPages ? paginationButtonDisabledStyle : {}),
+                    flex: isMobile ? "1" : "none",
+                    minWidth: isMobile ? "auto" : "80px"
+                  }}
+                >
+                  Siguiente
+                </button>
               </div>
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                style={paginationButtonBaseStyle}
-              >
-                Siguiente
-              </button>
+              
+              {totalPages > 1 && (
+                <div style={{
+                  ...paginationButtonsWrapperStyle,
+                  justifyContent: isMobile ? "center" : "flex-start",
+                  flexWrap: isMobile ? "wrap" : "nowrap",
+                  width: isMobile ? "100%" : "auto"
+                }}>
+                </div>
+              )}
             </div>
           </div>
         )}
-      </div>
 
       {/* Modal de Filtros */}
       {showFilterModal && (
@@ -1238,10 +1467,19 @@ export default function SucursalesPage() {
                   setSelectedTipo('');
                   setShowFilterModal(false);
                   Swal.fire({
-                    title: 'Filtros reiniciados',
-                    text: 'Se han eliminado todos los filtros',
+                    html: `
+                      <div style="${swalTituloCssString}">
+                        ¡<b>Filtros reiniciados</b>!
+                      </div>
+                      <div style="${swalTextoConMargenCssString}">
+                        Se han eliminado todos los filtros
+                      </div>
+                    `,
                     icon: 'info',
-                    confirmButtonColor: '#ff7300'
+                    confirmButtonColor: '#ff7300',
+                    timer: 5000,
+                    timerProgressBar: true,
+                    showCloseButton: true
                   });
                 }} 
                 style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
@@ -1291,11 +1529,20 @@ export default function SucursalesPage() {
               if (!validation.isValid) {
                 Swal.fire({
                   title: 'Caracteres no permitidos',
-                  text: validation.message,
+                  html: `
+                    <div style="${swalTituloCssString}">
+                      ¡<b>Error</b>!
+                    </div>
+                    <div style="${swalTextoConMargenCssString}">
+                      ${validation.message}
+                    </div>
+                  `,
+
                   icon: 'warning',
                   confirmButtonColor: '#ff7300',
-                  timer: 3000,
-                  timerProgressBar: true
+                  timer: 5000,
+                  timerProgressBar: true,
+                  showCloseButton: true
                 });
               }
 
@@ -1318,11 +1565,19 @@ export default function SucursalesPage() {
               if (!validation.isValid) {
                 Swal.fire({
                   title: 'Caracteres no permitidos',
-                  text: validation.message,
+                  html: `
+                    <div style="${swalTituloCssString}">
+                      ¡<b>Error</b>!
+                    </div>
+                    <div style="${swalTextoConMargenCssString}">
+                      ${validation.message}
+                    </div>
+                  `,
                   icon: 'warning',
                   confirmButtonColor: '#ff7300',
-                  timer: 3000,
-                  timerProgressBar: true
+                  timer: 5000,
+                  timerProgressBar: true,
+                  showCloseButton: true
                 });
               }
 
@@ -1344,12 +1599,19 @@ export default function SucursalesPage() {
 
               if (!validation.isValid) {
                 Swal.fire({
-                  title: 'Formato de teléfono inválido',
-                  text: validation.message,
+                  html: `
+                    <div style="${swalTituloCssString}">
+                      ¡<b>Error</b>!
+                    </div>
+                    <div style="${swalTextoConMargenCssString}">
+                      ${validation.message}
+                    </div>
+                  `,
                   icon: 'warning',
                   confirmButtonColor: '#ff7300',
-                  timer: 3000,
-                  timerProgressBar: true
+                  timer: 5000,
+                  timerProgressBar: true,
+                  showCloseButton: true
                 });
               }
 
@@ -1426,10 +1688,19 @@ export default function SucursalesPage() {
           onClick={() => {
             if (!editFormData.tipo) {
               Swal.fire({
-                title: 'Tipo de sucursal obligatorio',
-                text: 'Debes seleccionar Bodega o Sucursal',
+                html: `
+                  <div style="${swalTituloCssString}">
+                    ¡<b>Tipo de sucursal obligatorio</b>!
+                  </div>
+                  <div style="${swalTextoConMargenCssString}">
+                    Debes seleccionar Bodega o Sucursal
+                  </div>
+                `,
                 icon: 'warning',
                 confirmButtonColor: '#ff7300',
+                timer: 5000,
+                timerProgressBar: true,
+                showCloseButton: true
               });
               return;
             }
@@ -1834,16 +2105,6 @@ const paginationButtonBaseStyle: React.CSSProperties = {
   alignItems: 'center',
 };
 
-const paginationDotsStyle: React.CSSProperties = {
-  color: '#5c5c5c',
-  fontSize: '1rem',
-  fontFamily: 'Montserrat, sans-serif',
-};
-
-const paginationButtonActiveStyle: React.CSSProperties = {
-  backgroundColor: '#5c5c5c',
-  color: '#fff',
-};
 
 const modalOverlayStyle: React.CSSProperties = {
   position: 'fixed',
@@ -1935,49 +2196,29 @@ const closeButtonStyle: React.CSSProperties = {
   justifyContent: 'center',
 };
 
-// =====================
-// 2. FUNCIONES DE VALIDACIÓN
-// =====================
-
-// Función para validar nombre y dirección (sin caracteres especiales)
-const validateTextInput = (value: string): { isValid: boolean; message: string } => {
-  // Caracteres prohibidos: ; % $ @ # & * ( ) [ ] { } | \ / ? < > " ' ` ~ ! ^ = 
-  const forbiddenChars = /[;%$@#&*()[\]{}|\\/?<>"'`~!^=]/;
-  
-  if (forbiddenChars.test(value)) {
-    const foundChars = value.match(forbiddenChars);
-    return {
-      isValid: false,
-      message: `Caracteres no permitidos encontrados: ${foundChars?.join(', ')}`
-    };
-  }
-  
-  return { isValid: true, message: '' };
+const paginationButtonDisabledStyle: React.CSSProperties = {
+  backgroundColor: '#d1d5db',
+  color: '#9ca3af',
+  cursor: 'not-allowed',
+  opacity: 0.6
 };
 
-// Función para validar teléfono (solo números, espacios, guiones y +)
-const validatePhoneInput = (value: string): { isValid: boolean; message: string } => {
-  // Solo permitir números, espacios, guiones y el símbolo +
-  const validChars = /^[0-9\s\-+]*$/;
-  
-  if (!validChars.test(value)) {
-    return {
-      isValid: false,
-      message: 'Solo se permiten números, espacios, guiones (-) y el símbolo +'
-    };
-  }
-  
-  return { isValid: true, message: '' };
+const pageIndicatorStyle: React.CSSProperties = {
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  color: '#f7f7f7',
+  fontFamily: 'Montserrat, sans-serif',
+  display: 'flex',
+  alignItems: 'center',
+  padding: '0 1rem',
+  backgroundColor: '#5c5c5c',
+  borderRadius: '6px',
+  border: '1px solid #e5e7eb',
+  minWidth: 'fit-content',
+  whiteSpace: 'nowrap',
+  paddingTop: '0.5rem',
+  paddingBottom: '0.5rem',
 };
 
-// Función para filtrar caracteres en tiempo real
-const filterTextInput = (value: string): string => {
-  // Remover caracteres prohibidos automáticamente
-  return value.replace(/[;%$@#&*()[\]{}|\\/?<>"'`~!^=]/g, '');
-};
 
-// Función para filtrar teléfono en tiempo real
-const filterPhoneInput = (value: string): string => {
-  // Solo mantener números, espacios, guiones y +
-  return value.replace(/[^0-9\s\-+]/g, '');
-};
+

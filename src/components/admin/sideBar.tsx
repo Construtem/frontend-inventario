@@ -41,12 +41,7 @@ const Sidebar: FC<SidebarProps> = ({ isOpen }) => {
     setBodegaAbierta(false);
     setProveedorAbierto(false);
   };
-
-  const toggleBodegas = () => {
-    closeAllMenus();
-    setBodegaAbierta(!bodegaAbierta);
-  };
-
+  
   const toggleProveedores = () => {
     closeAllMenus();
     setProveedorAbierto(!proveedoresAbierto);
