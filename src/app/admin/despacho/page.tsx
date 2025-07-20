@@ -565,7 +565,6 @@ export default function DespachoPage() {
                 }} />
                 <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando despachos...</div>
                 <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
-                  Conectando con el servidor...
                 </div>
                 <style>
                   {`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}

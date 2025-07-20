@@ -241,6 +241,8 @@ export default function InventarioProveedoresPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
+                                            maxLength={70}
+
               />
               <button style={lupaButtonStyle}>
                 <Image

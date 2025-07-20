@@ -7,6 +7,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import Swal from 'sweetalert2';
 import Image from "next/image";
 import { useSearchParams, useRouter } from 'next/navigation';
+import { FaArrowLeft } from "react-icons/fa";
 
 
 import filtrosImg from "@/styles/images/filtros.png";
@@ -1067,6 +1068,16 @@ export default function SucursalSlot1Page() {
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
+                    <button
+                      onClick={() => router.push('/admin/inventario')}
+                      style={backButtonStyle}
+                      title="Volver a Despachos"
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#e65a00')}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#ff7300')}
+                    >
+                      <FaArrowLeft />
+                      Volver
+                    </button>
         <h1 style={{...titleStyle,
           fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
           marginBottom: "1.5rem"}}>
@@ -1107,7 +1118,7 @@ export default function SucursalSlot1Page() {
                   setSearchTerm(valor);
                 }
               }}
-              maxLength={100}
+              maxLength={70}
               style={{
                 ...inputStyle,
                 fontSize: isMobile ? "0.875rem" : "1rem"
@@ -1896,4 +1907,21 @@ const pageIndicatorStyle: React.CSSProperties = {
   whiteSpace: 'nowrap',
   paddingTop: '0.5rem',
   paddingBottom: '0.5rem',
+};
+const backButtonStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "0.5rem",
+  backgroundColor: "#ff7300",
+  color: "white",
+  border: "none",
+  padding: "0.75rem 1.5rem",
+  borderRadius: "8px",
+  cursor: "pointer",
+  fontSize: "0.875rem",
+  fontWeight: "600",
+  fontFamily: "Montserrat, sans-serif",
+  transition: "all 0.2s ease",
+  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+  alignSelf: "flex-start",
 };

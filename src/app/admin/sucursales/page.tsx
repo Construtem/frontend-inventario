@@ -23,6 +23,44 @@ interface Sucursal {
   tipo_id?: number; 
 }
 
+
+
+const validatePhoneInput = (value: string): { isValid: boolean; message: string } => {
+  const validChars = /^[0-9\s\-+]*$/;
+
+  if (!validChars.test(value)) {
+    return {
+      isValid: false,
+      message: 'Solo se permiten números, espacios, guiones (-) y el símbolo +'
+    };
+  }
+
+  return { isValid: true, message: '' };
+};
+
+
+
+const formatPhoneChileno = (numero: string): string => {
+  if (!numero) return '';
+
+  // Eliminar caracteres no numéricos
+  let clean = numero.replace(/\D/g, '');
+
+  // Limitar a 9 dígitos
+  clean = clean.slice(0, 9);
+
+  // Formatear como +56 9 XXXX XXXX
+  let formateado = '+56 9 ';
+  if (clean.length > 4) {
+    formateado += clean.slice(0, 4) + ' ' + clean.slice(4);
+  } else {
+    formateado += clean;
+  }
+
+  return formateado;
+};
+
+
 const maxPorTipo = 3;
 const totalBodegas = 3; // Cambia por el conteo real
 const totalSucursales = 3; // Cambia por el conteo real
@@ -892,14 +930,6 @@ const filterPhoneInput = (value: string): string => {
 
         Swal.fire({
           title: 'Eliminado',
-          html: `
-            <div style="${swalTituloCssString}">
-              ¡<b>Eliminado</b>!
-            </div>
-            <div style="${swalTextoConMargenCssString}">
-              La ${tipo} y todos sus productos asociados han sido eliminados permanentemente
-            </div>
-          `,
           icon: 'success',
           confirmButtonColor: '#ff7300',
           timer: 5000,
@@ -1038,6 +1068,7 @@ const filterPhoneInput = (value: string): string => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
+                maxLength={70}
               />
               <button style={lupaButtonStyle}>
                 <Image
@@ -1588,39 +1619,44 @@ const filterPhoneInput = (value: string): string => {
           />
         </div>
 
-        <div style={selectGroupStyle}>
-          <label style={labelStyle}>Teléfono</label>
-          <input
-            type="text"
-            value={editFormData.telefono || ''}
-            onChange={(e) => {
-              const filteredValue = filterPhoneInput(e.target.value);
-              const validation = validatePhoneInput(filteredValue);
+{/* Teléfono de la Sucursal */}
+<div style={selectGroupStyle}>
+  <label style={labelStyle}>Celular</label>
+  <input
+    type="tel"
+    value={editFormData.telefono || '+56 9 '}
+    maxLength={15}
+    onChange={(e) => {
+      let valor = e.target.value;
 
-              if (!validation.isValid) {
-                Swal.fire({
-                  html: `
-                    <div style="${swalTituloCssString}">
-                      ¡<b>Error</b>!
-                    </div>
-                    <div style="${swalTextoConMargenCssString}">
-                      ${validation.message}
-                    </div>
-                  `,
-                  icon: 'warning',
-                  confirmButtonColor: '#ff7300',
-                  timer: 5000,
-                  timerProgressBar: true,
-                  showCloseButton: true
-                });
-              }
+      // Mantener prefijo +56 9 y solo números después
+      if (!valor.startsWith('+56 9 ')) {
+        // Si borra el prefijo, resetearlo
+        valor = '+56 9 ';
+      }
 
-              setEditFormData({ ...editFormData, telefono: filteredValue });
-            }}
-            style={inputStyle}
-            placeholder="Ej: +56912345678"
-          />
-        </div>
+      // Extraer solo números después del prefijo
+      let numeros = valor.replace('+56 9 ', '').replace(/\D/g, '');
+
+      // Limitar a máximo 8 dígitos (4 + 4)
+      if (numeros.length > 8) {
+        numeros = numeros.slice(0, 8);
+      }
+
+      // Formatear como +56 9 XXXX XXXX
+      let formateado = '+56 9 ';
+      if (numeros.length > 4) {
+        formateado += numeros.slice(0, 4) + ' ' + numeros.slice(4);
+      } else {
+        formateado += numeros;
+      }
+
+      setEditFormData({ ...editFormData, telefono: formateado });
+    }}
+    style={selectStyle}
+    placeholder="+56 9 1234 5678"
+  />
+</div>
 
         <div style={selectGroupStyle}>
           <label style={labelStyle}>Ciudad</label>
@@ -1654,25 +1690,6 @@ const filterPhoneInput = (value: string): string => {
             {editFormData.ciudad && COMUNAS_POR_CIUDAD[editFormData.ciudad]?.map(comuna => (
               <option key={comuna} value={comuna}>{comuna}</option>
             ))}
-          </select>
-        </div>
-
-        <div style={selectGroupStyle}>
-          <label style={labelStyle}>Tipo de Sucursal</label>
-          <select
-            value={editFormData.tipo || ''}
-            onChange={(e) => {
-              setEditFormData({ ...editFormData, tipo: e.target.value });
-            }}
-            style={selectStyle}
-            disabled={
-              (editFormData.tipo === 'Bodega' && totalBodegas >= maxPorTipo) ||
-              (editFormData.tipo === 'Sucursal' && totalSucursales >= maxPorTipo)
-            }
-          >
-            <option value="">Seleccionar tipo</option>
-            <option value="Bodega" disabled={totalBodegas >= maxPorTipo}>Bodega</option>
-            <option value="Sucursal" disabled={totalSucursales >= maxPorTipo}>Sucursal</option>
           </select>
         </div>
       </div>
@@ -1802,14 +1819,41 @@ const filterPhoneInput = (value: string): string => {
                 />
               </div>
 
+              {/* Teléfono de la Sucursal - Agregar */}
               <div style={selectGroupStyle}>
-                <label style={labelStyle}>Teléfono</label>
+                <label style={labelStyle}>Celular</label>
                 <input
-                  type="text"
-                  value={addFormData.telefono}
-                  onChange={(e) => setAddFormData({...addFormData, telefono: e.target.value})}
+                  type="tel"
+                  value={addFormData.telefono || '+56 9 '}
+                  maxLength={15}
+                  onChange={(e) => {
+                    let valor = e.target.value;
+
+                    // Mantener prefijo +56 9 y solo números después
+                    if (!valor.startsWith('+56 9 ')) {
+                      valor = '+56 9 ';
+                    }
+
+                    // Extraer solo números después del prefijo
+                    let numeros = valor.replace('+56 9 ', '').replace(/\D/g, '');
+
+                    // Limitar a máximo 8 dígitos (4 + 4)
+                    if (numeros.length > 8) {
+                      numeros = numeros.slice(0, 8);
+                    }
+
+                    // Formatear como +56 9 XXXX XXXX
+                    let formateado = '+56 9 ';
+                    if (numeros.length > 4) {
+                      formateado += numeros.slice(0, 4) + ' ' + numeros.slice(4);
+                    } else {
+                      formateado += numeros;
+                    }
+
+                    setAddFormData({ ...addFormData, telefono: formateado });
+                  }}
                   style={inputStyle}
-                  placeholder="Ej: +56 9 1234 5678"
+                  placeholder="+56 9 1234 5678"
                 />
               </div>
 
@@ -2219,6 +2263,5 @@ const pageIndicatorStyle: React.CSSProperties = {
   paddingTop: '0.5rem',
   paddingBottom: '0.5rem',
 };
-
 
 
