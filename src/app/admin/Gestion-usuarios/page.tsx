@@ -81,6 +81,45 @@ const sortUsuarios = (data: Usuario[]) => {
   });
 };
 
+// ===================== SWEET ALERT2 ESTILOS =====================
+
+// Función auxiliar para convertir un objeto JS de estilos a una cadena CSS en línea
+function objToInlineCss(styleObj: React.CSSProperties): string {
+  return Object.entries(styleObj)
+    .map(([key, value]) => {
+      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      return `${cssKey}: ${value};`;
+    })
+    .join(' ');
+}
+
+// DEFINICIONES DE ESTILOS PARA SWEETALERT2
+
+const estiloSwalTituloObj: React.CSSProperties = {
+  fontFamily: "'Montserrat', sans-serif",
+  fontSize: '1.5rem',
+  fontWeight: '600',
+  color: '#222'
+};
+
+const estiloSwalTextoObj: React.CSSProperties = {
+  fontFamily: "'Roboto', sans-serif",
+  fontSize: '1rem',
+  fontWeight: '400',
+  color: '#333'
+};
+
+const estiloSwalTextoConMargenObj: React.CSSProperties = {
+  ...estiloSwalTextoObj,
+  marginTop: '10px'
+};
+
+
+const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
+const swalTextoCssString = objToInlineCss(estiloSwalTextoObj);
+const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
+
+
 // =====================
 // 3. FUNCIONES DE VALIDACIÓN
 // =====================
@@ -226,7 +265,7 @@ export default function GestionUsuariosPage() {
     };
 
     fetchUsuarios();
-  }, [apiInventarioUrl]);
+  }, []);
 
   // Función para reintentar la carga de datos
   const retryFetch = () => {
@@ -411,10 +450,17 @@ export default function GestionUsuariosPage() {
     
     if (!filtersApplied) {
       Swal.fire({
-        title: 'Sin filtros',
-        text: 'No has seleccionado ningún filtro',
+        html: `
+          <div>
+            <p style="${swalTituloCssString}">No has seleccionado ningún filtro.</p>
+            <p style="${swalTextoConMargenCssString}">Por favor, selecciona al menos un filtro para continuar.</p>
+          </div>
+        `,
         icon: 'info',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
       });
       return;
     }
@@ -426,13 +472,20 @@ export default function GestionUsuariosPage() {
     
     // Mostrar mensaje de éxito con los filtros aplicados
     Swal.fire({
-      title: 'Filtros aplicados',
       html: `
-        ${tempRol ? `<p>Rol: ${tempRol}</p>` : ''}
-        ${tempEstado ? `<p>Estado: ${tempEstado}</p>` : ''}
+        <div>
+          <h2 style="${swalTituloCssString}">Filtros aplicados</h2>
+          <p style="${swalTextoConMargenCssString}">Se han aplicado los siguientes filtros:</p>
+          ${tempRol ? `<p style="${swalTextoConMargenCssString}">Rol: ${tempRol}</p>` : ''}
+        ${tempEstado ? `<p style="${swalTextoConMargenCssString}">Estado: ${tempEstado}</p>` : ''}
+        </div>
+
       `,
       icon: 'success',
-      confirmButtonColor: '#ff7300'
+      confirmButtonColor: '#ff7300',
+      showCloseButton: true,
+      timer: 5000,
+      timerProgressBar: true
     });
   };
 
@@ -475,10 +528,17 @@ export default function GestionUsuariosPage() {
     const nombreValidation = validateNombre(editFormData.nombre);
     if (!nombreValidation.isValid) {
       Swal.fire({
-        title: 'Error de validación',
-        text: nombreValidation.error,
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Error de validación</h2>
+            <p style="${swalTextoConMargenCssString}">${nombreValidation.error}</p>
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
       });
       return;
     }
@@ -487,10 +547,17 @@ export default function GestionUsuariosPage() {
     const emailValidation = validateEmail(editFormData.email);
     if (!emailValidation.isValid) {
       Swal.fire({
-        title: 'Error de validación',
-        text: emailValidation.error,
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Error de validación</h2>
+            <p style="${swalTextoConMargenCssString}">${emailValidation.error}</p>
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
       });
       return;
     }
@@ -564,10 +631,18 @@ setUsuariosData(prevData => {
 setShowEditModal(false);
 setOriginalEmail(''); // Limpiar el email original
 Swal.fire({
-  title: 'Éxito',
-  text: 'Usuario actualizado correctamente',
   icon: 'success',
-  confirmButtonColor: '#ff7300'
+  html: `
+    <div>
+      <h2 style="${swalTituloCssString}">¡Éxito!</h2>
+      <p style="${swalTextoConMargenCssString}">Usuario actualizado correctamente</p>
+    </div>
+  `,
+  confirmButtonColor: '#ff7300',
+  showConfirmButton: true,
+  showCloseButton: true,
+  timer: 5000,
+  timerProgressBar: true
 });
 
     } catch (err) {
@@ -586,10 +661,18 @@ Swal.fire({
       }
       
       Swal.fire({
-        title: 'Error',
-        text: errorMessage,
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Error</h2>
+            <p style="${swalTextoConMargenCssString}">${errorMessage}</p>
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
+        
       });
     }
   };
@@ -600,10 +683,17 @@ Swal.fire({
     const nombreValidation = validateNombre(addFormData.nombre);
     if (!nombreValidation.isValid) {
       Swal.fire({
-        title: 'Error de validación',
-        text: nombreValidation.error,
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Error de validación</h2>
+            <p style="${swalTextoConMargenCssString}">${nombreValidation.error}</p>
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,  
+        timerProgressBar: true
       });
       return;
     }
@@ -612,10 +702,17 @@ Swal.fire({
     const emailValidation = validateEmail(addFormData.email);
     if (!emailValidation.isValid) {
       Swal.fire({
-        title: 'Error de validación',
-        text: emailValidation.error,
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Error de validación</h2>
+            <p style="${swalTextoConMargenCssString}">${emailValidation.error}</p>
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
       });
       return;
     }
@@ -666,10 +763,17 @@ Swal.fire({
       });
       
       Swal.fire({
-        title: 'Éxito',
-        text: 'Usuario creado correctamente',
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Éxito</h2>
+            <p style="${swalTextoConMargenCssString}">Usuario creado correctamente</p>
+          </div>
+        `,
         icon: 'success',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
       });
     } catch (err) {
       console.error('Error completo:', err);
@@ -687,10 +791,17 @@ Swal.fire({
       }
       
       Swal.fire({
-        title: 'Error',
-        text: errorMessage,
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Error</h2>
+            <p style="${swalTextoConMargenCssString}">${errorMessage}</p>
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
       });
     }
   };
@@ -768,10 +879,16 @@ Swal.fire({
         });
 
         Swal.fire({
-          title: 'Eliminado',
-          text: `El usuario "${usuario.nombre}" ha sido eliminado permanentemente`,
+          html: `
+            <div style="text-align: left;">
+              <p><strong>El usuario "${usuario.nombre}" ha sido eliminado permanentemente.</strong></p>
+            </div>
+          `,
           icon: 'success',
-          confirmButtonColor: '#ff7300'
+          confirmButtonColor: '#ff7300',
+          showCloseButton: true,
+          timer: 5000,
+          timerProgressBar: true
         });
       } catch (err) {
         console.error('Error al eliminar usuario:', err);
@@ -789,15 +906,52 @@ Swal.fire({
         }
 
         Swal.fire({
-          title: 'Error',
-          text: errorMessage,
+          html: `
+            <div>
+              <h2 style="${swalTituloCssString}">Error al eliminar</h2>
+              <p style="${swalTextoConMargenCssString}">${errorMessage}</p>
+            </div>
+          `,
           icon: 'error',
-          confirmButtonColor: '#ff7300'
+          confirmButtonColor: '#ff7300',
+          showCloseButton: true,
+          timer: 5000,
+          timerProgressBar: true
         });
       }
     }
   });
 };
+
+
+    const handleFiltersUsuarios = () => {
+
+    setShowFilterModal(true);
+  };
+
+
+    // Agregar función para limpiar filtros desde la barra de herramientas
+  const handleClearFilters = () => {
+    setSelectedRol('');
+    setSelectedEstado('');
+    setTempRol('');
+    setTempEstado('');
+    setShowFilterModal(false);
+    setCurrentPage(1);
+    Swal.fire({
+      html: `
+        <div>
+          <h2 style="${swalTituloCssString}">Filtros reiniciados</h2>
+          <p style="${swalTextoConMargenCssString}">Se han eliminado todos los filtros</p>
+        </div>
+      `,
+      icon: 'info',
+      confirmButtonColor: '#ff7300',
+      showCloseButton: true,
+      timer: 5000,
+      timerProgressBar: true
+    });
+  };
 
   // Agregar función para limpiar filtros desde la barra de herramientas
   const handleClearFiltersFromToolbar = () => {
@@ -807,10 +961,17 @@ Swal.fire({
     setTempEstado('');
     setCurrentPage(1);
     Swal.fire({
-      title: 'Filtros reiniciados',
-      text: 'Se han eliminado todos los filtros',
+      html: `
+        <div>
+          <h2 style="${swalTituloCssString}">Filtros reiniciados</h2>
+          <p style="${swalTextoConMargenCssString}">Se han eliminado todos los filtros</p>
+        </div>
+      `,
       icon: 'info',
-      confirmButtonColor: '#ff7300'
+      confirmButtonColor: '#ff7300',
+      showCloseButton: true,
+      timer: 5000,
+      timerProgressBar: true
     });
   };
 
@@ -852,9 +1013,14 @@ Swal.fire({
                 type="text"
                 placeholder="Buscar por Nombre, Email o Rol..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                maxLength={50}
+                onChange={(e) => {
+                  const valor = e.target.value;
+                  if (valor === '' || /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s@]*$/.test(valor)) {
+                    setSearchTerm(valor);
+                  }
+                }}
                 style={inputStyle}
-                maxLength={70}
               />
               <button style={lupaButtonStyle}>
                 <Image
@@ -868,52 +1034,57 @@ Swal.fire({
             </div>
             
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button 
-                style={{
-                  ...filterButtonStyle,
+             {!hasActiveFilters ? (
+                <button style={{
+                  ...filterButtonStyle, 
+                  ...entirePieceFilterButtonStyle,
                   width: isMobile ? "100%" : "auto",
                   fontSize: isMobile ? "0.875rem" : "1rem",
                   padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
-                  backgroundColor: hasActiveFilters ? '#ff7300' : '#5c5c5c',
-                  position: 'relative'
-                }}
-                onClick={() => setShowFilterModal(true)}
-              >
-                <Image
-                  src={filtrosImg.src}
-                  alt="Filtros"
-                  width={20}
-                  height={20}
-                  style={filterIconStyle}
-                />
-                Filtros
-                {hasActiveFilters && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '-5px',
-                    right: '-5px',
-                    width: '10px',
-                    height: '10px',
-                    backgroundColor: '#10b981',
-                    borderRadius: '50%',
-                    border: '2px solid white'
-                  }} />
-                )}
-              </button>
-
-              {hasActiveFilters && (
-                <button 
-                  onClick={handleClearFiltersFromToolbar}
-                  style={{
+                  }}
+                  onClick={handleFiltersUsuarios}>
+                    <Image
+                      src={filtrosImg.src}
+                      alt="Filtros"
+                      width={20}
+                      height={20}
+                      style={filterIconStyle}
+                    />
+                    Filtros
+                  </button>
+                ) : (
+                <div style={{ display: 'flex' }}>
+                  <button style={{
                     ...filterButtonStyle,
-                    backgroundColor: '#ef4444',
-                    width: isMobile ? "100%" : "auto",
+                    ...firstPieceFilterButtonStyle,
+                    width: isMobile ? "calc(100% - 80px)" : "auto",
                     fontSize: isMobile ? "0.875rem" : "1rem",
                     padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
-                  }}
-                >
-                  Limpiar
-                </button>
+                  }} onClick={handleFiltersUsuarios}>
+                    <Image
+                      src={filtrosImg.src}
+                      alt="Filtros"
+                      width={20}
+                      height={20}
+                      style={filterIconStyle}
+                    />
+                    Filtros
+                  </button>
+                  <button
+                    onClick={handleClearFiltersFromToolbar}
+                    style={{
+                      ...filterButtonStyle,
+                      ...secondPieceFilterButtonStyle,
+                      width: isMobile ? "80px" : "auto",
+                      fontSize: isMobile ? "0.75rem" : "0.875rem",
+                      padding: isMobile ? "0.75rem 0.5rem" : "0.5rem 1rem",
+                    }}
+                    title="Limpiar Filtros"
+                  >
+                    <span style={xClosebuttonStyle}>×</span>
+                    {!isMobile && 'Limpiar'}
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -1063,9 +1234,12 @@ Swal.fire({
                   )}
                 </tbody>
               </table>
+            </>
+          )}
+        </div>
+      </div>
 
           {usuariosData.length > 0 && (
-          <div style={paginationContainerStyle}>
             <div style={{
               ...paginationControlsStyle,
               flexDirection: isMobile ? "column" : "row",
@@ -1098,7 +1272,7 @@ Swal.fire({
                   flex: isMobile ? "0 0 auto" : "none"
                 }}>
                   {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>página(s)</span>}
                 </div>
                 
                 <button
@@ -1125,20 +1299,16 @@ Swal.fire({
                 </div>
               )}
             </div>
-          </div>
+
         )}
-            </>
-          )}
-        </div>
-      </div>
 
       {/* Modal de filtros */}
       {showFilterModal && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <h2 style={modalTitleStyle}>Filtrar Usuarios</h2>
-              <button onClick={() => setShowFilterModal(false)} style={closeButtonStyle}>
+                <button onClick={() => setShowFilterModal(false)} style={closeButtonStyle}>
                 ×
               </button>
             </div>
@@ -1157,27 +1327,12 @@ Swal.fire({
                   ))}
                 </select>
               </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Estado</label>
-                <select 
-                  value={tempEstado}
-                  onChange={(e) => setTempEstado(e.target.value)}
-                  style={selectStyle}
-                >
-                  <option value="">Todos los estados</option>
-                  {ESTADOS.map(estado => (
-                    <option key={estado} value={estado}>{estado}</option>
-                  ))}
-                </select>
-              </div>
             </div>
 
             <div style={modalButtonsStyle}>
               <button 
                 onClick={() => {
-                  setTempRol('');
-                  setTempEstado('');
+                  handleClearFilters();
                 }}
                 style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
               >
@@ -1219,7 +1374,7 @@ Swal.fire({
                     }
                   }}
                   style={inputStyle}
-                  placeholder="Ej: Juan Pérez"
+                  placeholder="Edita tu nombre"
                   maxLength={50}
                 />
               </div>
@@ -1233,15 +1388,21 @@ Swal.fire({
                   readOnly
                   onClick={() => {
                     Swal.fire({
-                      title: 'No se puede editar el email',
-                      text: 'El email es el identificador único y no puede ser modificado.',
+                      html: `
+                        <div>
+                          <h2 style="${swalTituloCssString}">No se puede editar el email</h2>
+                          <p style="${swalTextoConMargenCssString}">El email es el identificador único y no puede ser modificado.</p>
+                        </div>
+                      `,
                       icon: 'info',
                       confirmButtonColor: '#ff7300',
-                      showCloseButton: true
+                      showCloseButton: true,
+                      timer: 5000,
+                      timerProgressBar: true
                     });
                   }}
                   style={{ ...inputStyle, backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
-                  placeholder="Ej: juan@empresa.com"
+                  placeholder="Edita tu correo electrónico"
                   maxLength={100}
                 />
               </div>
@@ -1303,7 +1464,7 @@ Swal.fire({
                     }
                   }}
                   style={inputStyle}
-                  placeholder="Ej: Juan Pérez"
+                  placeholder="Agrega tu nombre"
                   maxLength={50}
                 />
               </div>
@@ -1321,7 +1482,7 @@ Swal.fire({
                     }
                   }}
                   style={inputStyle}
-                  placeholder="Ej: juan@empresa.com"
+                  placeholder="Agrega tu correo electrónico"
                   maxLength={100}
                 />
               </div>
@@ -1548,21 +1709,11 @@ const searchIconStyle: React.CSSProperties = {
   height: '30px',
 };
 
-const paginationContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-  marginTop: '2rem',
-  padding: '1rem',
-  backgroundColor: '#f3f4f6',
-  borderRadius: '10px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-};
-
 const paginationControlsStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '1rem',
+  marginTop: '1rem',
   backgroundColor: '#fff',
   borderRadius: '8px',
   padding: '0.5rem 1rem',
@@ -1592,16 +1743,6 @@ const paginationButtonBaseStyle: React.CSSProperties = {
   alignItems: 'center',
 };
 
-const paginationDotsStyle: React.CSSProperties = {
-  color: '#5c5c5c',
-  fontSize: '1rem',
-  fontFamily: 'Montserrat, sans-serif',
-};
-
-const paginationButtonActiveStyle: React.CSSProperties = {
-  backgroundColor: '#5c5c5c',
-  color: '#fff',
-};
 
 const modalOverlayStyle: React.CSSProperties = {
   position: 'fixed',
@@ -1623,15 +1764,14 @@ const modalContentStyle: React.CSSProperties = {
   width: '90%',
   maxWidth: '500px',
   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-  maxHeight: '90vh',
-  overflowY: 'auto',
 };
 
 const modalTitleStyle: React.CSSProperties = {
   color: '#374151',
   fontSize: '1.5rem',
   fontWeight: 'bold',
-  marginBottom: '1.5rem',
+  marginBottom: '3rem',
+  marginTop: '0',
   textAlign: 'center',
   fontFamily: 'Montserrat, sans-serif',
 };
@@ -1652,6 +1792,7 @@ const labelStyle: React.CSSProperties = {
   color: '#374151',
   fontSize: '0.875rem',
   fontWeight: '500',
+  fontFamily: 'Montserrat, sans-serif',
 };
 
 const selectStyle: React.CSSProperties = {
@@ -1685,13 +1826,14 @@ const closeButtonStyle: React.CSSProperties = {
   border: 'none',
   fontSize: '1.5rem',
   cursor: 'pointer',
-  padding: '0.5rem',
   color: '#6b7280',
   transition: 'color 0.2s ease',
   borderRadius: '4px',
   width: '2rem',
   height: '2rem',
   display: 'flex',
+  marginBottom: '3.5rem',
+  marginTop: '0',
   alignItems: 'center',
   justifyContent: 'center',
 };
@@ -1718,4 +1860,37 @@ const pageIndicatorStyle: React.CSSProperties = {
   whiteSpace: 'nowrap',
   paddingTop: '0.5rem',
   paddingBottom: '0.5rem',
+};
+
+const entirePieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#5c5c5c',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
+};
+
+const firstPieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  borderTopRightRadius: '0',
+  borderBottomRightRadius: '0',
+  borderRight: '1px solid rgba(255, 255, 255, 0.3)',
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
+};
+
+const secondPieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ef4444',
+  borderTopLeftRadius: '0',
+  borderBottomLeftRadius: '0',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.25rem'
+};
+
+const xClosebuttonStyle: React.CSSProperties = {
+  fontSize: '1rem',
+  lineHeight: '1' 
 };

@@ -547,7 +547,8 @@ const [addFormData, setAddFormData] = useState({
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
+      showCloseButton: true
     });
 
     if (result.isConfirmed) {
@@ -980,40 +981,71 @@ const [addFormData, setAddFormData] = useState({
             </tbody>
           </table>
         </div>
-
-        {filteredData.length > 0 && (
-          <div style={{
-            ...paginationContainerStyle,
-            flexDirection: isMobile ? "column" : "row",
-            padding: "1rem",
-            marginTop: "1rem",
-            width: "100%",
-            boxSizing: "border-box"
-          }}>
-            <div style={{
-              ...paginationControlsStyle,
-              flexWrap: "wrap",
-              gap: isMobile ? "0.5rem" : "0.75rem"
-            }}>
-              <button onClick={handlePrevPage} disabled={currentPage === 1} style={paginationButtonBaseStyle}>
-                Anterior
-              </button>
-              <div style={paginationButtonsWrapperStyle}>
-                {renderPaginationButtons()}
-              </div>
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
-              >
-                Siguiente
-              </button>
-            </div>
-            
-          </div>
-        )}
       </div>
 
+
+      
+          {filteredData.length > 0 && (
+            <div style={{
+              ...paginationControlsStyle,
+              flexDirection: isMobile ? "column" : "row",
+              gap: isMobile ? "1rem" : "1rem",
+              padding: isMobile ? "1rem" : "0.5rem 1rem"
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: isMobile ? "100%" : "auto",
+                gap: "1rem"
+              }}>
+                <button 
+                  onClick={handlePrevPage} 
+                  disabled={currentPage === 1} 
+                  style={{
+                    ...paginationButtonBaseStyle,
+                    ...(currentPage === 1 ? paginationButtonDisabledStyle : {}),
+                    flex: isMobile ? "1" : "none",
+                    minWidth: isMobile ? "auto" : "80px"
+                  }}
+                >
+                  Anterior
+                </button>
+                
+                <div style={{
+                  ...pageIndicatorStyle,
+                  margin: isMobile ? "0" : "0",
+                  flex: isMobile ? "0 0 auto" : "none"
+                }}>
+                  {currentPage} de {totalPages}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>págin(a)s</span>}
+                </div>
+                
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    ...paginationButtonBaseStyle,
+                    ...(currentPage === totalPages ? paginationButtonDisabledStyle : {}),
+                    flex: isMobile ? "1" : "none",
+                    minWidth: isMobile ? "auto" : "80px"
+                  }}
+                >
+                  Siguiente
+                </button>
+              </div>
+              
+              {totalPages > 1 && (
+                <div style={{
+                  ...paginationButtonsWrapperStyle,
+                  justifyContent: isMobile ? "center" : "flex-start",
+                  flexWrap: isMobile ? "wrap" : "nowrap",
+                  width: isMobile ? "100%" : "auto"
+                }}>
+                </div>
+              )}
+            </div>
+          )}  
 
 {/* Modal de Edición */}
 {/* Modal de Edición */}
@@ -1050,7 +1082,7 @@ const [addFormData, setAddFormData] = useState({
                     ...selectStyle,
                     borderColor: !editFormData.marca.trim() ? '#ef4444' : '#ddd'
                   }}
-                  placeholder="Nombre de la marca"
+                  placeholder="Edita el nombre de la marca"
                 />
               </div>
 
@@ -1069,44 +1101,50 @@ const [addFormData, setAddFormData] = useState({
               }
             }}
             style={selectStyle}
-            placeholder="correo@ejemplo.com"
+            placeholder="Edita tu correo electrónico"
           />
         </div>
 
-        {/* Celular */}
-        <div style={selectGroupStyle}>
-          <label style={labelStyle}>Celular</label>
-          <input
-            type="tel"
-            value={editFormData.telefono || '+56 9 '}
-            maxLength={15}
-            onChange={(e) => {
-              let valor = e.target.value;
+<div style={selectGroupStyle}>
+  <label style={labelStyle}>Celular</label>
+  <input
+    type="tel"
+    value={editFormData.telefono || '+56 9 '}
+    maxLength={17} // +56 9 XXXX XXXX
+    onChange={(e) => {
+      let input = e.target.value;
 
-              // Mantener prefijo +56 9
-              if (!valor.startsWith('+56 9 ')) {
-                valor = valor.replace(/[^\d]/g, '');
-              } else {
-                valor = valor.replace('+56 9 ', '').replace(/[^\d]/g, '');
-              }
+      // Asegurar que empiece con '+56 9 '
+      if (!input.startsWith('+56 9 ')) {
+        input = '+56 9 ';
+      }
 
-              // Limitar solo 9 dígitos
-              if (valor.length > 9) valor = valor.slice(0, 9);
+      // Obtener la parte posterior (lo que el usuario escribe)
+      let numero = input.replace('+56 9 ', '').replace(/\D/g, '');
 
-              // Formatear como +56 9 XXXX XXXX
-              let formateado = '+56 9 ';
-              if (valor.length > 4) {
-                formateado += valor.slice(0, 4) + ' ' + valor.slice(4);
-              } else {
-                formateado += valor;
-              }
+      // Limitar a 8 dígitos
+      if (numero.length > 8) {
+        numero = numero.slice(0, 8);
+      }
 
-              setEditFormData({ ...editFormData, telefono: formateado });
-            }}
-            style={selectStyle}
-            placeholder="+56 9 1234 5678"
-          />
-        </div>
+      // Formatear como XXXX XXXX
+      let formateado = '';
+      if (numero.length > 4) {
+        formateado = numero.slice(0, 4) + ' ' + numero.slice(4);
+      } else {
+        formateado = numero;
+      }
+
+      // Combinar con el prefijo fijo
+      const resultado = '+56 9 ' + formateado;
+
+      setEditFormData({ ...editFormData, telefono: resultado });
+    }}
+    style={selectStyle}
+    placeholder="+56 9 1234 5678"
+  />
+</div>
+
 
               <div style={selectGroupStyle}>
                 <label style={labelStyle}>Dirección *</label>
@@ -1118,7 +1156,7 @@ const [addFormData, setAddFormData] = useState({
                     ...selectStyle,
                     borderColor: !editFormData.direccion.trim() ? '#ef4444' : '#ddd'
                   }}
-                  placeholder="Dirección completa"
+                  placeholder="Edita tu dirección"
                 />
               </div>
             </div>
@@ -1197,44 +1235,48 @@ const [addFormData, setAddFormData] = useState({
   <label style={labelStyle}>Celular</label>
   <input
     type="tel"
-    value={addFormData.telefono}
-    maxLength={15}
+    value={addFormData.telefono || '+56 9 '}
+    maxLength={17} // +56 9 XXXX XXXX
     onChange={(e) => {
-      const valor = e.target.value;
+      let input = e.target.value;
 
-      // Si el usuario borra todo, permitir campo vacío
-      if (valor.trim() === '') {
+      // Permitir dejar el campo vacío si se borra todo
+      if (input.trim() === '') {
         setAddFormData({ ...addFormData, telefono: '' });
         return;
       }
 
-      // Quitar todo excepto números
-      let soloNumeros = valor.replace(/\D/g, '');
-
-      // Eliminar prefijo si ya viene con 569 al principio (caso raro)
-      if (soloNumeros.startsWith('569')) {
-        soloNumeros = soloNumeros.slice(3);
+      // Asegurar que el prefijo se mantenga
+      if (!input.startsWith('+56 9 ')) {
+        input = '+56 9 ';
       }
 
-      // Limitar a 9 dígitos después del 9
-      if (soloNumeros.length > 9) {
-        soloNumeros = soloNumeros.slice(0, 9);
+      // Obtener la parte numérica después del prefijo
+      let numero = input.replace('+56 9 ', '').replace(/\D/g, '');
+
+      // Limitar a 8 dígitos después del prefijo
+      if (numero.length > 8) {
+        numero = numero.slice(0, 8);
       }
 
-      // Formatear como +56 9 XXXX XXXX
-      let formateado = '+56 9 ';
-      if (soloNumeros.length > 4) {
-        formateado += soloNumeros.slice(0, 4) + ' ' + soloNumeros.slice(4);
+      // Formatear como XXXX XXXX
+      let formateado = '';
+      if (numero.length > 4) {
+        formateado = numero.slice(0, 4) + ' ' + numero.slice(4);
       } else {
-        formateado += soloNumeros;
+        formateado = numero;
       }
 
-      setAddFormData({ ...addFormData, telefono: formateado });
+      // Combinar con prefijo
+      const resultado = '+56 9 ' + formateado;
+
+      setAddFormData({ ...addFormData, telefono: resultado });
     }}
     style={selectStyle}
     placeholder="+56 9 1234 5678"
   />
 </div>
+
 
         {/* Dirección */}
         <div style={selectGroupStyle}>
@@ -1244,7 +1286,7 @@ const [addFormData, setAddFormData] = useState({
             value={addFormData.direccion}
             onChange={(e) => setAddFormData({ ...addFormData, direccion: e.target.value })}
             style={selectStyle}
-            placeholder="Ingresa la dirección completa"
+            placeholder="Ingresa la dirección"
           />
         </div>
       </div>
@@ -1473,24 +1515,17 @@ const modifyProductButtonStyle: React.CSSProperties = {
   display: 'block',
 };
 
-const paginationContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'center',
-  marginTop: '2rem',
-  padding: '1rem',
-  backgroundColor: '#f3f4f6',
-  borderRadius: '10px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-};
 
 const paginationControlsStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '1rem',
+  marginTop: '1rem',
   backgroundColor: '#fff',
   borderRadius: '8px',
   padding: '0.5rem 1rem',
   boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  justifyContent: 'center',
 };
 
 const paginationButtonBaseStyle: React.CSSProperties = {
@@ -1640,4 +1675,28 @@ const closeButtonStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+};
+
+const paginationButtonDisabledStyle: React.CSSProperties = {
+  backgroundColor: '#d1d5db',
+  color: '#9ca3af',
+  cursor: 'not-allowed',
+  opacity: 0.6
+};
+
+const pageIndicatorStyle: React.CSSProperties = {
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  color: '#f7f7f7',
+  fontFamily: 'Montserrat, sans-serif',
+  display: 'flex',
+  alignItems: 'center',
+  padding: '0 1rem',
+  backgroundColor: '#5c5c5c',
+  borderRadius: '6px',
+  border: '1px solid #e5e7eb',
+  minWidth: 'fit-content',
+  whiteSpace: 'nowrap',
+  paddingTop: '0.5rem',
+  paddingBottom: '0.5rem',
 };
