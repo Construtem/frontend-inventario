@@ -583,7 +583,7 @@ export default function DespachoPage() {
                 type="text"
                 placeholder="Buscar por cliente, origen o destino..."
                 value={search}
-                maxLength={100}
+                maxLength={70}
                 onChange={(e) => {
                   const valor = e.target.value;
                   if (valor === '' || /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s@]*$/.test(valor)) {

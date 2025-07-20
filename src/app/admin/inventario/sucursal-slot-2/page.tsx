@@ -223,7 +223,6 @@ const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 // =====================
 // 5. COMPONENTES REACT
 // =====================
-
 const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFilters, activeFilters }) => {
   const [categoria, setCategoria] = useState("");
   const [estado, setEstado] = useState("");
@@ -1926,3 +1925,4 @@ const buttonStyle: React.CSSProperties = {
   gap: "0.5rem",
   minWidth: "fit-content"
 };
+

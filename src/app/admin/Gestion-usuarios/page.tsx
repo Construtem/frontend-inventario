@@ -1013,7 +1013,9 @@ Swal.fire({
                 type="text"
                 placeholder="Buscar por Nombre, Email o Rol..."
                 value={searchTerm}
-                maxLength={100}
+
+                maxLength={50}
+
                 onChange={(e) => {
                   const valor = e.target.value;
                   if (valor === '' || /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s@]*$/.test(valor)) {
@@ -1142,7 +1144,6 @@ Swal.fire({
               }} />
               <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando usuarios...</div>
               <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
-                Conectando con el servidor...
               </div>
             </div>
           ) : error ? (
@@ -1375,7 +1376,7 @@ Swal.fire({
                     }
                   }}
                   style={inputStyle}
-                  placeholder="Ej: Juan Pérez"
+                  placeholder="Edita tu nombre"
                   maxLength={50}
                 />
               </div>
@@ -1403,7 +1404,7 @@ Swal.fire({
                     });
                   }}
                   style={{ ...inputStyle, backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
-                  placeholder="Ej: juan@empresa.com"
+                  placeholder="Edita tu correo electrónico"
                   maxLength={100}
                 />
               </div>
@@ -1465,7 +1466,7 @@ Swal.fire({
                     }
                   }}
                   style={inputStyle}
-                  placeholder="Ej: Juan Pérez"
+                  placeholder="Agrega tu nombre"
                   maxLength={50}
                 />
               </div>
@@ -1483,7 +1484,7 @@ Swal.fire({
                     }
                   }}
                   style={inputStyle}
-                  placeholder="Ej: juan@empresa.com"
+                  placeholder="Agrega tu correo electrónico"
                   maxLength={100}
                 />
               </div>

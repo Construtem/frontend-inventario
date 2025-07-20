@@ -163,7 +163,7 @@ export default function InventarioProveedoresPage() {
       }
     };
     fetchInventario();
-  }, []);
+  }, [apiInventarioUrl]);
 
   // Filtrar datos según búsqueda y fechas
   const filteredData = useMemo(() => {
@@ -405,7 +405,8 @@ export default function InventarioProveedoresPage() {
                   setSearchTerm(valor);
                 }
               }}
-              maxLength={100}
+
+              maxLength={70}
                 value={searchTerm}
                 style={inputStyle}
               />
@@ -1237,4 +1238,3 @@ const xClosebuttonStyle: React.CSSProperties = {
   fontSize: '1rem',
   lineHeight: '1' 
 };
-

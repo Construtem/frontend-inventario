@@ -224,9 +224,6 @@ const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 // 5. COMPONENTES REACT
 // =====================
 
-
-
-
 const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFilters, activeFilters }) => {
   const [categoria, setCategoria] = useState("");
   const [estado, setEstado] = useState("");
@@ -254,6 +251,7 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
       return () => clearTimeout(timeout);
     }
   }, [isOpen]);
+
 
   const handleApplyFilters = () => {
     onApplyFilters({ categoria, estado });
@@ -340,6 +338,7 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
               value={estado} 
               onChange={(e) => setEstado(e.target.value)}
               style={selectStyle}
+              disabled
             >
               <option value="">Todos los estados</option>
               <option value="activo">Activo</option>

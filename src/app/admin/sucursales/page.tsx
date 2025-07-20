@@ -23,6 +23,63 @@ interface Sucursal {
   tipo_id?: number; 
 }
 
+
+// FUNCIONES PARA RESTRINGIR
+
+const validatePhoneInput = (value: string): { isValid: boolean; message: string } => {
+  const validChars = /^[0-9\s\-+]*$/;
+
+  if (!validChars.test(value)) {
+    return {
+      isValid: false,
+      message: 'Solo se permiten números, espacios, guiones (-) y el símbolo +'
+    };
+  }
+
+  return { isValid: true, message: '' };
+};
+
+
+
+const formatPhoneChileno = (numero: string): string => {
+  if (!numero) return '';
+
+  // Eliminar caracteres no numéricos
+  let clean = numero.replace(/\D/g, '');
+
+  // Limitar a 9 dígitos
+  clean = clean.slice(0, 9);
+
+  // Formatear como +56 9 XXXX XXXX
+  let formateado = '+56 9 ';
+  if (clean.length > 4) {
+    formateado += clean.slice(0, 4) + ' ' + clean.slice(4);
+  } else {
+    formateado += clean;
+  }
+
+  return formateado;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const maxPorTipo = 3;
 const totalBodegas = 3; // Cambia por el conteo real
 const totalSucursales = 3; // Cambia por el conteo real
@@ -309,7 +366,7 @@ const filterPhoneInput = (value: string): string => {
     };
 
     fetchSucursales();
-  }, []);
+  }, [apiInventarioUrl]);
 
 
   // Función para reintentar la carga de datos
@@ -1029,7 +1086,8 @@ const filterPhoneInput = (value: string): string => {
               <input
                 type="text"
                 placeholder="Buscar por Nombre..."
-                maxLength={100}
+                maxLength={70}
+
                 onChange={(e) => {
                   const valor = e.target.value;
                   if (valor === '' || /^[a-zA-ZÀ-ÿ0-9ñÑ\u00f1\u00d1\s]*$/.test(valor)) {
@@ -1171,7 +1229,6 @@ const filterPhoneInput = (value: string): string => {
               }} />
               <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando sucursales...</div>
               <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
-                Conectando con el servidor...
               </div>
             </div>
           ) : error ? (
@@ -1500,7 +1557,7 @@ const filterPhoneInput = (value: string): string => {
         </div>
       )}
 
-      {/* Modal de Edición */}
+{/* Modal de Edición */}
 {showEditModal && editFormData && (
   <div style={modalOverlayStyle}>
     <div style={{ ...modalContentStyle, padding: '2rem' }}>
@@ -1591,39 +1648,47 @@ const filterPhoneInput = (value: string): string => {
           />
         </div>
 
-        <div style={selectGroupStyle}>
-          <label style={labelStyle}>Celular</label>
-          <input
-            type="text"
-            value={editFormData.telefono || ''}
-            onChange={(e) => {
-              const filteredValue = filterPhoneInput(e.target.value);
-              const validation = validatePhoneInput(filteredValue);
 
-              if (!validation.isValid) {
-                Swal.fire({
-                  html: `
-                    <div style="${swalTituloCssString}">
-                      ¡<b>Error</b>!
-                    </div>
-                    <div style="${swalTextoConMargenCssString}">
-                      ${validation.message}
-                    </div>
-                  `,
-                  icon: 'warning',
-                  confirmButtonColor: '#ff7300',
-                  timer: 5000,
-                  timerProgressBar: true,
-                  showCloseButton: true
-                });
-              }
 
-              setEditFormData({ ...editFormData, telefono: filteredValue });
-            }}
-            style={inputStyle}
-            placeholder="Ej: +56912345678"
-          />
-        </div>
+{/* Teléfono de la Sucursal */}
+<div style={selectGroupStyle}>
+  <label style={labelStyle}>Celular</label>
+  <input
+    type="tel"
+    value={editFormData.telefono || '+56 9 '}
+    maxLength={15}
+    onChange={(e) => {
+      let valor = e.target.value;
+
+      // Mantener prefijo +56 9 y solo números después
+      if (!valor.startsWith('+56 9 ')) {
+        // Si borra el prefijo, resetearlo
+        valor = '+56 9 ';
+      }
+
+
+      // Extraer solo números después del prefijo
+      let numeros = valor.replace('+56 9 ', '').replace(/\D/g, '');
+
+      // Limitar a máximo 8 dígitos (4 + 4)
+      if (numeros.length > 8) {
+        numeros = numeros.slice(0, 8);
+      }
+
+      // Formatear como +56 9 XXXX XXXX
+      let formateado = '+56 9 ';
+      if (numeros.length > 4) {
+        formateado += numeros.slice(0, 4) + ' ' + numeros.slice(4);
+      } else {
+        formateado += numeros;
+      }
+
+      setEditFormData({ ...editFormData, telefono: formateado });
+    }}
+    style={selectStyle}
+    placeholder="+56 9 1234 5678"
+  />
+</div>
 
         <div style={selectGroupStyle}>
           <label style={labelStyle}>Ciudad</label>
@@ -1698,6 +1763,7 @@ const filterPhoneInput = (value: string): string => {
     </div>
   </div>
 )}
+
 
       {/* Modal de Agregar Sucursal */}
       {showAddModal && (
@@ -1796,15 +1862,44 @@ const filterPhoneInput = (value: string): string => {
                 />
               </div>
 
+              {/* Teléfono de la Sucursal - Agregar */}
               <div style={selectGroupStyle}>
                 <label style={labelStyle}>Celular</label>
                 <input
-                  type="text"
-                  value={addFormData.telefono}
+
+
+                  type="tel"
+                  value={addFormData.telefono || '+56 9 '}
                   maxLength={15}
-                  onChange={(e) => setAddFormData({...addFormData, telefono: e.target.value})}
+                  onChange={(e) => {
+                    let valor = e.target.value;
+
+                    // Mantener prefijo +56 9 y solo números después
+                    if (!valor.startsWith('+56 9 ')) {
+                      valor = '+56 9 ';
+                    }
+
+                    // Extraer solo números después del prefijo
+                    let numeros = valor.replace('+56 9 ', '').replace(/\D/g, '');
+
+                    // Limitar a máximo 8 dígitos (4 + 4)
+                    if (numeros.length > 8) {
+                      numeros = numeros.slice(0, 8);
+                    }
+
+                    // Formatear como +56 9 XXXX XXXX
+                    let formateado = '+56 9 ';
+                    if (numeros.length > 4) {
+                      formateado += numeros.slice(0, 4) + ' ' + numeros.slice(4);
+                    } else {
+                      formateado += numeros;
+                    }
+
+                    setAddFormData({ ...addFormData, telefono: formateado });
+                  }}
+
                   style={inputStyle}
-                  placeholder="Ej: +56 9 1234 5678"
+                  placeholder="+56 9 1234 5678"
                 />
               </div>
 
@@ -1866,6 +1961,7 @@ const filterPhoneInput = (value: string): string => {
           </div>
         </div>
       )}
+
     </div>
   );
 }
@@ -2242,6 +2338,7 @@ const firstPieceFilterButtonStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '0.5rem'
 };
+
 
 const secondPieceFilterButtonStyle: React.CSSProperties = {
   backgroundColor: '#ef4444',

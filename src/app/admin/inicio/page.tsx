@@ -222,8 +222,8 @@ const fetchClientes = async (): Promise<ClienteAPI[]> => {
 const fetchSucursales = async (): Promise<SucursalesAPI[]> => {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
-    
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     const response = await fetch(`${API_BASE_URL}/api/sucursales`, {
       method: 'GET',
       headers: {
@@ -231,15 +231,17 @@ const fetchSucursales = async (): Promise<SucursalesAPI[]> => {
       },
       signal: controller.signal,
     });
-    
+
     clearTimeout(timeoutId);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    return Array.isArray(data) ? data : [];
+
+    // 🟢 Filtrar solo sucursales con tipo.id === 2
+    return Array.isArray(data) ? data.filter((item: SucursalesAPI) => item.tipo?.id === 2) : [];
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       console.warn('⏱️ Timeout al cargar sucursales - operación cancelada');
@@ -250,12 +252,12 @@ const fetchSucursales = async (): Promise<SucursalesAPI[]> => {
   }
 };
 
-// Función para obtener sucursales del endpoint
+// Función para obtener bodegas del endpoint
 const fetchBodegas = async (): Promise<BodegasAPI[]> => {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
-    
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     const response = await fetch(`${API_BASE_URL}/api/bodegas`, {
       method: 'GET',
       headers: {
@@ -263,15 +265,17 @@ const fetchBodegas = async (): Promise<BodegasAPI[]> => {
       },
       signal: controller.signal,
     });
-    
+
     clearTimeout(timeoutId);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    return Array.isArray(data) ? data : [];
+
+    // 🟢 Filtrar solo bodegas con tipo.id === 1
+    return Array.isArray(data) ? data.filter((item: BodegasAPI) => item.tipo?.id === 1) : [];
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       console.warn('⏱️ Timeout al cargar bodegas - operación cancelada');
@@ -410,6 +414,43 @@ const fetchUsuarios = async (): Promise<UsuarioAPI[]> => {
   }
 };
 
+// Estilos para productos inactivos
+interface ProductoInactivo {
+  sku: string;
+  nombre: string;
+  sucursal: string;
+}
+
+// Función para obtener productos inactivos del endpoint
+const fetchProductosInactivos = async (): Promise<ProductoInactivo[]> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const response = await fetch(`${API_BASE_URL}/api/stock-sucursal/productos-inactivos`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.warn('⏱️ Timeout al cargar productos inactivos');
+    } else {
+      console.warn('⚠️ Error al cargar productos inactivos');
+    }
+    return [];
+  }
+};
+
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
   const [windowSize, setWindowSize] = useState({
@@ -441,6 +482,15 @@ function useWindowSize() {
     isMobile: windowSize.width <= 768
   };
 }
+const MiComponente = () => {
+  const { isSmall, isMobile } = useWindowSize();
+
+  return (
+    <div style={{ fontSize: isMobile ? '12px' : isSmall ? '14px' : '16px' }}>
+      {/* resto de tu JSX */}
+    </div>
+  );
+};
 
 interface CardProps {
   id: number;
@@ -468,7 +518,10 @@ export default function InicioPage() {
   const [productosCount, setProductosCount] = useState<number>(0);
   const [proveedoresCount, setProveedoresCount] = useState<number>(0);
   const [realBodegas, setRealBodegas] = useState<BodegasAPI[]>([]);
-  const { isSmall, isMobile } = useWindowSize();
+  const [bodegasCount, setBodegasCount] = useState<number>(0);
+  const [realProductosInactivos, setRealProductosInactivos] = useState<ProductoInactivo[]>([]);
+  const [productosInactivosCount, setProductosInactivosCount] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -485,28 +538,46 @@ export default function InicioPage() {
     // Cargar conteo de usuarios, clientes, sucursales, despachos, productos y proveedores
     const loadCounts = async () => {
       try {
-        const [usuarios, clientes, sucursales, despachos, productos, proveedores] = await Promise.all([
+        const [
+          usuarios,
+          clientes,
+          sucursales,
+          despachos,
+          productos,
+          proveedores,
+          bodegas,
+          inactivos // ← nuevo
+        ] = await Promise.all([
           fetchUsuarios(),
           fetchClientes(),
           fetchSucursales(),
           fetchDespachos(),
           fetchProductos(),
-          fetchProveedores()
+          fetchProveedores(),
+          fetchBodegas(),
+          fetchProductosInactivos() // ← nuevo
         ]);
+
         setUsuariosCount(usuarios.length);
         setClientesCount(clientes.length);
         setSucursalesCount(sucursales.length);
         setDespachosCount(despachos.length);
         setProductosCount(productos.length);
+        setBodegasCount(bodegas.length);
         setProveedoresCount(proveedores.length);
+        setRealProductosInactivos(inactivos); // ← CORREGIDO
+        setProductosInactivosCount(inactivos.length);
+
         console.log("📊 Conteos cargados:", { 
           usuarios: usuarios.length, 
           clientes: clientes.length, 
           sucursales: sucursales.length,
           despachos: despachos.length,
           productos: productos.length,
-          proveedores: proveedores.length 
+          proveedores: proveedores.length,
+          productosInactivos: inactivos.length
         });
+
       } catch (error) {
         console.error("Error loading counts:", error);
         setUsuariosCount(0);
@@ -515,6 +586,8 @@ export default function InicioPage() {
         setDespachosCount(0);
         setProductosCount(0);
         setProveedoresCount(0);
+        setBodegasCount(0);
+        setRealProductosInactivos([]); // ← manejo de error
       }
     };
 
@@ -533,18 +606,19 @@ export default function InicioPage() {
   const cardData: CardProps[] = [
     { id: 1, mainText: clientesCount.toString(), subText: 'Clientes', imagePath: '/images/inicio/clientes.png' },
     { id: 2, mainText: proveedoresCount.toString(), subText: 'Proveedores', imagePath: '/images/inicio/proveedores.png' },
-    { id: 3, mainText: '4', subText: 'Bodegas', imagePath: '/images/inicio/bodegas.png' },
-    { id: 4, mainText: productosCount.toString(), subText: 'Productos registrados', imagePath: '/images/inicio/productos.png' },
-    { id: 5, mainText: '25', subText: 'Productos disponibles', imagePath: '/images/inicio/productos.png' },
-    //{ id: 6, mainText: '25', subText: 'Productos no disponibles', imagePath: '/images/inicio/productos.png' },
-    { id: 7, mainText: despachosCount.toString(), subText: 'Despachos', imagePath: '/images/inicio/pedidos.png' },
+    { id: 3, mainText: usuariosCount.toString(), subText: 'Usuarios registrados', imagePath: '/images/inicio/usuarios_registrados.png' },
+    { id: 4, mainText: sucursalesCount.toString(), subText: 'Sucursales', imagePath: '/images/inicio/sucursales.png' },
+    { id: 5, mainText: bodegasCount.toString(), subText: 'Bodegas', imagePath: '/images/inicio/bodegas.png' },
+    { id: 6, mainText: despachosCount.toString(), subText: 'Despachos', imagePath: '/images/inicio/pedidos.png' },
+    { id: 7, mainText: productosCount.toString(), subText: 'Productos registrados', imagePath: '/images/inicio/productos.png' },
+    { id: 8, mainText: productosInactivosCount.toString(), subText: 'Productos no disponibles', imagePath: '/images/inicio/productos.png' },
     { id: 9, mainText: '150', subText: 'Existencia total', imagePath: '/images/inicio/existencias.png' },
     //{ id: 10, mainText: '100', subText: 'Existencia vendida', imagePath: '/images/inicio/existencias.png' },
-    { id: 11, mainText: sucursalesCount.toString(), subText: 'Sucursales', imagePath: '/images/inicio/sucursales.png' },
-    //{ id: 12, mainText: '50', subText: 'Ventas', imagePath: '/images/inicio/ventas.png' },
-    { id: 13, mainText: usuariosCount.toString(), subText: 'Usuarios registrados', imagePath: '/images/inicio/usuarios_registrados.png' },
+    //{ id: 11, mainText: '50', subText: 'Ventas', imagePath: '/images/inicio/ventas.png' },
+    //{ id: 12, mainText: '25', subText: 'Productos disponibles', imagePath: '/images/inicio/productos.png' },
   ];
 
+  const { isSmall, isMobile } = useWindowSize();
   return (
     <div style={containerStyle}>
       <div style={{
@@ -711,12 +785,14 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   const [realDespachos, setRealDespachos] = useState<DespachoAPI[]>([]);
   const [realProductos, setRealProductos] = useState<ProductoAPI[]>([]);
   const [realProveedores, setRealProveedores] = useState<ProveedorAPI[]>([]);
+  const [realProductosInactivos, setRealProductosInactivos] = useState<ProductoInactivo[]>([]);
+  const [productosInactivosCount, setProductosInactivosCount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
 
-  // Cargar datos reales de usuarios, clientes, sucursales, despachos, productos y proveedores cuando el modal se abre
+  // Cargar datos reales de usuarios, clientes, sucursales, despachos, productos, proveedores y productos no disponibles cuando el modal se abre
   useEffect(() => {
     const loadRealData = async () => {
-      if (card.subText !== 'Usuarios registrados' && card.subText !== 'Clientes' && card.subText !== 'Sucursales' && card.subText !== 'Bodegas' && card.subText !== 'Despachos' && card.subText !== 'Productos registrados' && card.subText !== 'Proveedores') {
+      if (card.subText !== 'Usuarios registrados' && card.subText !== 'Clientes' && card.subText !== 'Sucursales' && card.subText !== 'Bodegas' && card.subText !== 'Despachos' && card.subText !== 'Productos registrados' && card.subText !== 'Proveedores'&& card.subText !== 'Productos no disponibles') {
         setRealUsuarios([]);
         setRealClientes([]);
         setRealSucursales([]);
@@ -724,6 +800,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
         setRealDespachos([]);
         setRealProductos([]);
         setRealProveedores([]);
+        setRealProductosInactivos([]);
         return;
       }
 
@@ -757,7 +834,12 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
           const proveedores = await fetchProveedores();
           setRealProveedores(proveedores);
           console.log("📊 Proveedores cargados en modal:", proveedores);
+        } else if (card.subText === 'Productos no disponibles') {
+          const productosInactivos = await fetchProductosInactivos();
+          setRealProductosInactivos(productosInactivos);
+          setProductosInactivosCount(productosInactivos.length);
         }
+
       } catch (error) {
         console.error("Error loading data in modal:", error);
         if (card.subText === 'Usuarios registrados') {
@@ -846,65 +928,65 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
 
     // ...dentro de CardModal...
 
-// Si es la card de sucursales, mostrar solo las sucursales (tipo.id === 2)
-if (card.subText === 'Sucursales') {
-  if (loading) {
-    return [{
-      id: 1,
-      mensaje: 'Cargando información...',
-      estado: 'Conectando al servidor',
-      descripcion: 'Por favor espere mientras se cargan las sucursales'
-    }];
-  }
+    // Si es la card de sucursales, mostrar solo las sucursales (tipo.id === 2)
+    if (card.subText === 'Sucursales') {
+      if (loading) {
+        return [{
+          id: 1,
+          mensaje: 'Cargando información...',
+          estado: 'Conectando al servidor',
+          descripcion: 'Por favor espere mientras se cargan las sucursales'
+        }];
+      }
 
-  if (realSucursales.length > 0) {
-    return realSucursales.map((sucursal, index) => ({
-      id: index + 1,
-      nombre: sucursal.nombre,
-      direccion: sucursal.direccion,
-      telefono: sucursal.telefono,
-      comuna: sucursal.comuna,
-      ciudad: sucursal.ciudad,
-      tipo: sucursal.tipo.nombre
-    }));
-  }
+      if (realSucursales.length > 0) {
+        return realSucursales.map((sucursal, index) => ({
+          id: index + 1,
+          nombre: sucursal.nombre,
+          direccion: sucursal.direccion,
+          telefono: sucursal.telefono,
+          comuna: sucursal.comuna,
+          ciudad: sucursal.ciudad,
+          tipo: sucursal.tipo.nombre
+        }));
+      }
 
-  return [{
-    id: 1,
-    mensaje: 'No hay sucursales registradas',
-    descripcion: 'No se encontraron sucursales en el sistema'
-  }];
-}
+      return [{
+        id: 1,
+        mensaje: 'No hay sucursales registradas',
+        descripcion: 'No se encontraron sucursales en el sistema'
+      }];
+    }
 
-// Si es la card de bodegas, mostrar las bodegas reales
-if (card.subText === 'Bodegas') {
-  if (loading) {
-    return [{
-      id: 1,
-      mensaje: 'Cargando información...',
-      estado: 'Conectando al servidor',
-      descripcion: 'Por favor espere mientras se cargan las bodegas'
-    }];
-  }
+    // Si es la card de bodegas, mostrar las bodegas reales
+    if (card.subText === 'Bodegas') {
+      if (loading) {
+        return [{
+          id: 1,
+          mensaje: 'Cargando información...',
+          estado: 'Conectando al servidor',
+          descripcion: 'Por favor espere mientras se cargan las bodegas'
+        }];
+      }
 
-  if (realBodegas.length > 0) {
-    return realBodegas.map((bodega, index) => ({
-      id: index + 1,
-      nombre: bodega.nombre,
-      direccion: bodega.direccion,
-      telefono: bodega.telefono,
-      comuna: bodega.comuna,
-      ciudad: bodega.ciudad,
-      tipo: bodega.tipo.nombre
-    }));
-  }
+      if (realBodegas.length > 0) {
+        return realBodegas.map((bodega, index) => ({
+          id: index + 1,
+          nombre: bodega.nombre,
+          direccion: bodega.direccion,
+          telefono: bodega.telefono,
+          comuna: bodega.comuna,
+          ciudad: bodega.ciudad,
+          tipo: bodega.tipo.nombre
+        }));
+      }
 
-  return [{
-    id: 1,
-    mensaje: 'No hay bodegas registradas',
-    descripcion: 'No se encontraron bodegas en el sistema'
-  }];
-}
+      return [{
+        id: 1,
+        mensaje: 'No hay bodegas registradas',
+        descripcion: 'No se encontraron bodegas en el sistema'
+      }];
+    }
 
     // Si es la card de despachos, usar datos reales del endpoint
     if (card.subText === 'Despachos') {
@@ -959,7 +1041,7 @@ if (card.subText === 'Bodegas') {
           nombre: producto.nombre,
           descripcion: producto.descripcion,
           categoria: producto.categoria.nombre,
-          proveedor: producto.proveedor.marca,
+          proveedor: producto.proveedor.marca ? producto.proveedor.marca : 'Sin proveedor',
           precio: `$${producto.precio.toLocaleString()}`,
           peso: `${producto.peso} kg`,
           dimensiones: `${producto.largo}x${producto.ancho}x${producto.alto} cm`,
@@ -1002,6 +1084,31 @@ if (card.subText === 'Bodegas') {
         descripcion: 'No se encontraron proveedores en el sistema'
       }];
     }
+
+    // Si es la card de productos no disponibles, usar datos reales del endpoint
+if (card.subText === 'Productos no disponibles') {
+  if (loading) {
+    return [{
+      id: 1,
+      mensaje: 'Cargando productos no disponibles...',
+      descripcion: 'Por favor espere mientras se cargan los productos inactivos'
+    }];
+  }
+  if (realProductosInactivos.length > 0) {
+    return realProductosInactivos.map((prod, index) => ({
+      id: index + 1,
+      sku: prod.sku,
+      nombre: prod.nombre,
+      sucursal: prod.sucursal,
+    }));
+  }
+  return [{
+    id: 1,
+    mensaje: 'No hay productos no disponibles',
+    descripcion: 'No se encontraron productos inactivos en el sistema'
+  }];
+}
+
 
     // Para otras cards, usar datos estáticos o mostrar mensaje de no implementado
     return generateSampleData(card.subText);
@@ -1226,7 +1333,7 @@ if (card.subText === 'Bodegas') {
             type="text"
             placeholder={`Buscar en ${card.subText}...`}
             value={searchTerm}
-            maxLength={75}
+            maxLength={70}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
               flex: 1,
