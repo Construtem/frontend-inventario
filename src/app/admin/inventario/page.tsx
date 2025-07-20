@@ -111,7 +111,7 @@ export default function InventarioPage() {
     };
 
     fetchSucursales();
-  }, []);
+  }, [apiInventarioUrl]);
 
   // Función para reintentar la carga de datos
   const retryFetch = () => {
@@ -244,7 +244,6 @@ export default function InventarioPage() {
           <div style={loadingSpinnerStyle} />
           <div style={loadingTextStyle}>Cargando sucursales...</div>
           <div style={loadingSubTextStyle}>
-            Conectando con el servidor...
           </div>
         </div>
       );

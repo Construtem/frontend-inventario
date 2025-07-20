@@ -218,12 +218,11 @@ const fetchClientes = async (): Promise<ClienteAPI[]> => {
   }
 };
 
-// Función para obtener sucursales del endpoint
 const fetchSucursales = async (): Promise<SucursalesAPI[]> => {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
-    
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     const response = await fetch(`${API_BASE_URL}/api/sucursales`, {
       method: 'GET',
       headers: {
@@ -231,15 +230,17 @@ const fetchSucursales = async (): Promise<SucursalesAPI[]> => {
       },
       signal: controller.signal,
     });
-    
+
     clearTimeout(timeoutId);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    return Array.isArray(data) ? data : [];
+
+    // 🟢 Filtrar solo sucursales con tipo.id === 2
+    return Array.isArray(data) ? data.filter((item: SucursalesAPI) => item.tipo?.id === 2) : [];
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       console.warn('⏱️ Timeout al cargar sucursales - operación cancelada');
@@ -250,12 +251,12 @@ const fetchSucursales = async (): Promise<SucursalesAPI[]> => {
   }
 };
 
-// Función para obtener sucursales del endpoint
+
 const fetchBodegas = async (): Promise<BodegasAPI[]> => {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout de 10 segundos
-    
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     const response = await fetch(`${API_BASE_URL}/api/bodegas`, {
       method: 'GET',
       headers: {
@@ -263,15 +264,17 @@ const fetchBodegas = async (): Promise<BodegasAPI[]> => {
       },
       signal: controller.signal,
     });
-    
+
     clearTimeout(timeoutId);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    return Array.isArray(data) ? data : [];
+
+    // 🟢 Filtrar solo bodegas con tipo.id === 1
+    return Array.isArray(data) ? data.filter((item: BodegasAPI) => item.tipo?.id === 1) : [];
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       console.warn('⏱️ Timeout al cargar bodegas - operación cancelada');
@@ -281,6 +284,7 @@ const fetchBodegas = async (): Promise<BodegasAPI[]> => {
     return [];
   }
 };
+
 
 // Función para obtener despachos del endpoint
 const fetchDespachos = async (): Promise<DespachoAPI[]> => {
@@ -468,6 +472,7 @@ export default function InicioPage() {
   const [productosCount, setProductosCount] = useState<number>(0);
   const [proveedoresCount, setProveedoresCount] = useState<number>(0);
   const [realBodegas, setRealBodegas] = useState<BodegasAPI[]>([]);
+  const [bodegasCount, setBodegasCount] = useState<number>(0);
   const { isSmall, isMobile } = useWindowSize();
 
   useEffect(() => {
@@ -485,19 +490,21 @@ export default function InicioPage() {
     // Cargar conteo de usuarios, clientes, sucursales, despachos, productos y proveedores
     const loadCounts = async () => {
       try {
-        const [usuarios, clientes, sucursales, despachos, productos, proveedores] = await Promise.all([
+        const [usuarios, clientes, sucursales, despachos, productos, proveedores, bodegas] = await Promise.all([
           fetchUsuarios(),
           fetchClientes(),
           fetchSucursales(),
           fetchDespachos(),
           fetchProductos(),
-          fetchProveedores()
+          fetchProveedores(),
+          fetchBodegas()
         ]);
         setUsuariosCount(usuarios.length);
         setClientesCount(clientes.length);
         setSucursalesCount(sucursales.length);
         setDespachosCount(despachos.length);
         setProductosCount(productos.length);
+        setBodegasCount(bodegas.length);
         setProveedoresCount(proveedores.length);
         console.log("📊 Conteos cargados:", { 
           usuarios: usuarios.length, 
@@ -515,6 +522,8 @@ export default function InicioPage() {
         setDespachosCount(0);
         setProductosCount(0);
         setProveedoresCount(0);
+        //para el qa pa q deje de wear
+        setBodegasCount(0);
       }
     };
 
@@ -533,7 +542,7 @@ export default function InicioPage() {
   const cardData: CardProps[] = [
     { id: 1, mainText: clientesCount.toString(), subText: 'Clientes', imagePath: '/images/inicio/clientes.png' },
     { id: 2, mainText: proveedoresCount.toString(), subText: 'Proveedores', imagePath: '/images/inicio/proveedores.png' },
-    { id: 3, mainText: '4', subText: 'Bodegas', imagePath: '/images/inicio/bodegas.png' },
+    { id: 3, mainText: bodegasCount.toString(), subText: 'Bodegas', imagePath: '/images/inicio/bodegas.png' },
     { id: 4, mainText: productosCount.toString(), subText: 'Productos registrados', imagePath: '/images/inicio/productos.png' },
     { id: 5, mainText: '25', subText: 'Productos disponibles', imagePath: '/images/inicio/productos.png' },
     //{ id: 6, mainText: '25', subText: 'Productos no disponibles', imagePath: '/images/inicio/productos.png' },

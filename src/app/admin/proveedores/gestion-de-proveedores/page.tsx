@@ -11,6 +11,44 @@ import buscarImg from "@/styles/images/buscar.png";
 import logo1Img from "@/styles/images/logo1.png";
 
 
+
+// Función para validar nombre y dirección (sin caracteres especiales)
+const validateTextInput = (value: string): { isValid: boolean; message: string } => {
+  // Caracteres prohibidos: ; % $ @ # & * ( ) [ ] { } | \ / ? < > " ' ` ~ ! ^ = 
+  const forbiddenChars = /[;%$@#&*()[\]{}|\\/?<>"'`~!^=]/;
+  
+  if (forbiddenChars.test(value)) {
+    const foundChars = value.match(forbiddenChars);
+    return {
+      isValid: false,
+      message: `Caracteres no permitidos encontrados: ${foundChars?.join(', ')}`
+    };
+  }
+  
+  return { isValid: true, message: '' };
+};
+
+
+// Función para validar teléfono (solo números, espacios, guiones y +)
+const validatePhoneInput = (value: string): { isValid: boolean; message: string } => {
+  // Solo permitir números, espacios, guiones y el símbolo +
+  const validChars = /^[0-9\s\-+]*$/;
+  
+  if (!validChars.test(value)) {
+    return {
+      isValid: false,
+      message: 'Solo se permiten números, espacios, guiones (-) y el símbolo +'
+    };
+  }
+  
+  return { isValid: true, message: '' };
+};
+
+
+
+
+
+
 // Interfaz para los datos de proveedores
 interface Proveedor {
   id: number;
@@ -19,6 +57,18 @@ interface Proveedor {
   telefono: string;
   direccion: string;
 }
+
+// Función para filtrar caracteres en tiempo real
+const filterTextInput = (value: string): string => {
+  // Remover caracteres prohibidos automáticamente
+  return value.replace(/[;%$@#&*()[\]{}|\\/?<>"'`~!^=]/g, '');
+};
+
+// Función para filtrar teléfono en tiempo real
+const filterPhoneInput = (value: string): string => {
+  // Solo mantener números, espacios, guiones y +
+  return value.replace(/[^0-9\s\-+]/g, '');
+};
 
 // =====================
 // DEFINICIONES DE ESTILOS PARA SWEETALERT2
@@ -91,8 +141,7 @@ function useWindowSize() {
     isSmall: windowSize.width <= 992 && windowSize.width > 768,
     isMobile: windowSize.width <= 768
   };
-}
-
+};
 
 export default function GestionProveedoresPage() {
   const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
@@ -101,22 +150,25 @@ export default function GestionProveedoresPage() {
   const [error, setError] = useState<string | null>(null);
   const [proveedoresData, setProveedoresData] = useState<Proveedor[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 15;
   const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
 
   // Estados para el modal de edición
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProveedor, setEditingProveedor] = useState<Proveedor | null>(null);
   const [editFormData, setEditFormData] = useState<Proveedor | null>(null);
-  
-  // Estados para el modal de agregar
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [addFormData, setAddFormData] = useState({
-    marca: '',
-    email: '',
-    telefono: '',
-    direccion: ''
-  });
+
+
+// Estado para mostrar u ocultar el modal de agregar
+const [showAddModal, setShowAddModal] = useState(false);
+
+// Estado para el formulario de agregar
+const [addFormData, setAddFormData] = useState({
+  marca: '',
+  email: '',
+  telefono: '',
+  direccion: ''
+});
 
   // Efecto para cargar los datos
   useEffect(() => {
@@ -175,7 +227,7 @@ export default function GestionProveedoresPage() {
     };
 
     fetchProveedores();
-  }, []);
+  }, [apiInventarioUrl]);
 
   // Función para reintentar la carga de datos
   const retryFetch = () => {
@@ -232,13 +284,10 @@ export default function GestionProveedoresPage() {
       imageAlt: "Funcionalidad en Mantenimiento",
       confirmButtonText: 'ACEPTAR',
       confirmButtonColor: '#ff7300',
-      timer: 5000,
-      timerProgressBar: true,
-      showCloseButton: true
     });
   };
 
-  // Función para agregar un nuevo proveedor
+// Función para agregar un nuevo proveedor
   const handleAgregarProveedor = () => {
     // Resetear el formulario
     setAddFormData({
@@ -390,115 +439,54 @@ export default function GestionProveedoresPage() {
     }
   };
 
-  // Función para editar un proveedor
+    // Función para editar un proveedor
   const handleEditar = (proveedor: Proveedor) => {
     setEditingProveedor(proveedor);
     setEditFormData({ ...proveedor });
     setShowEditModal(true);
   };
 
-  // Función para guardar cambios del modal de edición
   const handleSaveEditChanges = async () => {
   if (!editFormData || !editingProveedor) return;
 
-    // Validaciones requeridas
-    if (!editFormData.marca.trim()) {
-      Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Error
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            El nombre de la marca es requerido
-          </div>
-        `,
-        icon: 'error',
-        confirmButtonColor: '#ff7300',
-        confirmButtonText: 'OK',
-        showCloseButton: true
-      });
-      return;
-    }
+  // Validaciones
+  if (!editFormData.marca.trim()) {
+    Swal.fire({ title: 'Error', text: 'La marca es requerida', icon: 'error', confirmButtonColor: '#ff7300' });
+    return;
+  }
 
-    if (!editFormData.email.trim()) {
-      Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Error
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            El correo electrónico es requerido
-          </div>
-        `,
-        icon: 'error',
-        confirmButtonColor: '#ff7300',
-        confirmButtonText: 'OK',
-        showCloseButton: true
-      });
-      return;
-    }
+  if (!editFormData.email.trim()) {
+    Swal.fire({ title: 'Error', text: 'El email es requerido', icon: 'error', confirmButtonColor: '#ff7300' });
+    return;
+  }
 
-    if (!editFormData.telefono.trim()) {
-      Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Error
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            El teléfono es requerido
-          </div>
-        `,
-        icon: 'error',
-        confirmButtonColor: '#ff7300',
-        confirmButtonText: 'OK',
-        showCloseButton: true
-      });
-      return;
-    }
+  if (!editFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    Swal.fire({ title: 'Error', text: 'Email inválido', icon: 'error', confirmButtonColor: '#ff7300' });
+    return;
+  }
 
-    if (!editFormData.direccion.trim()) {
-      Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Error
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            La dirección es requerida
-          </div>
-        `,
-        icon: 'error',
-        confirmButtonColor: '#ff7300',
-        showCloseButton: true
-      });
-      return;
-    }
+  if (!editFormData.telefono.trim()) {
+    Swal.fire({ title: 'Error', text: 'El celular es requerido', icon: 'error', confirmButtonColor: '#ff7300' });
+    return;
+  }
 
-    if (!editFormData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Error
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            Email inválido
-          </div>
-        `,
-        icon: 'error',
-        confirmButtonColor: '#ff7300',
-        showCloseButton: true
-      });
-      return;
-    }
+  // Validar formato exacto "+56 9 1234 5678"
+  const telefonoRegex = /^\+56 9 \d{4} \d{4}$/;
+  if (!telefonoRegex.test(editFormData.telefono)) {
+    Swal.fire({ title: 'Error', text: 'El número debe tener el formato +56 9 XXXX XXXX', icon: 'error', confirmButtonColor: '#ff7300' });
+    return;
+  }
+
+  if (!editFormData.direccion.trim()) {
+    Swal.fire({ title: 'Error', text: 'La dirección es requerida', icon: 'error', confirmButtonColor: '#ff7300' });
+    return;
+  }
 
   try {
-    // Normalizar teléfono: quitar todo menos números
-    const telefonoNormalizado = editFormData.telefono.replace(/\D/g, '');
-
-    // Crear el cuerpo del request
     const payload = {
       marca: editFormData.marca.trim(),
       email: editFormData.email.trim(),
-      telefono: telefonoNormalizado,
+      telefono: editFormData.telefono.trim(), // Aquí se envía con formato +56 9 XXXX XXXX
       direccion: editFormData.direccion.trim(),
     };
 
@@ -530,63 +518,36 @@ export default function GestionProveedoresPage() {
     setEditingProveedor(null);
     setEditFormData(null);
 
-      Swal.fire({
-        icon: 'success',
-        html: `
-          <div style="${swalTituloCssString}">
-            ¡Proveedor editado con éxito!
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            Los cambios se han guardado correctamente.
-          </div>
-        `,
-        showConfirmButton: true,
-        timer: 5000,
-        timerProgressBar: true,
-        showCloseButton: true,
-        confirmButtonColor: '#ff7300',
-        confirmButtonText: 'Aceptar'
-      });
-    } catch (error) {
-
-      Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            Error
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            No se pudo actualizar el proveedor
-          </div>
-        `,
-        icon: 'error',
-        confirmButtonColor: '#ff7300',
-        confirmButtonText: 'Aceptar',
-        showCloseButton: true,
-        timer: 5000,
-        timerProgressBar: true,
-
-      });
-    }
-  };
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: '¡Proveedor actualizado exitosamente!',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+    });
+  } catch (error) {
+    Swal.fire({
+      title: 'Error',
+      text: 'No se pudo actualizar el proveedor',
+      icon: 'error',
+      confirmButtonColor: '#ff7300'
+    });
+  }
+};
 
   // Función para eliminar un proveedor
   const handleEliminar = async (proveedor: Proveedor) => {
     const result = await Swal.fire({
-      html: `
-        <div style="${swalTituloCssString}">
-          ¿Estás seguro?
-        </div>
-        <div style="${swalTextoConMargenCssString}">
-          ¿Deseas eliminar el proveedor ${proveedor.marca}?
-        </div>
-      `,
+      title: '¿Estás seguro?',
+      text: `¿Deseas eliminar el proveedor ${proveedor.marca}?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
-      showCloseButton: true,
+      cancelButtonText: 'Cancelar'
     });
 
     if (result.isConfirmed) {
@@ -600,36 +561,18 @@ export default function GestionProveedoresPage() {
         setProveedoresData(proveedoresData.filter(p => p.id !== proveedor.id));
 
         await Swal.fire({
-          html: `
-            <div style="${swalTituloCssString}">
-              ¡Eliminado!
-            </div>
-            <div style="${swalTextoConMargenCssString}">
-              El proveedor ha sido eliminado correctamente.
-            </div>
-          `,
+          title: '¡Eliminado!',
+          text: 'El proveedor ha sido eliminado correctamente',
           icon: 'success',
-          confirmButtonColor: '#ff7300',
-          timer: 5000,
-          timerProgressBar: true,
-          showCloseButton: true
+          confirmButtonColor: '#ff7300'
         });
       } catch (error) {
 
         await Swal.fire({
-          html: `
-            <div style="${swalTituloCssString}">
-              Error
-            </div>
-            <div style="${swalTextoConMargenCssString}">
-              No se pudo eliminar el proveedor
-            </div>
-          `,
+          title: 'Error',
+          text: 'No se pudo eliminar el proveedor',
           icon: 'error',
-          confirmButtonColor: '#ff7300',
-          timer: 5000,
-          timerProgressBar: true,
-          showCloseButton: true
+          confirmButtonColor: '#ff7300'
         });
       }
     }
@@ -674,7 +617,56 @@ export default function GestionProveedoresPage() {
     setCurrentPage(pageNumber);
   };
 
+  // Renderizar botones de paginación
+  const renderPaginationButtons = () => {
+    const buttons = [];
+    const maxButtonsToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
 
+    if (endPage - startPage + 1 < maxButtonsToShow) {
+      startPage = Math.max(1, endPage - maxButtonsToShow + 1);
+    }
+
+    if (startPage > 1) {
+      buttons.push(
+        <button key="1" onClick={() => handlePageClick(1)} style={paginationButtonBaseStyle}>
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        buttons.push(<span key="dots-start" style={paginationDotsStyle}>...</span>);
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => handlePageClick(i)}
+          style={{
+            ...paginationButtonBaseStyle,
+            ...(currentPage === i ? paginationButtonActiveStyle : {}),
+          }}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        buttons.push(<span key="dots-end" style={paginationDotsStyle}>...</span>);
+      }
+      buttons.push(
+        <button key={totalPages} onClick={() => handlePageClick(totalPages)} style={paginationButtonBaseStyle}>
+          {totalPages}
+        </button>
+      );
+    }
+
+    return buttons;
+  };
 
   // Calcular ancho de búsqueda basado en el tamaño de la ventana
   const getSearchWidth = () => {
@@ -760,6 +752,8 @@ export default function GestionProveedoresPage() {
                 type="text"
                 placeholder="Buscar por ID, Marca, Email..."
                 value={searchTerm}
+                                            maxLength={70}
+
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
               />
@@ -841,7 +835,7 @@ export default function GestionProveedoresPage() {
                 <th style={thStyle}>ID Proveedor</th>
                 <th style={thStyle}>Nombre</th>
                 <th style={thStyle}>Correo electrónico</th>
-                <th style={thStyle}>Teléfono</th>
+                <th style={thStyle}>Celular</th>
                 <th style={thStyle}>Dirección</th>
                 <th style={thStyle}>Acciones</th>
               </tr>
@@ -871,7 +865,6 @@ export default function GestionProveedoresPage() {
                       }} />
                       <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando proveedores...</div>
                       <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
-                        Conectando con el servidor...
                       </div>
                     </div>
                   </td>
@@ -987,73 +980,43 @@ export default function GestionProveedoresPage() {
             </tbody>
           </table>
         </div>
-      </div>
 
         {filteredData.length > 0 && (
-          <div style={paginationContainerStyle}>
+          <div style={{
+            ...paginationContainerStyle,
+            flexDirection: isMobile ? "column" : "row",
+            padding: "1rem",
+            marginTop: "1rem",
+            width: "100%",
+            boxSizing: "border-box"
+          }}>
             <div style={{
               ...paginationControlsStyle,
-              flexDirection: isMobile ? "column" : "row",
-              gap: isMobile ? "1rem" : "1rem",
-              padding: isMobile ? "1rem" : "0.5rem 1rem"
+              flexWrap: "wrap",
+              gap: isMobile ? "0.5rem" : "0.75rem"
             }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                width: isMobile ? "100%" : "auto",
-                gap: "1rem"
-              }}>
-                <button 
-                  onClick={handlePrevPage} 
-                  disabled={currentPage === 1} 
-                  style={{
-                    ...paginationButtonBaseStyle,
-                    ...(currentPage === 1 ? paginationButtonDisabledStyle : {}),
-                    flex: isMobile ? "1" : "none",
-                    minWidth: isMobile ? "auto" : "80px"
-                  }}
-                >
-                  Anterior
-                </button>
-                
-                <div style={{
-                  ...pageIndicatorStyle,
-                  margin: isMobile ? "0" : "0",
-                  flex: isMobile ? "0 0 auto" : "none"
-                }}>
-                  {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
-                </div>
-                
-                <button
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                  style={{
-                    ...paginationButtonBaseStyle,
-                    ...(currentPage === totalPages ? paginationButtonDisabledStyle : {}),
-                    flex: isMobile ? "1" : "none",
-                    minWidth: isMobile ? "auto" : "80px"
-                  }}
-                >
-                  Siguiente
-                </button>
+              <button onClick={handlePrevPage} disabled={currentPage === 1} style={paginationButtonBaseStyle}>
+                Anterior
+              </button>
+              <div style={paginationButtonsWrapperStyle}>
+                {renderPaginationButtons()}
               </div>
-              
-              {totalPages > 1 && (
-                <div style={{
-                  ...paginationButtonsWrapperStyle,
-                  justifyContent: isMobile ? "center" : "flex-start",
-                  flexWrap: isMobile ? "wrap" : "nowrap",
-                  width: isMobile ? "100%" : "auto"
-                }}>
-                </div>
-              )}
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                style={{ ...paginationButtonBaseStyle, ...paginationNextButtonStyle }}
+              >
+                Siguiente
+              </button>
             </div>
+            
           </div>
         )}
-        
-      {/* Modal de Edición */}
+      </div>
+
+
+{/* Modal de Edición */}
+{/* Modal de Edición */}
       {showEditModal && editFormData && (
         <div style={modalOverlayStyle}>
           <div style={{...modalContentStyle, maxWidth: '500px', padding: '2rem'}}>
@@ -1180,98 +1143,111 @@ export default function GestionProveedoresPage() {
   </div>
 )}
 
-      {/* Modal de Agregar Proveedor */}
-      {showAddModal && (
-        <div style={modalOverlayStyle}>
-          <div style={{...modalContentStyle, maxWidth: '500px', padding: '2rem'}}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-              <h2 style={{...modalTitleStyle, margin: 0}}>Agregar Nuevo Proveedor</h2>
-              <button 
-                onClick={() => setShowAddModal(false)}
-                style={closeButtonStyle}
-              >
-                &times;
-              </button>
-            </div>
-            
-            <div style={{...modalFormStyle, padding: '0 1rem'}}>
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Marca *</label>
-                <input
-                  type="text"
-                  value={addFormData.marca}
-                  onChange={(e) => setAddFormData({...addFormData, marca: e.target.value})}
-                  style={{
-                    ...selectStyle,
-                    borderColor: !addFormData.marca.trim() ? '#ef4444' : '#ddd'
-                  }}
-                  placeholder="Nombre de la marca"
-                />
-              </div>
 
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Email *</label>
-                <input
-                  type="email"
-                  value={addFormData.email}
-                  onChange={(e) => setAddFormData({...addFormData, email: e.target.value})}
-                  style={{
-                    ...selectStyle,
-                    borderColor: !addFormData.email.trim() ? '#ef4444' : '#ddd'
-                  }}
-                  placeholder="correo@ejemplo.com"
-                />
-              </div>
 
-        {/* Celular */}
+
+
+{/* Modal de Agregar Proveedor */}
+{showAddModal && (
+  <div style={modalOverlayStyle}>
+    <div style={{ ...modalContentStyle, maxWidth: '500px', padding: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+        <h2 style={{ ...modalTitleStyle, margin: 0 }}>Agregar Nuevo Proveedor</h2>
+        <button
+          onClick={() => setShowAddModal(false)}
+          style={closeButtonStyle}
+        >
+          &times;
+        </button>
+      </div>
+
+      <div style={{ ...modalFormStyle, padding: '0 1rem' }}>
+        {/* Marca */}
         <div style={selectGroupStyle}>
-          <label style={labelStyle}>Celular</label>
+          <label style={labelStyle}>Marca</label>
           <input
-            type="tel"
-            value={addFormData.telefono || '+56 9 '}
-            maxLength={15}
-            onChange={(e) => {
-              let valor = e.target.value;
-
-              // Forzar prefijo +56 9
-              if (!valor.startsWith('+56 9 ')) {
-                valor = valor.replace(/[^\d]/g, '');
-              } else {
-                valor = valor.replace('+56 9 ', '').replace(/[^\d]/g, '');
-              }
-
-              // Limitar a 9 dígitos
-              if (valor.length > 9) valor = valor.slice(0, 9);
-
-              // Formatear +56 9 XXXX XXXX
-              let formateado = '+56 9 ';
-              if (valor.length > 4) {
-                formateado += valor.slice(0, 4) + ' ' + valor.slice(4);
-              } else {
-                formateado += valor;
-              }
-
-              setAddFormData({ ...addFormData, telefono: formateado });
-            }}
+            type="text"
+            value={addFormData.marca}
+            onChange={(e) => setAddFormData({ ...addFormData, marca: e.target.value })}
             style={selectStyle}
-            placeholder="+56 9 1234 5678"
+            placeholder="Ingresa el nombre de la marca"
           />
         </div>
 
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Dirección *</label>
-                <input
-                  type="text"
-                  value={addFormData.direccion}
-                  onChange={(e) => setAddFormData({...addFormData, direccion: e.target.value})}
-                  style={{
-                    ...selectStyle,
-                    borderColor: !addFormData.direccion.trim() ? '#ef4444' : '#ddd'
-                  }}
-                  placeholder="Dirección completa"
-                />
-              </div>
-            </div>
+        {/* Email */}
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Email</label>
+          <input
+            type="email"
+            value={addFormData.email}
+            maxLength={100}
+            onChange={(e) => {
+              const valor = e.target.value;
+              if (valor === '' || /^[a-zA-Z0-9._@-]*$/.test(valor)) {
+                setAddFormData({ ...addFormData, email: valor });
+              }
+            }}
+            style={selectStyle}
+            placeholder="Ingresa tu correo electrónico"
+          />
+        </div>
+
+{/* Celular */}
+<div style={selectGroupStyle}>
+  <label style={labelStyle}>Celular</label>
+  <input
+    type="tel"
+    value={addFormData.telefono}
+    maxLength={15}
+    onChange={(e) => {
+      const valor = e.target.value;
+
+      // Si el usuario borra todo, permitir campo vacío
+      if (valor.trim() === '') {
+        setAddFormData({ ...addFormData, telefono: '' });
+        return;
+      }
+
+      // Quitar todo excepto números
+      let soloNumeros = valor.replace(/\D/g, '');
+
+      // Eliminar prefijo si ya viene con 569 al principio (caso raro)
+      if (soloNumeros.startsWith('569')) {
+        soloNumeros = soloNumeros.slice(3);
+      }
+
+      // Limitar a 9 dígitos después del 9
+      if (soloNumeros.length > 9) {
+        soloNumeros = soloNumeros.slice(0, 9);
+      }
+
+      // Formatear como +56 9 XXXX XXXX
+      let formateado = '+56 9 ';
+      if (soloNumeros.length > 4) {
+        formateado += soloNumeros.slice(0, 4) + ' ' + soloNumeros.slice(4);
+      } else {
+        formateado += soloNumeros;
+      }
+
+      setAddFormData({ ...addFormData, telefono: formateado });
+    }}
+    style={selectStyle}
+    placeholder="+56 9 1234 5678"
+  />
+</div>
+
+        {/* Dirección */}
+        <div style={selectGroupStyle}>
+          <label style={labelStyle}>Dirección</label>
+          <input
+            type="text"
+            value={addFormData.direccion}
+            onChange={(e) => setAddFormData({ ...addFormData, direccion: e.target.value })}
+            style={selectStyle}
+            placeholder="Ingresa la dirección completa"
+          />
+        </div>
+      </div>
 
       <div style={{ ...modalButtonsStyle, padding: '0 1rem' }}>
         <button
@@ -1664,28 +1640,4 @@ const closeButtonStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-};
-
-const paginationButtonDisabledStyle: React.CSSProperties = {
-  backgroundColor: '#d1d5db',
-  color: '#9ca3af',
-  cursor: 'not-allowed',
-  opacity: 0.6
-};
-
-const pageIndicatorStyle: React.CSSProperties = {
-  fontSize: '0.875rem',
-  fontWeight: '500',
-  color: '#f7f7f7',
-  fontFamily: 'Montserrat, sans-serif',
-  display: 'flex',
-  alignItems: 'center',
-  padding: '0 1rem',
-  backgroundColor: '#5c5c5c',
-  borderRadius: '6px',
-  border: '1px solid #e5e7eb',
-  minWidth: 'fit-content',
-  whiteSpace: 'nowrap',
-  paddingTop: '0.5rem',
-  paddingBottom: '0.5rem',
 };

@@ -226,7 +226,7 @@ export default function GestionUsuariosPage() {
     };
 
     fetchUsuarios();
-  }, []);
+  }, [apiInventarioUrl]);
 
   // Función para reintentar la carga de datos
   const retryFetch = () => {
@@ -854,6 +854,7 @@ Swal.fire({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
+                maxLength={70}
               />
               <button style={lupaButtonStyle}>
                 <Image
@@ -970,7 +971,6 @@ Swal.fire({
               }} />
               <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando usuarios...</div>
               <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
-                Conectando con el servidor...
               </div>
             </div>
           ) : error ? (

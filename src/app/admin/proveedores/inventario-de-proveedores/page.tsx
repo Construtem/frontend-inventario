@@ -116,7 +116,7 @@ export default function InventarioProveedoresPage() {
       }
     };
     fetchInventario();
-  }, []);
+  }, [apiInventarioUrl]);
 
   // Filtrar datos según búsqueda
   const filteredData = useMemo(() => {
@@ -241,6 +241,8 @@ export default function InventarioProveedoresPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
+                                            maxLength={70}
+
               />
               <button style={lupaButtonStyle}>
                 <Image
