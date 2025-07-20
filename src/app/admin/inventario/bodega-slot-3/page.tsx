@@ -7,14 +7,12 @@ import React, { useState, useMemo, useEffect } from "react";
 import Swal from 'sweetalert2';
 import Image from "next/image";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { FaArrowLeft } from "react-icons/fa";
-
 
 
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
-import logo1Img from "@/styles/images/logo1.png";
 import buscarImg from "@/styles/images/buscar.png";
+import volverImg from "@/styles/images/volver.png";
 
 // =====================
 // 1.1 CONFIGURACIÓN DEL BACKEND
@@ -227,6 +225,8 @@ const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 // =====================
 
 
+
+
 const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFilters, activeFilters }) => {
   const [categoria, setCategoria] = useState("");
   const [estado, setEstado] = useState("");
@@ -275,7 +275,7 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
       confirmButtonText: 'ACEPTAR',
       confirmButtonColor: '#ff7300',
       showCloseButton: true,
-      timer: 3000,
+      timer: 5000,
       timerProgressBar: true,
     });
   };
@@ -406,7 +406,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
           </div>
         `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
@@ -422,7 +425,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
           </div>
         `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
@@ -438,7 +444,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
           </div>
         `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
@@ -454,7 +463,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ isOpen, product, on
           </div>
         `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
@@ -687,6 +699,7 @@ export default function SucursalSlot1Page() {
 
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductData | null>(null);
   const [loadedProducts, setLoadedProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -837,6 +850,7 @@ export default function SucursalSlot1Page() {
     });
   }, [loadedProducts, searchTerm, activeFilters]);
 
+
   // Calcular los datos a mostrar en la página actual usando los productos filtrados
   const currentTableData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -844,39 +858,15 @@ export default function SucursalSlot1Page() {
     return filteredProducts.slice(startIndex, endIndex);
   }, [filteredProducts, currentPage]);
 
+
   // Calcular el número total de páginas con los productos filtrados
   const totalPages = useMemo(() => {
     return Math.ceil(filteredProducts.length / itemsPerPage);
   }, [filteredProducts]);
 
   
-
   // Función para el botón MODIFICAR
   const handleModifyProduct = async (sku: string) => {
-    if (sku === 'NUEVO') {
-      // Mostrar modal para agregar productos
-      Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            ¡<b>Funcionalidad en Mantenimiento</b>!
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            Esta funcionalidad estará nuevamente disponible próximamente.
-          </div>
-        `,
-        imageUrl: logo1Img.src,
-        imageWidth: 400,
-        imageHeight: 200,
-        imageAlt: "Funcionalidad en Mantenimiento",
-        confirmButtonText: 'ACEPTAR',
-        confirmButtonColor: '#ff7300',
-        showCloseButton: true,
-        timer: 5000,
-        timerProgressBar: true,
-      });
-      return;
-    }
-
     // Buscar el producto a editar
     const product = loadedProducts.find(p => p.sku === sku);
     if (!product) {
@@ -892,6 +882,9 @@ export default function SucursalSlot1Page() {
         `,
         confirmButtonText: 'ACEPTAR',
         confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
       return;
     }
@@ -948,6 +941,9 @@ export default function SucursalSlot1Page() {
         `,
         confirmButtonText: 'ACEPTAR',
         confirmButtonColor: '#ff7300',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true
       });
     }
   };
@@ -981,12 +977,15 @@ export default function SucursalSlot1Page() {
         Swal.fire({
           icon: 'success',
           html: `
+            <div style="${swalTituloCssString}">
+              ¡Producto eliminado!
+            </div>
             <div style="${swalTextoCssString}">
               Producto eliminado exitosamente
             </div>
           `,
           showConfirmButton: false,
-          timer: 3000,
+          timer: 5000,
           timerProgressBar: true,
         });
       } catch (error) {
@@ -1002,6 +1001,9 @@ export default function SucursalSlot1Page() {
           `,
           confirmButtonText: 'ACEPTAR',
           confirmButtonColor: '#ff7300',
+          timer: 5000,
+          timerProgressBar: true,
+          showCloseButton: true
         });
       }
     }
@@ -1020,9 +1022,6 @@ export default function SucursalSlot1Page() {
     }
   };
 
-  const handlePageClick = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-  };
 
 
   // Guardar los productos cargados en window para que el modal los pueda leer
@@ -1069,16 +1068,21 @@ export default function SucursalSlot1Page() {
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-                    <button
-                      onClick={() => router.push('/admin/inventario')}
-                      style={backButtonStyle}
-                      title="Volver a Despachos"
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#e65a00')}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#ff7300')}
-                    >
-                      <FaArrowLeft />
-                      Volver
-                    </button>
+        <button style={{
+              ...buttonStyle,
+              width: isMobile ? "25%" : isSmall ? "15%" : isMedium ? "12%" : isLarge ? "10%" : "7.5%",
+              fontSize: isMobile ? "0.875rem" : "1rem",
+              padding: isMobile ? "0.5rem 0.75rem" : "0.5rem 1.2rem"
+            }} onClick={() => router.push('/admin/inventario')}>
+              <Image
+                src={volverImg.src}
+                width={20}
+                height={20}
+                alt="Volver"
+                style={filterIconStyle}
+              />
+              {!isMobile && "Volver"}
+            </button>
         <h1 style={{...titleStyle,
           fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
           marginBottom: "1.5rem"}}>
@@ -1114,12 +1118,11 @@ export default function SucursalSlot1Page() {
               value={searchTerm}
               onChange={(e) => {
                 const valor = e.target.value;
-                // Solo permitir letras, espacios y caracteres acentuados
                 if (valor === '' || /^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
                   setSearchTerm(valor);
                 }
               }}
-              maxLength={70}
+              maxLength={100}
               style={{
                 ...inputStyle,
                 fontSize: isMobile ? "0.875rem" : "1rem"
@@ -1204,8 +1207,7 @@ export default function SucursalSlot1Page() {
               ...editButtonStyle,
               width: isMobile ? "100%" : "auto",
               fontSize: isMobile ? "0.875rem" : "1rem",
-              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-            }} onClick={() => handleModifyProduct('NUEVO')}>
+            }} onClick={() => setIsAddProductModalOpen(true)}>
               <Image
                 src={agregarImg.src}
                 alt="Agregar productos"
@@ -1320,9 +1322,9 @@ export default function SucursalSlot1Page() {
             </tbody>
           </table>
         </div>
+      </div>
 
         {loadedProducts.length > 0 && (
-          <div style={paginationContainerStyle}>
             <div style={{
               ...paginationControlsStyle,
               flexDirection: isMobile ? "column" : "row",
@@ -1355,7 +1357,7 @@ export default function SucursalSlot1Page() {
                   flex: isMobile ? "0 0 auto" : "none"
                 }}>
                   {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>página(s)</span>}
                 </div>
                 
                 <button
@@ -1382,10 +1384,7 @@ export default function SucursalSlot1Page() {
                 </div>
               )}
             </div>
-          </div>
         )}
-      </div>
-
       <FiltersModal
         isOpen={isFiltersModalOpen}
         onClose={() => setIsFiltersModalOpen(false)}
@@ -1402,9 +1401,11 @@ export default function SucursalSlot1Page() {
         }}
         onSave={handleSaveProduct}
       />
+
     </div>
   );
 }
+
 
 // =====================
 // 6. ESTILOS DE COMPONENTES
@@ -1495,7 +1496,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const titleStyle: React.CSSProperties = {
-  color: "rgb(34, 34, 34)",
+  color:"#000",
   fontSize: "2rem",
   fontWeight: "bold",
   marginBottom: "1.5rem",
@@ -1578,24 +1579,18 @@ const tdStyle: React.CSSProperties = {
   textAlign: "center",
 };
 
-const paginationContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'center',
-  marginTop: '2rem',
-  padding: '1rem',
-  backgroundColor: '#f3f4f6',
-  borderRadius: '10px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-};
+
 
 const paginationControlsStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '1rem',
+  marginTop: '1rem',
   backgroundColor: '#fff',
   borderRadius: '8px',
   padding: '0.5rem 1rem',
   boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  justifyContent: 'center',
 };
 
 const paginationButtonsWrapperStyle: React.CSSProperties = {
@@ -1669,7 +1664,7 @@ const modifyProductButtonStyle: React.CSSProperties = {
   fontFamily: 'Montserrat, sans-serif',
   transition: 'background-color 0.2s ease',
   whiteSpace: 'nowrap',
-  boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08)',
   maxWidth: '120px',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
@@ -1883,7 +1878,9 @@ const skuContainerStyle: React.CSSProperties = {
   backgroundColor: '#f3f4f6', 
   padding: '0.5rem 0.75rem', 
   borderRadius: '6px', 
-  border: '1px solid #d1d5db' 
+  border: '1px solid #d1d5db', 
+  fontFamily: 'Montserrat, sans-serif',
+
 };
 
 const paginationButtonDisabledStyle: React.CSSProperties = {
@@ -1909,20 +1906,24 @@ const pageIndicatorStyle: React.CSSProperties = {
   paddingTop: '0.5rem',
   paddingBottom: '0.5rem',
 };
-const backButtonStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "0.5rem",
+
+const buttonStyle: React.CSSProperties = {
   backgroundColor: "#ff7300",
   color: "white",
-  border: "none",
-  padding: "0.75rem 1.5rem",
+  padding: "0.5rem 1.2rem",
   borderRadius: "8px",
+  height: "40px",
+  border: "none",
   cursor: "pointer",
-  fontSize: "0.875rem",
-  fontWeight: "600",
   fontFamily: "Montserrat, sans-serif",
-  transition: "all 0.2s ease",
-  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-  alignSelf: "flex-start",
+  fontSize: "1rem",
+  fontWeight: 600,
+  marginBottom: "1rem",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+  transition: "background-color 0.2s ease",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "0.5rem",
+  minWidth: "fit-content"
 };

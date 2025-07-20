@@ -24,6 +24,7 @@ interface Sucursal {
 }
 
 
+// FUNCIONES PARA RESTRINGIR
 
 const validatePhoneInput = (value: string): { isValid: boolean; message: string } => {
   const validChars = /^[0-9\s\-+]*$/;
@@ -59,6 +60,24 @@ const formatPhoneChileno = (numero: string): string => {
 
   return formateado;
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 const maxPorTipo = 3;
@@ -159,7 +178,6 @@ const estiloSwalTextoConMargenObj: React.CSSProperties = {
 
 
 const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
-const swalTextoCssString = objToInlineCss(estiloSwalTextoObj);
 const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 
 
@@ -572,7 +590,7 @@ const filterPhoneInput = (value: string): string => {
     telefono: '',
     ciudad: '',
     comuna: '',
-    tipo: '2' // valor por defecto (2 = Sucursal)
+    tipo: '' // Cambiar a string vacío para mostrar placeholder
   });
 
   // Agregar función para manejar la edición - eliminar lógica de determinación de tipo
@@ -745,7 +763,7 @@ const filterPhoneInput = (value: string): string => {
             ¡<b>Error</b>!
           </div>
           <div style="${swalTextoConMargenCssString}">
-            El teléfono es requerido
+            El número de celular es requerido
           </div>
         `,
         icon: 'error',
@@ -799,7 +817,7 @@ const filterPhoneInput = (value: string): string => {
       // Preparar los datos para enviar con tipo_id
       const dataToSend = {
         nombre: addFormData.tipo === '1' 
-          ? `Bodega ${addFormData.nombre}` 
+          ? `${addFormData.nombre}`
           : addFormData.nombre,
         direccion: addFormData.direccion,
         telefono: addFormData.telefono,
@@ -929,7 +947,14 @@ const filterPhoneInput = (value: string): string => {
         setSucursalesData(prevData => prevData.filter(item => item.id !== sucursal.id));
 
         Swal.fire({
-          title: 'Eliminado',
+          html: `
+            <div style="${swalTituloCssString}">
+              ¡<b>Eliminado</b>!
+            </div>
+            <div style="${swalTextoConMargenCssString}">
+              La ${tipo} y todos sus productos asociados han sido eliminados permanentemente
+            </div>
+          `,
           icon: 'success',
           confirmButtonColor: '#ff7300',
           timer: 5000,
@@ -982,24 +1007,20 @@ const filterPhoneInput = (value: string): string => {
       return;
     }
 
-    // Determinar qué tipos están disponibles
-    const tiposDisponibles = [];
-    if (sucursales < 3) tiposDisponibles.push('2');
-    if (bodegas < 3) tiposDisponibles.push('1');
-
-    // Si solo hay un tipo disponible, preseleccionarlo
-    const tipoInicial = tiposDisponibles.length === 1 ? tiposDisponibles[0] : '2';
-
-    // Resetear el formulario
+    // Resetear el formulario con valor vacío para el tipo
     setAddFormData({
       nombre: '',
       direccion: '',
       telefono: '',
       ciudad: '',
       comuna: '',
-      tipo: tipoInicial
+      tipo: '' // Cambiar a string vacío para mostrar placeholder
     });
     setShowAddModal(true);
+  };
+
+    const handleFiltersSucursal = () => {
+    setShowFilterModal(true);
   };
 
   // Agregar función para limpiar filtros desde la barra de herramientas
@@ -1065,10 +1086,15 @@ const filterPhoneInput = (value: string): string => {
               <input
                 type="text"
                 placeholder="Buscar por Nombre..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={inputStyle}
                 maxLength={70}
+                onChange={(e) => {
+                  const valor = e.target.value;
+                  if (valor === '' || /^[a-zA-ZÀ-ÿ0-9ñÑ\u00f1\u00d1\s]*$/.test(valor)) {
+                    setSearchTerm(valor);
+                  }
+                }}
+                value={searchTerm}
+                style={inputStyle}
               />
               <button style={lupaButtonStyle}>
                 <Image
@@ -1082,53 +1108,58 @@ const filterPhoneInput = (value: string): string => {
             </div>
             
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button 
-                style={{
-                  ...filterButtonStyle,
-                  width: isMobile ? "100%" : "auto",
-                  fontSize: isMobile ? "0.875rem" : "1rem",
-                  padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
-                  backgroundColor: hasActiveFilters ? '#ff7300' : '#5c5c5c',
-                  position: 'relative'
-                }}
-                onClick={() => setShowFilterModal(true)}
-              >
-                <Image
-                  src={filtrosImg.src}
-                  alt="Filtros"
-                  width={20}
-                  height={20}
-                  style={filterIconStyle}
-                />
-                Filtros
-                {hasActiveFilters && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '-5px',
-                    right: '-5px',
-                    width: '10px',
-                    height: '10px',
-                    backgroundColor: '#10b981',
-                    borderRadius: '50%',
-                    border: '2px solid white'
-                  }} />
-                )}
-              </button>
-
-              {hasActiveFilters && (
-                <button 
-                  onClick={handleClearFiltersFromToolbar}
-                  style={{
-                    ...filterButtonStyle,
-                    backgroundColor: '#ef4444',
-                    width: isMobile ? "100%" : "auto",
-                    fontSize: isMobile ? "0.875rem" : "1rem",
-                    padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
-                  }}
-                >
-                  Limpiar
-                </button>
-              )}
+                {!hasActiveFilters ? (
+                 <button style={{
+                   ...filterButtonStyle, 
+                   ...entirePieceFilterButtonStyle,
+                   width: isMobile ? "100%" : "auto",
+                   fontSize: isMobile ? "0.875rem" : "1rem",
+                   padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                   }}
+                   onClick={handleFiltersSucursal}>
+                     <Image
+                       src={filtrosImg.src}
+                       alt="Filtros"
+                       width={20}
+                       height={20}
+                       style={filterIconStyle}
+                     />
+                     Filtros
+                   </button>
+                 ) : (
+                 <div style={{ display: 'flex' }}>
+                   <button style={{
+                     ...filterButtonStyle,
+                     ...firstPieceFilterButtonStyle,
+                     width: isMobile ? "calc(100% - 80px)" : "auto",
+                     fontSize: isMobile ? "0.875rem" : "1rem",
+                     padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                   }} onClick={handleFiltersSucursal}>
+                     <Image
+                       src={filtrosImg.src}
+                       alt="Filtros"
+                       width={20}
+                       height={20}
+                       style={filterIconStyle}
+                     />
+                     Filtros
+                   </button>
+                   <button
+                     onClick={handleClearFiltersFromToolbar}
+                     style={{
+                       ...filterButtonStyle,
+                       ...secondPieceFilterButtonStyle,
+                       width: isMobile ? "80px" : "auto",
+                       fontSize: isMobile ? "0.75rem" : "0.875rem",
+                       padding: isMobile ? "0.75rem 0.5rem" : "0.5rem 1rem",
+                     }}
+                     title="Limpiar Filtros"
+                   >
+                     <span style={xClosebuttonStyle}>×</span>
+                     {!isMobile && 'Limpiar'}
+                   </button>
+                 </div>
+               )}
             </div>
           </div>
 
@@ -1197,7 +1228,6 @@ const filterPhoneInput = (value: string): string => {
               }} />
               <div style={{ fontSize: '1.1rem', color: '#666' }}>Cargando sucursales...</div>
               <div style={{ fontSize: '0.9rem', color: '#999', marginTop: '0.5rem' }}>
-                Conectando con el servidor...
               </div>
             </div>
           ) : error ? (
@@ -1275,7 +1305,7 @@ const filterPhoneInput = (value: string): string => {
                   <th style={thStyle}>ID</th>
                   <th style={thStyle}>Nombre</th>
                   <th style={thStyle}>Dirección</th>
-                  <th style={thStyle}>Teléfono</th>
+                  <th style={thStyle}>Celular</th>
                   <th style={thStyle}>Comuna</th>
                   <th style={thStyle}>Ciudad</th>
                   <th style={thStyle}>Tipo</th>
@@ -1306,10 +1336,10 @@ const filterPhoneInput = (value: string): string => {
                                    sucursal.nombre?.toLowerCase()?.includes('bodega')) ? '#10b981' : '#3b82f6';
                           })(),
                           color: 'white',
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '4px',
+                          padding: '0.4rem',
+                          borderRadius: '10px',
                           fontSize: '0.75rem',
-                          fontWeight: 'semibold'
+                          fontWeight: 'bold',
                         }}>
                           {(() => {
                             const tipoValue = sucursal.tipo_id || sucursal.tipo;
@@ -1318,7 +1348,7 @@ const filterPhoneInput = (value: string): string => {
                           })()}
                         </span>
                       </td>
-                      <td style={{...tdStyle, minWidth: '200px'}}>
+                      <td style={{...tdStyle, minWidth: '10px', textAlign: 'center'}}>
                         <div style={{
                           display: 'flex',
                           justifyContent: 'center',
@@ -1362,7 +1392,6 @@ const filterPhoneInput = (value: string): string => {
 
 
       {filteredData.length > 0 && (
-          <div style={paginationContainerStyle}>
             <div style={{
               ...paginationControlsStyle,
               flexDirection: isMobile ? "column" : "row",
@@ -1395,7 +1424,7 @@ const filterPhoneInput = (value: string): string => {
                   flex: isMobile ? "0 0 auto" : "none"
                 }}>
                   {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>página(s)</span>}
                 </div>
                 
                 <button
@@ -1422,7 +1451,6 @@ const filterPhoneInput = (value: string): string => {
                 </div>
               )}
             </div>
-          </div>
         )}
 
       {/* Modal de Filtros */}
@@ -1528,7 +1556,7 @@ const filterPhoneInput = (value: string): string => {
         </div>
       )}
 
-      {/* Modal de Edición */}
+{/* Modal de Edición */}
 {showEditModal && editFormData && (
   <div style={modalOverlayStyle}>
     <div style={{ ...modalContentStyle, padding: '2rem' }}>
@@ -1732,6 +1760,7 @@ const filterPhoneInput = (value: string): string => {
   </div>
 )}
 
+
       {/* Modal de Agregar Sucursal */}
       {showAddModal && (
         <div style={modalOverlayStyle}>
@@ -1755,16 +1784,16 @@ const filterPhoneInput = (value: string): string => {
               fontSize: '0.875rem',
               color: '#374151'
             }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Estado actual:</div>
-              <div>• Sucursales: {countByType.sucursales}/3</div>
-              <div>• Bodegas: {countByType.bodegas}/3</div>
+              <div style={subtitleModalStyle}>Estado actual:</div>
+              <div style={labelStyle}>• Sucursales: {countByType.sucursales}/3</div>
+              <div style={labelStyle}>• Bodegas: {countByType.bodegas}/3</div>
               {countByType.sucursales >= 3 && (
-                <div style={{ color: '#ef4444', marginTop: '0.5rem' }}>
+                <div style={limitReachedStyle}>
                   Límite de sucursales alcanzado
                 </div>
               )}
               {countByType.bodegas >= 3 && (
-                <div style={{ color: '#ef4444', marginTop: '0.5rem' }}>
+                <div style={limitReachedStyle}>
                   Límite de bodegas alcanzado
                 </div>
               )}
@@ -1778,17 +1807,25 @@ const filterPhoneInput = (value: string): string => {
                   onChange={(e) => {
                     setAddFormData({...addFormData, tipo: e.target.value});
                   }}
-                  style={selectStyle}
+                  style={{
+                    ...selectStyle,
+                    color: addFormData.tipo === '' ? '#9ca3af' : '#374151' // Color gris para placeholder
+                  }}
                 >
+                  <option value="" disabled style={{ color: '#9ca3af' }}>
+                    Seleccionar tipo
+                  </option>
                   <option 
                     value="2" 
                     disabled={countByType.sucursales >= 3}
+                    style={{ color: '#374151' }}
                   >
                     Sucursal {countByType.sucursales >= 3 ? '(Límite alcanzado)' : `(${countByType.sucursales}/3)`}
                   </option>
                   <option 
                     value="1" 
                     disabled={countByType.bodegas >= 3}
+                    style={{ color: '#374151' }}
                   >
                     Bodega {countByType.bodegas >= 3 ? '(Límite alcanzado)' : `(${countByType.bodegas}/3)`}
                   </option>
@@ -1797,11 +1834,12 @@ const filterPhoneInput = (value: string): string => {
 
               <div style={selectGroupStyle}>
                 <label style={labelStyle}>
-                  Nombre {addFormData.tipo === '1' && <span style={{fontSize: '0.8rem', color: '#666'}}>(se agregará &quot;Bodega&quot; al inicio automáticamente)</span>}
+                  Nombre 
                 </label>
                 <input
                   type="text"
                   value={addFormData.nombre}
+                  maxLength={50}
                   onChange={(e) => setAddFormData({...addFormData, nombre: e.target.value})}
                   style={inputStyle}
                   placeholder={addFormData.tipo === '1' ? 'Ej: Central' : 'Ej: Sucursal Centro'}
@@ -1915,6 +1953,7 @@ const filterPhoneInput = (value: string): string => {
           </div>
         </div>
       )}
+
     </div>
   );
 }
@@ -2072,7 +2111,6 @@ const lupaButtonStyle: React.CSSProperties = {
 const editButtonStyle: React.CSSProperties = {
   backgroundColor: "#ff7300",
   color: "white",
-  padding: "0.5rem 1.2rem",
   borderRadius: "8px",
   border: "none",
   cursor: "pointer",
@@ -2106,25 +2144,16 @@ const searchIconStyle: React.CSSProperties = {
   height: '30px',
 };
 
-
-const paginationContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'center',
-  marginTop: '2rem',
-  padding: '1rem',
-  backgroundColor: '#f3f4f6',
-  borderRadius: '10px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-};
-
 const paginationControlsStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '1rem',
   backgroundColor: '#fff',
+  marginTop: '1rem',
   borderRadius: '8px',
   padding: '0.5rem 1rem',
   boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  justifyContent:'center',
 };
 
 const paginationButtonsWrapperStyle: React.CSSProperties = {
@@ -2178,6 +2207,7 @@ const modalTitleStyle: React.CSSProperties = {
   fontWeight: 'bold',
   marginBottom: '1.5rem',
   textAlign: 'center',
+  fontFamily: 'Montserrat, sans-serif',
 };
 
 const modalFormStyle: React.CSSProperties = {
@@ -2196,6 +2226,7 @@ const labelStyle: React.CSSProperties = {
   color: '#374151',
   fontSize: '0.875rem',
   fontWeight: '500',
+  fontFamily: 'Montserrat, sans-serif',
 };
 
 const selectStyle: React.CSSProperties = {
@@ -2264,4 +2295,53 @@ const pageIndicatorStyle: React.CSSProperties = {
   paddingBottom: '0.5rem',
 };
 
+const subtitleModalStyle: React.CSSProperties = {
+  color: '#6b7280',
+  fontSize: '1rem',
+  fontWeight: 'semibold',
+  marginBottom: '1rem',
+  textAlign: 'left',
+  fontFamily: 'Montserrat, sans-serif',
+};
 
+const limitReachedStyle: React.CSSProperties = {
+  color: '#ef4444',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  marginTop: '0.5rem',
+  textAlign: 'left',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const entirePieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#5c5c5c',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
+};
+
+const firstPieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  borderTopRightRadius: '0',
+  borderBottomRightRadius: '0',
+  borderRight: '1px solid rgba(255, 255, 255, 0.3)',
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
+};
+
+const secondPieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ef4444',
+  borderTopLeftRadius: '0',
+  borderBottomLeftRadius: '0',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.25rem'
+};
+
+const xClosebuttonStyle: React.CSSProperties = {
+  fontSize: '1rem',
+  lineHeight: '1' 
+};
