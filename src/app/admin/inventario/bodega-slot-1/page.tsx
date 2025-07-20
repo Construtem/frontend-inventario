@@ -68,7 +68,7 @@ const fetchProducts = async (sucursalId?: string): Promise<ProductData[]> => {
         altoCm: item.producto.alto,
         precioVentaCu: item.producto.precio,
         stock: item.cantidad,
-        estado: item.producto.estado,
+        estado: item.producto.estado ? 'activo' : 'inactivo',
       }));
     
     return transformedData;
