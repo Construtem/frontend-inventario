@@ -5,14 +5,12 @@
 // =====================
 import React, { useState, useMemo, useEffect } from "react";
 import Swal from 'sweetalert2';
-import { useCSVReader } from 'react-papaparse';
 import Image from "next/image";
 import { useSearchParams, useRouter } from 'next/navigation';
 
 
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
-import logo1Img from "@/styles/images/logo1.png";
 import buscarImg from "@/styles/images/buscar.png";
 import volverImg from "@/styles/images/volver.png";
 
@@ -227,332 +225,7 @@ const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 // =====================
 
 
-// Simple Modal implementation
-const Modal: React.FC<{ isOpen: boolean; onClose: () => void; children: React.ReactNode }> = ({ isOpen, onClose, children }) => {
-  if (!isOpen) return null;
-  return (
-    <div style={modalOverlayStyle}>
-      <div style={modalContentStyle}>
-        <button style={closeButtonStyle} onClick={onClose}>&times;</button>
-        {children}
-      </div>
-    </div>
-  );
-};
 
-const AddProductModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (product: ProductData) => void; }> = ({ isOpen, onClose }) => {
-  const [zoneHover, setZoneHover] = useState(false);
-  const [removeHoverColor, setRemoveHoverColor] = useState('#ff7300');
-  const [csvData, setCsvData] = useState<any[]>([]);
-  const [showPreview, setShowPreview] = useState(false);
-  const { CSVReader } = useCSVReader();
-
-  // Helper to format file size
-  function formatFileSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} bytes`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-  }
-
-  // Reset state when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setCsvData([]);
-      setShowPreview(false);
-    }
-  }, [isOpen]);
-
-  // Handle CSV upload and parse data
-  const handleCSVUpload = (results: any) => {
-    console.log('CSV Results:', results);
-    if (results && results.data && results.data.length > 0) {
-      setCsvData(results.data);
-      setShowPreview(true);
-      setZoneHover(false);
-      
-      Swal.fire({
-        html: `
-          <div style="${swalTituloCssString}">
-            ¡Archivo cargado exitosamente!
-          </div>
-          <div style="${swalTextoConMargenCssString}">
-            Se encontraron ${results.data.length} filas de datos.
-          </div>
-        `,
-        icon: 'success',
-        confirmButtonColor: '#ff7300',
-        timer: 3000,
-        timerProgressBar: true,
-        showCloseButton: true
-      });
-    }
-  };
-
-  // Confirm upload and process data
-  const handleConfirmUpload = () => {
-    Swal.fire({
-      html: `
-        <div style="${swalTituloCssString}">
-          ¿Confirmar carga de productos?
-        </div>
-        <div style="${swalTextoConMargenCssString}">
-          Se procesarán ${csvData.length} filas de datos. ¿Deseas continuar?
-        </div>
-      `,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'SÍ, PROCESAR',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ff7300',
-      cancelButtonColor: '#6b7280'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // Process CSV data here
-        console.log('Processing CSV data:', csvData);
-        
-        Swal.fire({
-          html: `
-            <div style="${swalTituloCssString}">
-              ¡Productos procesados!
-            </div>
-            <div style="${swalTextoConMargenCssString}">
-              Los productos han sido cargados exitosamente.
-            </div>
-          `,
-          icon: 'success',
-          confirmButtonColor: '#ff7300',
-          timer: 3000,
-          timerProgressBar: true
-        });
-        
-        onClose();
-      }
-    });
-  };
-
-  // Style constants for the CSV drop zone and file display
-  const styles = {
-    zone: {
-      border: '2px dashed #ff7300',
-      borderRadius: '8px',
-      padding: '1.5rem',
-      textAlign: 'center' as const,
-      background: zoneHover ? '#fff7f0' : '#fafafa',
-      cursor: 'pointer',
-      transition: 'background 0.2s, border-color 0.2s',
-      marginBottom: '1rem',
-    },
-    zoneHover: {
-      borderColor: '#ff7300',
-      background: '#fff7f0',
-    },
-    file: {
-      display: 'flex',
-      flexDirection: 'column' as const,
-      alignItems: 'center',
-      gap: '0.5rem',
-    },
-    info: {
-      display: 'flex',
-      flexDirection: 'column' as const,
-      alignItems: 'center',
-      gap: '0.25rem',
-    },
-    size: {
-      fontSize: '0.85rem',
-      color: '#888',
-    },
-    name: {
-      fontWeight: 500,
-      fontSize: '1rem',
-      color: '#222',
-    },
-    progressBar: {
-      width: '100%',
-      margin: '0.5rem 0',
-    },
-    remove: {
-      cursor: 'pointer',
-      color: removeHoverColor,
-      fontSize: '1.2rem',
-      marginTop: '0.5rem',
-    },
-    previewContainer: {
-      width: "100%",
-      overflowX: "auto" as const,
-      borderRadius: "10px",
-      boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-      marginTop: "1rem",
-      border: "1px solid rgba(0, 0, 0, 0.05)",
-      backgroundColor: "#ffffff",
-      boxSizing: "border-box" as const,
-      maxHeight: "400px",
-      overflowY: "auto" as const,
-    },
-    buttonContainer: {
-      display: 'flex',
-      gap: '1rem',
-      marginTop: '1rem',
-      justifyContent: 'flex-end' as const,
-    },
-  };
-
-  const REMOVE_HOVER_COLOR_LIGHT = '#ffb380';
-  const DEFAULT_REMOVE_HOVER_COLOR = '#ff7300';
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <div style={{ padding: '1.5rem', maxWidth: '90vw', maxHeight: '90vh', overflow: 'auto' }}>
-        <h2 style={{...modalTitleStyle}}>Agregar Productos mediante CSV</h2>
-        
-        {!showPreview ? (
-          <div style={{ marginBottom: '1rem' }}>
-            <CSVReader
-              onUploadAccepted={handleCSVUpload}
-              onDragOver={(event: DragEvent) => {
-                event.preventDefault();
-                setZoneHover(true);
-              }}
-              onDragLeave={(event: DragEvent) => {
-                event.preventDefault();
-                setZoneHover(false);
-              }}
-            >
-              {({
-                getRootProps,
-                acceptedFile,
-                ProgressBar,
-                getRemoveFileProps,
-                Remove,
-              }: any) => (
-                <>
-                  <div
-                    {...getRootProps()}
-                    style={{
-                      ...styles.zone,
-                      ...(zoneHover ? styles.zoneHover : {}),
-                    }}
-                  >
-                    {acceptedFile ? (
-                      <>
-                        <div style={styles.file}>
-                          <div style={styles.info}>
-                            <span style={styles.size}>
-                              {formatFileSize(acceptedFile.size)}
-                            </span>
-                            <span style={styles.name}>{acceptedFile.name}</span>
-                          </div>
-                          <div style={styles.progressBar}>
-                            <ProgressBar />
-                          </div>
-                          <div
-                            {...getRemoveFileProps()}
-                            style={styles.remove}
-                            onMouseOver={(event: React.MouseEvent) => {
-                              event.preventDefault();
-                              setRemoveHoverColor(REMOVE_HOVER_COLOR_LIGHT);
-                            }}
-                            onMouseOut={(event: React.MouseEvent) => {
-                              event.preventDefault();
-                              setRemoveHoverColor(DEFAULT_REMOVE_HOVER_COLOR);
-                            }}
-                          >
-                            <Remove color={removeHoverColor} />
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      'Arrastra tu archivo CSV aquí o haz clic para subirlo'
-                    )}
-                  </div>
-                </>
-              )}
-            </CSVReader>
-          </div>
-        ) : (
-          <div>
-            <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: '#f0f9ff', borderRadius: '8px', border: '1px solid #0ea5e9' }}>
-              <h3 style={{ margin: '0 0 0.5rem 0', color: '#0369a1', fontFamily: 'Montserrat, sans-serif' }}>
-                Previsualización de datos
-              </h3>
-              <p style={{ margin: 0, fontSize: '0.875rem', color: '#075985' }}>
-                Se encontraron {csvData.length} filas de datos. Revisa la información antes de confirmar.
-              </p>
-            </div>
-            
-            <div style={styles.previewContainer}>
-              <table style={{
-                ...tableStyle,
-                fontSize: "0.875rem",
-                minWidth: "800px"
-              }}>
-                <thead style={{ 
-                  position: "sticky", 
-                  top: 0, 
-                  zIndex: 2, 
-                  background: "#5C5C5C",
-                  fontSize: "0.75rem"
-                }}>
-                  <tr>
-                    {csvData[0] && Object.keys(csvData[0]).map((header, index) => (
-                      <th key={index} style={thStyle}>
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {csvData.slice(0, 10).map((row, rowIndex) => (
-                    <tr key={rowIndex}>
-                      {Object.values(row).map((cell: any, cellIndex) => (
-                        <td key={cellIndex} style={tdStyle}>
-                          {cell || '-'}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {csvData.length > 10 && (
-                <div style={{ 
-                  ...tdStyle,
-                  textAlign: 'center',
-                  padding: '1rem',
-                  backgroundColor: '#f9fafb',
-                  fontStyle: 'italic',
-                  color: '#6b7280'
-                }}>
-                  ... y {csvData.length - 10} filas más
-                </div>
-              )}
-            </div>
-            
-            <div style={styles.buttonContainer}>
-              <button 
-                onClick={() => {
-                  setShowPreview(false);
-                  setCsvData([]);
-                }}
-                style={{
-                  ...modalButtonStyle,
-                  backgroundColor: '#6b7280'
-                }}
-              >
-                Volver a cargar
-              </button>
-              <button 
-                onClick={handleConfirmUpload}
-                style={modalButtonStyle}
-              >
-                Confirmar y procesar
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </Modal>
-  );
-};
 
 const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFilters, activeFilters }) => {
   const [categoria, setCategoria] = useState("");
@@ -1304,6 +977,9 @@ export default function SucursalSlot1Page() {
         Swal.fire({
           icon: 'success',
           html: `
+            <div style="${swalTituloCssString}">
+              ¡Producto eliminado!
+            </div>
             <div style="${swalTextoCssString}">
               Producto eliminado exitosamente
             </div>
@@ -1681,7 +1357,7 @@ export default function SucursalSlot1Page() {
                   flex: isMobile ? "0 0 auto" : "none"
                 }}>
                   {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>página(s)</span>}
                 </div>
                 
                 <button
@@ -1726,14 +1402,6 @@ export default function SucursalSlot1Page() {
         onSave={handleSaveProduct}
       />
 
-      <AddProductModal
-        isOpen={isAddProductModalOpen}
-        onClose={() => setIsAddProductModalOpen(false)}
-        onSave={(product) => {
-          // Aquí puedes agregar la lógica para guardar el producto
-          setLoadedProducts(prev => [...prev, product]);
-        }}
-      />
     </div>
   );
 }
@@ -1828,7 +1496,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const titleStyle: React.CSSProperties = {
-  color: "rgb(34, 34, 34)",
+  color:"#000",
   fontSize: "2rem",
   fontWeight: "bold",
   marginBottom: "1.5rem",
@@ -2239,7 +1907,6 @@ const pageIndicatorStyle: React.CSSProperties = {
   paddingBottom: '0.5rem',
 };
 
-// Style for the "Volver" button
 const buttonStyle: React.CSSProperties = {
   backgroundColor: "#ff7300",
   color: "white",

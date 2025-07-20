@@ -7,6 +7,45 @@ import Image from "next/image";
 import filtrosImg from "@/styles/images/filtros.png";
 import agregarImg from "@/styles/images/agregar.png";
 import buscarImg from "@/styles/images/buscar.png";
+import Swal from "sweetalert2";
+import { clearLine } from "readline";
+
+
+
+// =====================
+// 2. SWEET ALERT2 ESTILOS
+// =====================
+function objToInlineCss(styleObj: React.CSSProperties): string {
+  return Object.entries(styleObj)
+    .map(([key, value]) => {
+      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      return `${cssKey}: ${value};`;
+    })
+    .join(' ');
+}
+
+const estiloSwalTituloObj: React.CSSProperties = {
+  fontFamily: "'Montserrat', sans-serif",
+  fontSize: '1.5rem',
+  fontWeight: '600',
+  color: '#222'
+};
+
+const estiloSwalTextoObj: React.CSSProperties = {
+  fontFamily: "'Roboto', sans-serif",
+  fontSize: '1rem',
+  fontWeight: '400',
+  color: '#333'
+};
+
+const estiloSwalTextoConMargenObj: React.CSSProperties = {
+  ...estiloSwalTextoObj,
+  marginTop: '10px'
+};
+
+const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
+const swalTextoCssString = objToInlineCss(estiloSwalTextoObj);
+const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 
 
 // Hook para manejar el tamaño de la ventana
@@ -72,6 +111,14 @@ export default function InventarioProveedoresPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
   const itemsPerPage = 10;
+  
+  // Estados para el modal de filtros
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [tempFechaDesde, setTempFechaDesde] = useState("");
+  const [tempFechaHasta, setTempFechaHasta] = useState("");
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
+  
   const [inventarioData, setInventarioData] = useState<Array<{
   id: number;
   sku: string;
@@ -118,18 +165,36 @@ export default function InventarioProveedoresPage() {
     fetchInventario();
   }, []);
 
-  // Filtrar datos según búsqueda
+  // Filtrar datos según búsqueda y fechas
   const filteredData = useMemo(() => {
     const filtered = inventarioData.filter(item => {
       const searchLower = searchTerm.toLowerCase();
-      return (
+      const matchesSearch = (
         (item.sku || '-').toLowerCase().includes(searchLower) ||
         (item.nombreProducto || '-').toLowerCase().includes(searchLower) ||
         (item.proveedor || '-').toLowerCase().includes(searchLower)
       );
+
+      // Filtro por fecha
+      let matchesDate = true;
+      if (fechaDesde || fechaHasta) {
+        const itemDate = new Date(item.fechaIngreso);
+        const desde = fechaDesde ? new Date(fechaDesde) : null;
+        const hasta = fechaHasta ? new Date(fechaHasta) : null;
+
+        if (desde && hasta) {
+          matchesDate = itemDate >= desde && itemDate <= hasta;
+        } else if (desde) {
+          matchesDate = itemDate >= desde;
+        } else if (hasta) {
+          matchesDate = itemDate <= hasta;
+        }
+      }
+
+      return matchesSearch && matchesDate;
     });
     return sortInventario(filtered);
-  }, [inventarioData, searchTerm]);
+  }, [inventarioData, searchTerm, fechaDesde, fechaHasta]);
 
   // Calcular datos paginados
   const currentTableData = useMemo(() => {
@@ -204,6 +269,102 @@ export default function InventarioProveedoresPage() {
     };
   };
 
+  const handleApplyFilters = () => {
+    setFechaDesde(tempFechaDesde);
+    setFechaHasta(tempFechaHasta);
+    setCurrentPage(1);
+    setShowFilterModal(false);
+
+    const filtrosAplicados: string[] = [];
+    if (tempFechaDesde) {
+      filtrosAplicados.push(`Fecha Desde: ${tempFechaDesde}`);
+    }
+    if (tempFechaHasta) {
+      filtrosAplicados.push(`Fecha Hasta: ${tempFechaHasta}`);
+    }
+    if (filtrosAplicados.length === 0) {
+      filtrosAplicados.push('Sin filtros activos');
+    }
+
+    Swal.fire({
+      html: `
+        <div style="${swalTituloCssString}">
+          Filtros Aplicados
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          ${filtrosAplicados.join('<br>')}
+        </div>
+      `,
+      icon: 'success',
+      confirmButtonText: 'ACEPTAR',
+      confirmButtonColor: '#ff7300',
+      timer: 3000,
+      timerProgressBar: true,
+      showCloseButton: true
+    });
+  };
+
+
+  const handleFiltersProduct = () => {
+    setTempFechaDesde(fechaDesde);
+    setTempFechaHasta(fechaHasta);
+    setShowFilterModal(true);
+  };
+
+  const handleClearFilters = () => {
+    setTempFechaDesde("");
+    setTempFechaHasta("");
+    setFechaDesde("");
+    setFechaHasta("");
+    setCurrentPage(1);
+    setShowFilterModal(false);
+
+    Swal.fire({
+      html: `
+        <div style="${swalTituloCssString}">
+          Filtros Eliminados
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          Se han eliminado todos los filtros aplicados.
+        </div>
+      `,
+      icon: 'info',
+      confirmButtonText: 'ACEPTAR',
+      confirmButtonColor: '#ff7300',
+      timer: 5000,
+      timerProgressBar: true,
+      showCloseButton: true
+    });
+  };
+
+    const handleClearFiltersFromToolbar = () => {
+    setTempFechaDesde("");
+    setTempFechaHasta("");
+    setFechaDesde("");
+    setFechaHasta("");
+    setCurrentPage(1);
+    setShowFilterModal(false);
+
+    Swal.fire({
+      html: `
+        <div style="${swalTituloCssString}">
+          Filtros Eliminados
+        </div>
+        <div style="${swalTextoConMargenCssString}">
+          Se han eliminado todos los filtros aplicados.
+        </div>
+      `,
+      icon: 'info',
+      confirmButtonText: 'ACEPTAR',
+      confirmButtonColor: '#ff7300',
+      timer: 5000,
+      timerProgressBar: true,
+      showCloseButton: true
+    });
+  };
+
+  const hasActiveFilters = Boolean(fechaDesde || fechaHasta);
+
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
@@ -238,8 +399,14 @@ export default function InventarioProveedoresPage() {
               <input
                 type="text"
                 placeholder="Buscar por SKU, Nombre, Proveedor..."
+                onChange={(e) => {
+                const valor = e.target.value;
+                if (valor === '' || /^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
+                  setSearchTerm(valor);
+                }
+              }}
+              maxLength={100}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
               />
               <button style={lupaButtonStyle}>
@@ -253,21 +420,58 @@ export default function InventarioProveedoresPage() {
               </button>
             </div>
             
-            <button style={{
-              ...filterButtonStyle,
-              width: isMobile ? "100%" : "auto",
-              fontSize: isMobile ? "0.875rem" : "1rem",
-              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-            }}>
-              <Image
-                src={filtrosImg.src}
-                alt="Filtros"
-                width={20}
-                height={20}
-                style={filterIconStyle}
-              />
-              Filtros
-            </button>
+              {!hasActiveFilters ? (
+                <button style={{
+                  ...filterButtonStyle, 
+                  ...entirePieceFilterButtonStyle,
+                  width: isMobile ? "100%" : "auto",
+                  fontSize: isMobile ? "0.875rem" : "1rem",
+                  padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                  }}
+                  onClick={handleFiltersProduct}>
+                    <Image
+                      src={filtrosImg.src}
+                      alt="Filtros"
+                      width={20}
+                      height={20}
+                      style={filterIconStyle}
+                    />
+                    Filtros
+                  </button>
+                ) : (
+                <div style={{ display: 'flex' }}>
+                  <button style={{
+                    ...filterButtonStyle,
+                    ...firstPieceFilterButtonStyle,
+                    width: isMobile ? "calc(100% - 80px)" : "auto",
+                    fontSize: isMobile ? "0.875rem" : "1rem",
+                    padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                  }} onClick={handleFiltersProduct}>
+                    <Image
+                      src={filtrosImg.src}
+                      alt="Filtros"
+                      width={20}
+                      height={20}
+                      style={filterIconStyle}
+                    />
+                    Filtros
+                  </button>
+                  <button
+                    onClick={handleClearFilters}
+                    style={{
+                      ...filterButtonStyle,
+                      ...secondPieceFilterButtonStyle,
+                      width: isMobile ? "80px" : "auto",
+                      fontSize: isMobile ? "0.75rem" : "0.875rem",
+                      padding: isMobile ? "0.75rem 0.5rem" : "0.5rem 1rem",
+                    }}
+                    title="Limpiar Filtros"
+                  >
+                    <span style={xClosebuttonStyle}>×</span>
+                    {!isMobile && 'Limpiar'}
+                  </button>
+                </div>
+              )}
           </div>
 
           <div style={{
@@ -359,7 +563,7 @@ export default function InventarioProveedoresPage() {
                     <td style={tdStyle}>{item.altoCm}</td>
                     <td style={tdStyle}>${typeof item.precioCU === 'number' ? item.precioCU.toFixed(0) : '0'}</td>
                     <td style={tdStyle}>{item.stock}</td>
-                    <td style={tdStyle}>{new Date(item.fechaIngreso).toLocaleDateString()}</td>
+                    <td style={tdStyle}>{new Date(item.fechaIngreso).toISOString().split('T')[0]}</td>
                     <td style={tdStyle}>
                       <div style={{ display: "flex", justifyContent: "center", gap: "5px" }}>
                         <button style={{
@@ -450,6 +654,159 @@ export default function InventarioProveedoresPage() {
             </div>
         )}
       </div>
+
+      {/* Modal de Filtros */}
+      {showFilterModal && (
+        <div style={filterModalOverlayStyle}>
+          <div style={{
+            ...filterModalContentStyle,
+            width: isMobile ? "95%" : "90%",
+            maxWidth: isMobile ? "350px" : "500px",
+            padding: isMobile ? "1.5rem" : "2rem",
+            margin: isMobile ? "1rem" : "0"
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={{
+                ...filterModalTitleStyle,
+                fontSize: isMobile ? "1.25rem" : "1.5rem"
+              }}>Filtrar por Fecha de Ingreso</h2>
+              <button 
+                onClick={() => setShowFilterModal(false)}
+                style={filterCloseButtonStyle}
+              >
+                &times;
+              </button>
+            </div>
+            
+            {(() => {
+              const today = new Date();
+              const tenYearsAgo = new Date();
+              tenYearsAgo.setFullYear(today.getFullYear() - 10); //10 años atrás
+              const minDate = tenYearsAgo.toISOString().split('T')[0];
+              const maxDate = today.toISOString().split('T')[0];
+              
+              //Si la fecha seleccionada es anterior a 10 años, limpiar el campo
+              if (tempFechaDesde && new Date(tempFechaDesde) < tenYearsAgo) {
+                Swal.fire({
+                  icon: 'error',
+                  html: 
+                    `<div style="${swalTituloCssString}">Error</div>
+                    <div style="${swalTextoCssString}">La fecha "Desde" no puede ser anterior a 10 años desde el día de hoy.</div>`,
+                  confirmButtonText: 'ACEPTAR',
+                  confirmButtonColor: '#ff7300',
+                  timer: 5000,
+                  timerProgressBar: true,
+                  showCloseButton: true
+                });
+                setTempFechaDesde("");
+              }
+              if (tempFechaHasta && new Date(tempFechaHasta) > today) {
+                setTempFechaHasta("");
+                Swal.fire({
+                  icon: 'error',
+                  html:
+                   `<div style="${swalTituloCssString}">Error</div>
+                    <div style="${swalTextoCssString}">La fecha "Hasta" no puede ser futura.</div>`,
+                  confirmButtonText: 'ACEPTAR',
+                  confirmButtonColor: '#ff7300',
+                  timer:5000,
+                  timerProgressBar: true,
+                  showCloseButton: true
+                });
+              }
+               // La fecha de inicio no puede ser posterior a la fecha de fin
+              if (tempFechaDesde && tempFechaHasta && new Date(tempFechaDesde) > new Date(tempFechaHasta)) {
+                Swal.fire({
+                  icon : 'error',
+                  html:
+                  `<div style="${swalTituloCssString}">Error</div>
+                  <div style="${swalTextoCssString}">La fecha "Desde" no puede ser posterior a la fecha "Hasta".</div>`,
+                  confirmButtonText: 'ACEPTAR',
+                  confirmButtonColor: '#ff7300',
+                  timer: 5000,
+                  timerProgressBar: true,
+                  showCloseButton: true
+                });
+                setTempFechaDesde("");
+                setTempFechaHasta("");
+              }
+              
+              return (
+                <div style={filterModalFormStyle}>
+                  <div style={filterSelectGroupStyle}>
+                    <label style={{
+                      ...filterLabelStyle,
+                      fontSize: isMobile ? "0.8rem" : "0.875rem"
+                    }}>Fecha Desde</label>
+                    <input 
+                      type="date"
+                      id="fechaDesde"
+                      value={tempFechaDesde}
+                      max={maxDate} // No permitir fecha futura
+                      min={minDate} // No permitir fecha anterior a 10 años
+                      onChange={(e) => setTempFechaDesde(e.target.value)}
+                      style={{
+                        ...filterInputStyle,
+                        fontSize: isMobile ? "0.8rem" : "0.875rem",
+                        padding: isMobile ? "0.6rem" : "0.5rem"
+                      }}
+                    />
+                  </div>
+
+                  <div style={filterSelectGroupStyle}>
+                    <label style={{
+                      ...filterLabelStyle,
+                      fontSize: isMobile ? "0.8rem" : "0.875rem"
+                    }}>Fecha Hasta</label>
+                    <input 
+                      type="date"
+                      id="fechaHasta"
+
+                      value={tempFechaHasta}
+                      min={minDate} // No permitir fecha anterior a 10 años
+                      max={maxDate} // No permitir fecha futura
+                      onChange={(e) => setTempFechaHasta(e.target.value)}
+                      style={{
+                        ...filterInputStyle,
+                        fontSize: isMobile ? "0.8rem" : "0.875rem",
+                        padding: isMobile ? "0.6rem" : "0.5rem"
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div style={{
+              ...filterModalButtonsStyle,
+              flexDirection: isMobile ? "column" : "row",
+              gap: isMobile ? "0.5rem" : "1rem"
+            }}>
+              <button 
+                onClick={handleClearFilters} 
+                style={{
+                  ...filterModalButtonStyle, 
+                  backgroundColor: '#6b7280',
+                  width: isMobile ? "100%" : "auto",
+                  order: isMobile ? 2 : 1
+                }}
+              >
+                Limpiar filtros
+              </button>
+              <button 
+                onClick={handleApplyFilters}
+                style={{
+                  ...filterModalButtonStyle,
+                  width: isMobile ? "100%" : "auto",
+                  order: isMobile ? 1 : 2
+                }}
+              >
+                Aplicar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -745,3 +1102,139 @@ const pageIndicatorStyle: React.CSSProperties = {
   paddingTop: '0.5rem',
   paddingBottom: '0.5rem',
 };
+
+// Estilos adicionales para el modal
+const filterModalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000,
+};
+
+const filterModalContentStyle: React.CSSProperties = {
+  backgroundColor: 'white',
+  padding: '2rem',
+  borderRadius: '12px',
+  width: '90%',
+  maxWidth: '500px',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+  maxHeight: '90vh',
+  overflow: 'hidden',
+};
+
+const filterModalTitleStyle: React.CSSProperties = {
+  color: '#374151',
+  fontSize: '1.5rem',
+  fontWeight: 'bold',
+  marginTop: '0',
+  marginBottom: '1.5rem',
+  textAlign: 'center',
+  fontFamily: 'Montserrat, sans-serif',
+};
+
+const filterModalFormStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+};
+
+const filterSelectGroupStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.5rem',
+};
+
+const filterLabelStyle: React.CSSProperties = {
+  color: '#374151',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  fontFamily: 'Roboto, sans-serif',
+};
+
+const filterInputStyle: React.CSSProperties = {
+  padding: '0.5rem',
+  borderRadius: '6px',
+  border: '1px solid #d1d5db',
+  fontSize: '0.875rem',
+  width: '100%',
+  fontFamily: 'Roboto, sans-serif',
+  outline: 'none',
+  transition: 'border-color 0.2s ease',
+  boxSizing: 'border-box',
+};
+
+const filterModalButtonsStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '1rem',
+  marginTop: '2rem',
+};
+
+const filterModalButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: 'white',
+  padding: '0.5rem 1rem',
+  borderRadius: '6px',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  fontFamily: 'Montserrat, sans-serif',
+  transition: 'background-color 0.2s ease',
+};
+
+const filterCloseButtonStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontSize: '1.5rem',
+  cursor: 'pointer',
+  padding: '0.5rem',
+  color: '#6b7280',
+  transition: 'color 0.2s ease',
+  borderRadius: '4px',
+  width: '2rem',
+  height: '2rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+const entirePieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#5c5c5c',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
+};
+
+const firstPieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  borderTopRightRadius: '0',
+  borderBottomRightRadius: '0',
+  borderRight: '1px solid rgba(255, 255, 255, 0.3)',
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
+};
+
+const secondPieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ef4444',
+  borderTopLeftRadius: '0',
+  borderBottomLeftRadius: '0',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.25rem'
+};
+
+const xClosebuttonStyle: React.CSSProperties = {
+  fontSize: '1rem',
+  lineHeight: '1' 
+};
+

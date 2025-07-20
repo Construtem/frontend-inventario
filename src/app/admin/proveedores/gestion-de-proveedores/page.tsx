@@ -1023,7 +1023,7 @@ export default function GestionProveedoresPage() {
                   flex: isMobile ? "0 0 auto" : "none"
                 }}>
                   {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>págin(a)s</span>}
                 </div>
                 
                 <button
@@ -1150,6 +1150,7 @@ export default function GestionProveedoresPage() {
                 <input
                   type="text"
                   value={editFormData.direccion}
+                  maxLength={100}
                   onChange={(e) => setEditFormData({...editFormData, direccion: e.target.value})}
                   style={{
                     ...selectStyle,

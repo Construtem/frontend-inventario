@@ -450,8 +450,12 @@ export default function GestionUsuariosPage() {
     
     if (!filtersApplied) {
       Swal.fire({
-        title: 'Sin filtros',
-        text: 'No has seleccionado ningún filtro',
+        html: `
+          <div>
+            <p style="${swalTituloCssString}">No has seleccionado ningún filtro.</p>
+            <p style="${swalTextoConMargenCssString}">Por favor, selecciona al menos un filtro para continuar.</p>
+          </div>
+        `,
         icon: 'info',
         confirmButtonColor: '#ff7300',
         showCloseButton: true,
@@ -468,10 +472,14 @@ export default function GestionUsuariosPage() {
     
     // Mostrar mensaje de éxito con los filtros aplicados
     Swal.fire({
-      title: 'Filtros aplicados',
       html: `
-        ${tempRol ? `<p>Rol: ${tempRol}</p>` : ''}
-        ${tempEstado ? `<p>Estado: ${tempEstado}</p>` : ''}
+        <div>
+          <h2 style="${swalTituloCssString}">Filtros aplicados</h2>
+          <p style="${swalTextoConMargenCssString}">Se han aplicado los siguientes filtros:</p>
+          ${tempRol ? `<p style="${swalTextoConMargenCssString}">Rol: ${tempRol}</p>` : ''}
+        ${tempEstado ? `<p style="${swalTextoConMargenCssString}">Estado: ${tempEstado}</p>` : ''}
+        </div>
+
       `,
       icon: 'success',
       confirmButtonColor: '#ff7300',
@@ -523,7 +531,7 @@ export default function GestionUsuariosPage() {
         html: `
           <div>
             <h2 style="${swalTituloCssString}">Error de validación</h2>
-            <p style="${swalTextoCssString}">${nombreValidation.error}</p>
+            <p style="${swalTextoConMargenCssString}">${nombreValidation.error}</p>
           </div>
         `,
         icon: 'error',
@@ -542,7 +550,7 @@ export default function GestionUsuariosPage() {
         html: `
           <div>
             <h2 style="${swalTituloCssString}">Error de validación</h2>
-            <p style="${swalTextoCssString}">${emailValidation.error}</p>
+            <p style="${swalTextoConMargenCssString}">${emailValidation.error}</p>
           </div>
         `,
         icon: 'error',
@@ -626,8 +634,8 @@ Swal.fire({
   icon: 'success',
   html: `
     <div>
-      <h2 style="${swalTituloCssString}">Éxito</h2>
-      <p style="${swalTextoCssString}">Usuario actualizado correctamente</p>
+      <h2 style="${swalTituloCssString}">¡Éxito!</h2>
+      <p style="${swalTextoConMargenCssString}">Usuario actualizado correctamente</p>
     </div>
   `,
   confirmButtonColor: '#ff7300',
@@ -656,7 +664,7 @@ Swal.fire({
         html: `
           <div>
             <h2 style="${swalTituloCssString}">Error</h2>
-            <p style="${swalTextoCssString}">${errorMessage}</p>
+            <p style="${swalTextoConMargenCssString}">${errorMessage}</p>
           </div>
         `,
         icon: 'error',
@@ -678,7 +686,7 @@ Swal.fire({
         html: `
           <div>
             <h2 style="${swalTituloCssString}">Error de validación</h2>
-            <p style="${swalTextoCssString}">${nombreValidation.error}</p>
+            <p style="${swalTextoConMargenCssString}">${nombreValidation.error}</p>
           </div>
         `,
         icon: 'error',
@@ -697,7 +705,7 @@ Swal.fire({
         html: `
           <div>
             <h2 style="${swalTituloCssString}">Error de validación</h2>
-            <p style="${swalTextoCssString}">${emailValidation.error}</p>
+            <p style="${swalTextoConMargenCssString}">${emailValidation.error}</p>
           </div>
         `,
         icon: 'error',
@@ -755,8 +763,12 @@ Swal.fire({
       });
       
       Swal.fire({
-        title: 'Éxito',
-        text: 'Usuario creado correctamente',
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Éxito</h2>
+            <p style="${swalTextoConMargenCssString}">Usuario creado correctamente</p>
+          </div>
+        `,
         icon: 'success',
         confirmButtonColor: '#ff7300',
         showCloseButton: true,
@@ -779,8 +791,12 @@ Swal.fire({
       }
       
       Swal.fire({
-        title: 'Error',
-        text: errorMessage,
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Error</h2>
+            <p style="${swalTextoConMargenCssString}">${errorMessage}</p>
+          </div>
+        `,
         icon: 'error',
         confirmButtonColor: '#ff7300',
         showCloseButton: true,
@@ -890,8 +906,12 @@ Swal.fire({
         }
 
         Swal.fire({
-          title: 'Error',
-          text: errorMessage,
+          html: `
+            <div>
+              <h2 style="${swalTituloCssString}">Error al eliminar</h2>
+              <p style="${swalTextoConMargenCssString}">${errorMessage}</p>
+            </div>
+          `,
           icon: 'error',
           confirmButtonColor: '#ff7300',
           showCloseButton: true,
@@ -903,6 +923,36 @@ Swal.fire({
   });
 };
 
+
+    const handleFiltersUsuarios = () => {
+
+    setShowFilterModal(true);
+  };
+
+
+    // Agregar función para limpiar filtros desde la barra de herramientas
+  const handleClearFilters = () => {
+    setSelectedRol('');
+    setSelectedEstado('');
+    setTempRol('');
+    setTempEstado('');
+    setShowFilterModal(false);
+    setCurrentPage(1);
+    Swal.fire({
+      html: `
+        <div>
+          <h2 style="${swalTituloCssString}">Filtros reiniciados</h2>
+          <p style="${swalTextoConMargenCssString}">Se han eliminado todos los filtros</p>
+        </div>
+      `,
+      icon: 'info',
+      confirmButtonColor: '#ff7300',
+      showCloseButton: true,
+      timer: 5000,
+      timerProgressBar: true
+    });
+  };
+
   // Agregar función para limpiar filtros desde la barra de herramientas
   const handleClearFiltersFromToolbar = () => {
     setSelectedRol('');
@@ -911,8 +961,12 @@ Swal.fire({
     setTempEstado('');
     setCurrentPage(1);
     Swal.fire({
-      title: 'Filtros reiniciados',
-      text: 'Se han eliminado todos los filtros',
+      html: `
+        <div>
+          <h2 style="${swalTituloCssString}">Filtros reiniciados</h2>
+          <p style="${swalTextoConMargenCssString}">Se han eliminado todos los filtros</p>
+        </div>
+      `,
       icon: 'info',
       confirmButtonColor: '#ff7300',
       showCloseButton: true,
@@ -980,52 +1034,57 @@ Swal.fire({
             </div>
             
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button 
-                style={{
-                  ...filterButtonStyle,
+             {!hasActiveFilters ? (
+                <button style={{
+                  ...filterButtonStyle, 
+                  ...entirePieceFilterButtonStyle,
                   width: isMobile ? "100%" : "auto",
                   fontSize: isMobile ? "0.875rem" : "1rem",
                   padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
-                  backgroundColor: hasActiveFilters ? '#ff7300' : '#5c5c5c',
-                  position: 'relative'
-                }}
-                onClick={() => setShowFilterModal(true)}
-              >
-                <Image
-                  src={filtrosImg.src}
-                  alt="Filtros"
-                  width={20}
-                  height={20}
-                  style={filterIconStyle}
-                />
-                Filtros
-                {hasActiveFilters && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '-5px',
-                    right: '-5px',
-                    width: '10px',
-                    height: '10px',
-                    backgroundColor: '#10b981',
-                    borderRadius: '50%',
-                    border: '2px solid white'
-                  }} />
-                )}
-              </button>
-
-              {hasActiveFilters && (
-                <button 
-                  onClick={handleClearFiltersFromToolbar}
-                  style={{
+                  }}
+                  onClick={handleFiltersUsuarios}>
+                    <Image
+                      src={filtrosImg.src}
+                      alt="Filtros"
+                      width={20}
+                      height={20}
+                      style={filterIconStyle}
+                    />
+                    Filtros
+                  </button>
+                ) : (
+                <div style={{ display: 'flex' }}>
+                  <button style={{
                     ...filterButtonStyle,
-                    backgroundColor: '#ef4444',
-                    width: isMobile ? "100%" : "auto",
+                    ...firstPieceFilterButtonStyle,
+                    width: isMobile ? "calc(100% - 80px)" : "auto",
                     fontSize: isMobile ? "0.875rem" : "1rem",
                     padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
-                  }}
-                >
-                  Limpiar
-                </button>
+                  }} onClick={handleFiltersUsuarios}>
+                    <Image
+                      src={filtrosImg.src}
+                      alt="Filtros"
+                      width={20}
+                      height={20}
+                      style={filterIconStyle}
+                    />
+                    Filtros
+                  </button>
+                  <button
+                    onClick={handleClearFiltersFromToolbar}
+                    style={{
+                      ...filterButtonStyle,
+                      ...secondPieceFilterButtonStyle,
+                      width: isMobile ? "80px" : "auto",
+                      fontSize: isMobile ? "0.75rem" : "0.875rem",
+                      padding: isMobile ? "0.75rem 0.5rem" : "0.5rem 1rem",
+                    }}
+                    title="Limpiar Filtros"
+                  >
+                    <span style={xClosebuttonStyle}>×</span>
+                    {!isMobile && 'Limpiar'}
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -1182,7 +1241,6 @@ Swal.fire({
       </div>
 
           {usuariosData.length > 0 && (
-
             <div style={{
               ...paginationControlsStyle,
               flexDirection: isMobile ? "column" : "row",
@@ -1275,8 +1333,7 @@ Swal.fire({
             <div style={modalButtonsStyle}>
               <button 
                 onClick={() => {
-                  setTempRol('');
-                  setTempEstado('');
+                  handleClearFilters();
                 }}
                 style={{...modalButtonStyle, backgroundColor: '#6b7280'}}
               >
@@ -1332,8 +1389,12 @@ Swal.fire({
                   readOnly
                   onClick={() => {
                     Swal.fire({
-                      title: 'No se puede editar el email',
-                      text: 'El email es el identificador único y no puede ser modificado.',
+                      html: `
+                        <div>
+                          <h2 style="${swalTituloCssString}">No se puede editar el email</h2>
+                          <p style="${swalTextoConMargenCssString}">El email es el identificador único y no puede ser modificado.</p>
+                        </div>
+                      `,
                       icon: 'info',
                       confirmButtonColor: '#ff7300',
                       showCloseButton: true,
@@ -1800,4 +1861,37 @@ const pageIndicatorStyle: React.CSSProperties = {
   whiteSpace: 'nowrap',
   paddingTop: '0.5rem',
   paddingBottom: '0.5rem',
+};
+
+const entirePieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#5c5c5c',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
+};
+
+const firstPieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  borderTopRightRadius: '0',
+  borderBottomRightRadius: '0',
+  borderRight: '1px solid rgba(255, 255, 255, 0.3)',
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
+};
+
+const secondPieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ef4444',
+  borderTopLeftRadius: '0',
+  borderBottomLeftRadius: '0',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.25rem'
+};
+
+const xClosebuttonStyle: React.CSSProperties = {
+  fontSize: '1rem',
+  lineHeight: '1' 
 };

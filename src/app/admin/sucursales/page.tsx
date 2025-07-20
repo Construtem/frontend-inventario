@@ -121,7 +121,6 @@ const estiloSwalTextoConMargenObj: React.CSSProperties = {
 
 
 const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
-const swalTextoCssString = objToInlineCss(estiloSwalTextoObj);
 const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 
 
@@ -963,6 +962,10 @@ const filterPhoneInput = (value: string): string => {
     setShowAddModal(true);
   };
 
+    const handleFiltersSucursal = () => {
+    setShowFilterModal(true);
+  };
+
   // Agregar función para limpiar filtros desde la barra de herramientas
   const handleClearFiltersFromToolbar = () => {
     setSelectedCiudad('');
@@ -1026,8 +1029,14 @@ const filterPhoneInput = (value: string): string => {
               <input
                 type="text"
                 placeholder="Buscar por Nombre..."
+                maxLength={100}
+                onChange={(e) => {
+                  const valor = e.target.value;
+                  if (valor === '' || /^[a-zA-ZÀ-ÿ0-9ñÑ\u00f1\u00d1\s]*$/.test(valor)) {
+                    setSearchTerm(valor);
+                  }
+                }}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
               />
               <button style={lupaButtonStyle}>
@@ -1042,53 +1051,58 @@ const filterPhoneInput = (value: string): string => {
             </div>
             
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button 
-                style={{
-                  ...filterButtonStyle,
-                  width: isMobile ? "100%" : "auto",
-                  fontSize: isMobile ? "0.875rem" : "1rem",
-                  padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
-                  backgroundColor: hasActiveFilters ? '#ff7300' : '#5c5c5c',
-                  position: 'relative'
-                }}
-                onClick={() => setShowFilterModal(true)}
-              >
-                <Image
-                  src={filtrosImg.src}
-                  alt="Filtros"
-                  width={20}
-                  height={20}
-                  style={filterIconStyle}
-                />
-                Filtros
-                {hasActiveFilters && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '-5px',
-                    right: '-5px',
-                    width: '10px',
-                    height: '10px',
-                    backgroundColor: '#10b981',
-                    borderRadius: '50%',
-                    border: '2px solid white'
-                  }} />
-                )}
-              </button>
-
-              {hasActiveFilters && (
-                <button 
-                  onClick={handleClearFiltersFromToolbar}
-                  style={{
-                    ...filterButtonStyle,
-                    backgroundColor: '#ef4444',
-                    width: isMobile ? "100%" : "auto",
-                    fontSize: isMobile ? "0.875rem" : "1rem",
-                    padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
-                  }}
-                >
-                  Limpiar
-                </button>
-              )}
+                {!hasActiveFilters ? (
+                 <button style={{
+                   ...filterButtonStyle, 
+                   ...entirePieceFilterButtonStyle,
+                   width: isMobile ? "100%" : "auto",
+                   fontSize: isMobile ? "0.875rem" : "1rem",
+                   padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                   }}
+                   onClick={handleFiltersSucursal}>
+                     <Image
+                       src={filtrosImg.src}
+                       alt="Filtros"
+                       width={20}
+                       height={20}
+                       style={filterIconStyle}
+                     />
+                     Filtros
+                   </button>
+                 ) : (
+                 <div style={{ display: 'flex' }}>
+                   <button style={{
+                     ...filterButtonStyle,
+                     ...firstPieceFilterButtonStyle,
+                     width: isMobile ? "calc(100% - 80px)" : "auto",
+                     fontSize: isMobile ? "0.875rem" : "1rem",
+                     padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+                   }} onClick={handleFiltersSucursal}>
+                     <Image
+                       src={filtrosImg.src}
+                       alt="Filtros"
+                       width={20}
+                       height={20}
+                       style={filterIconStyle}
+                     />
+                     Filtros
+                   </button>
+                   <button
+                     onClick={handleClearFiltersFromToolbar}
+                     style={{
+                       ...filterButtonStyle,
+                       ...secondPieceFilterButtonStyle,
+                       width: isMobile ? "80px" : "auto",
+                       fontSize: isMobile ? "0.75rem" : "0.875rem",
+                       padding: isMobile ? "0.75rem 0.5rem" : "0.5rem 1rem",
+                     }}
+                     title="Limpiar Filtros"
+                   >
+                     <span style={xClosebuttonStyle}>×</span>
+                     {!isMobile && 'Limpiar'}
+                   </button>
+                 </div>
+               )}
             </div>
           </div>
 
@@ -1763,6 +1777,7 @@ const filterPhoneInput = (value: string): string => {
                 <input
                   type="text"
                   value={addFormData.nombre}
+                  maxLength={50}
                   onChange={(e) => setAddFormData({...addFormData, nombre: e.target.value})}
                   style={inputStyle}
                   placeholder={addFormData.tipo === '1' ? 'Ej: Central' : 'Ej: Sucursal Centro'}
@@ -1774,6 +1789,7 @@ const filterPhoneInput = (value: string): string => {
                 <input
                   type="text"
                   value={addFormData.direccion}
+                  maxLength={100}
                   onChange={(e) => setAddFormData({...addFormData, direccion: e.target.value})}
                   style={inputStyle}
                   placeholder="Ej: Av. Principal 123"
@@ -1785,6 +1801,7 @@ const filterPhoneInput = (value: string): string => {
                 <input
                   type="text"
                   value={addFormData.telefono}
+                  maxLength={15}
                   onChange={(e) => setAddFormData({...addFormData, telefono: e.target.value})}
                   style={inputStyle}
                   placeholder="Ej: +56 9 1234 5678"
@@ -1799,7 +1816,7 @@ const filterPhoneInput = (value: string): string => {
                     setAddFormData({
                       ...addFormData,
                       ciudad: e.target.value,
-                      comuna: '' // Reset comuna when city changes
+                      comuna: ''
                     });
                   }}
                   style={selectStyle}
@@ -2206,4 +2223,37 @@ const limitReachedStyle: React.CSSProperties = {
   marginTop: '0.5rem',
   textAlign: 'left',
   fontFamily: 'Montserrat, sans-serif',
+};
+
+const entirePieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#5c5c5c',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
+};
+
+const firstPieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  borderTopRightRadius: '0',
+  borderBottomRightRadius: '0',
+  borderRight: '1px solid rgba(255, 255, 255, 0.3)',
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
+};
+
+const secondPieceFilterButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ef4444',
+  borderTopLeftRadius: '0',
+  borderBottomLeftRadius: '0',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.25rem'
+};
+
+const xClosebuttonStyle: React.CSSProperties = {
+  fontSize: '1rem',
+  lineHeight: '1' 
 };
