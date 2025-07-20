@@ -1200,7 +1200,7 @@ const [addFormData, setAddFormData] = useState({
     value={addFormData.telefono}
     maxLength={15}
     onChange={(e) => {
-      let valor = e.target.value;
+      const valor = e.target.value;
 
       // Si el usuario borra todo, permitir campo vacío
       if (valor.trim() === '') {
