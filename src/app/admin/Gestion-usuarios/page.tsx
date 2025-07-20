@@ -81,6 +81,45 @@ const sortUsuarios = (data: Usuario[]) => {
   });
 };
 
+// ===================== SWEET ALERT2 ESTILOS =====================
+
+// Función auxiliar para convertir un objeto JS de estilos a una cadena CSS en línea
+function objToInlineCss(styleObj: React.CSSProperties): string {
+  return Object.entries(styleObj)
+    .map(([key, value]) => {
+      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      return `${cssKey}: ${value};`;
+    })
+    .join(' ');
+}
+
+// DEFINICIONES DE ESTILOS PARA SWEETALERT2
+
+const estiloSwalTituloObj: React.CSSProperties = {
+  fontFamily: "'Montserrat', sans-serif",
+  fontSize: '1.5rem',
+  fontWeight: '600',
+  color: '#222'
+};
+
+const estiloSwalTextoObj: React.CSSProperties = {
+  fontFamily: "'Roboto', sans-serif",
+  fontSize: '1rem',
+  fontWeight: '400',
+  color: '#333'
+};
+
+const estiloSwalTextoConMargenObj: React.CSSProperties = {
+  ...estiloSwalTextoObj,
+  marginTop: '10px'
+};
+
+
+const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
+const swalTextoCssString = objToInlineCss(estiloSwalTextoObj);
+const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
+
+
 // =====================
 // 3. FUNCIONES DE VALIDACIÓN
 // =====================
@@ -414,7 +453,10 @@ export default function GestionUsuariosPage() {
         title: 'Sin filtros',
         text: 'No has seleccionado ningún filtro',
         icon: 'info',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
       });
       return;
     }
@@ -432,7 +474,10 @@ export default function GestionUsuariosPage() {
         ${tempEstado ? `<p>Estado: ${tempEstado}</p>` : ''}
       `,
       icon: 'success',
-      confirmButtonColor: '#ff7300'
+      confirmButtonColor: '#ff7300',
+      showCloseButton: true,
+      timer: 5000,
+      timerProgressBar: true
     });
   };
 
@@ -475,10 +520,17 @@ export default function GestionUsuariosPage() {
     const nombreValidation = validateNombre(editFormData.nombre);
     if (!nombreValidation.isValid) {
       Swal.fire({
-        title: 'Error de validación',
-        text: nombreValidation.error,
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Error de validación</h2>
+            <p style="${swalTextoCssString}">${nombreValidation.error}</p>
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
       });
       return;
     }
@@ -487,10 +539,17 @@ export default function GestionUsuariosPage() {
     const emailValidation = validateEmail(editFormData.email);
     if (!emailValidation.isValid) {
       Swal.fire({
-        title: 'Error de validación',
-        text: emailValidation.error,
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Error de validación</h2>
+            <p style="${swalTextoCssString}">${emailValidation.error}</p>
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
       });
       return;
     }
@@ -564,10 +623,18 @@ setUsuariosData(prevData => {
 setShowEditModal(false);
 setOriginalEmail(''); // Limpiar el email original
 Swal.fire({
-  title: 'Éxito',
-  text: 'Usuario actualizado correctamente',
   icon: 'success',
-  confirmButtonColor: '#ff7300'
+  html: `
+    <div>
+      <h2 style="${swalTituloCssString}">Éxito</h2>
+      <p style="${swalTextoCssString}">Usuario actualizado correctamente</p>
+    </div>
+  `,
+  confirmButtonColor: '#ff7300',
+  showConfirmButton: true,
+  showCloseButton: true,
+  timer: 5000,
+  timerProgressBar: true
 });
 
     } catch (err) {
@@ -586,10 +653,18 @@ Swal.fire({
       }
       
       Swal.fire({
-        title: 'Error',
-        text: errorMessage,
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Error</h2>
+            <p style="${swalTextoCssString}">${errorMessage}</p>
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
+        
       });
     }
   };
@@ -600,10 +675,17 @@ Swal.fire({
     const nombreValidation = validateNombre(addFormData.nombre);
     if (!nombreValidation.isValid) {
       Swal.fire({
-        title: 'Error de validación',
-        text: nombreValidation.error,
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Error de validación</h2>
+            <p style="${swalTextoCssString}">${nombreValidation.error}</p>
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,  
+        timerProgressBar: true
       });
       return;
     }
@@ -612,10 +694,17 @@ Swal.fire({
     const emailValidation = validateEmail(addFormData.email);
     if (!emailValidation.isValid) {
       Swal.fire({
-        title: 'Error de validación',
-        text: emailValidation.error,
+        html: `
+          <div>
+            <h2 style="${swalTituloCssString}">Error de validación</h2>
+            <p style="${swalTextoCssString}">${emailValidation.error}</p>
+          </div>
+        `,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
       });
       return;
     }
@@ -669,7 +758,10 @@ Swal.fire({
         title: 'Éxito',
         text: 'Usuario creado correctamente',
         icon: 'success',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
       });
     } catch (err) {
       console.error('Error completo:', err);
@@ -690,7 +782,10 @@ Swal.fire({
         title: 'Error',
         text: errorMessage,
         icon: 'error',
-        confirmButtonColor: '#ff7300'
+        confirmButtonColor: '#ff7300',
+        showCloseButton: true,
+        timer: 5000,
+        timerProgressBar: true
       });
     }
   };
@@ -768,10 +863,16 @@ Swal.fire({
         });
 
         Swal.fire({
-          title: 'Eliminado',
-          text: `El usuario "${usuario.nombre}" ha sido eliminado permanentemente`,
+          html: `
+            <div style="text-align: left;">
+              <p><strong>El usuario "${usuario.nombre}" ha sido eliminado permanentemente.</strong></p>
+            </div>
+          `,
           icon: 'success',
-          confirmButtonColor: '#ff7300'
+          confirmButtonColor: '#ff7300',
+          showCloseButton: true,
+          timer: 5000,
+          timerProgressBar: true
         });
       } catch (err) {
         console.error('Error al eliminar usuario:', err);
@@ -792,7 +893,10 @@ Swal.fire({
           title: 'Error',
           text: errorMessage,
           icon: 'error',
-          confirmButtonColor: '#ff7300'
+          confirmButtonColor: '#ff7300',
+          showCloseButton: true,
+          timer: 5000,
+          timerProgressBar: true
         });
       }
     }
@@ -810,7 +914,10 @@ Swal.fire({
       title: 'Filtros reiniciados',
       text: 'Se han eliminado todos los filtros',
       icon: 'info',
-      confirmButtonColor: '#ff7300'
+      confirmButtonColor: '#ff7300',
+      showCloseButton: true,
+      timer: 5000,
+      timerProgressBar: true
     });
   };
 
@@ -852,7 +959,13 @@ Swal.fire({
                 type="text"
                 placeholder="Buscar por Nombre, Email o Rol..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                maxLength={100}
+                onChange={(e) => {
+                  const valor = e.target.value;
+                  if (valor === '' || /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s@]*$/.test(valor)) {
+                    setSearchTerm(valor);
+                  }
+                }}
                 style={inputStyle}
               />
               <button style={lupaButtonStyle}>
@@ -1063,9 +1176,13 @@ Swal.fire({
                   )}
                 </tbody>
               </table>
+            </>
+          )}
+        </div>
+      </div>
 
           {usuariosData.length > 0 && (
-          <div style={paginationContainerStyle}>
+
             <div style={{
               ...paginationControlsStyle,
               flexDirection: isMobile ? "column" : "row",
@@ -1098,7 +1215,7 @@ Swal.fire({
                   flex: isMobile ? "0 0 auto" : "none"
                 }}>
                   {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>página(s)</span>}
                 </div>
                 
                 <button
@@ -1125,20 +1242,16 @@ Swal.fire({
                 </div>
               )}
             </div>
-          </div>
+
         )}
-            </>
-          )}
-        </div>
-      </div>
 
       {/* Modal de filtros */}
       {showFilterModal && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <h2 style={modalTitleStyle}>Filtrar Usuarios</h2>
-              <button onClick={() => setShowFilterModal(false)} style={closeButtonStyle}>
+                <button onClick={() => setShowFilterModal(false)} style={closeButtonStyle}>
                 ×
               </button>
             </div>
@@ -1154,20 +1267,6 @@ Swal.fire({
                   <option value="">Todos los roles</option>
                   {ROLES_MAP.map(rol => (
                     <option key={rol.id} value={rol.nombre}>{rol.nombre}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={selectGroupStyle}>
-                <label style={labelStyle}>Estado</label>
-                <select 
-                  value={tempEstado}
-                  onChange={(e) => setTempEstado(e.target.value)}
-                  style={selectStyle}
-                >
-                  <option value="">Todos los estados</option>
-                  {ESTADOS.map(estado => (
-                    <option key={estado} value={estado}>{estado}</option>
                   ))}
                 </select>
               </div>
@@ -1237,7 +1336,9 @@ Swal.fire({
                       text: 'El email es el identificador único y no puede ser modificado.',
                       icon: 'info',
                       confirmButtonColor: '#ff7300',
-                      showCloseButton: true
+                      showCloseButton: true,
+                      timer: 5000,
+                      timerProgressBar: true
                     });
                   }}
                   style={{ ...inputStyle, backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
@@ -1548,21 +1649,11 @@ const searchIconStyle: React.CSSProperties = {
   height: '30px',
 };
 
-const paginationContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-  marginTop: '2rem',
-  padding: '1rem',
-  backgroundColor: '#f3f4f6',
-  borderRadius: '10px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-};
-
 const paginationControlsStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '1rem',
+  marginTop: '1rem',
   backgroundColor: '#fff',
   borderRadius: '8px',
   padding: '0.5rem 1rem',
@@ -1592,16 +1683,6 @@ const paginationButtonBaseStyle: React.CSSProperties = {
   alignItems: 'center',
 };
 
-const paginationDotsStyle: React.CSSProperties = {
-  color: '#5c5c5c',
-  fontSize: '1rem',
-  fontFamily: 'Montserrat, sans-serif',
-};
-
-const paginationButtonActiveStyle: React.CSSProperties = {
-  backgroundColor: '#5c5c5c',
-  color: '#fff',
-};
 
 const modalOverlayStyle: React.CSSProperties = {
   position: 'fixed',
@@ -1623,15 +1704,14 @@ const modalContentStyle: React.CSSProperties = {
   width: '90%',
   maxWidth: '500px',
   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-  maxHeight: '90vh',
-  overflowY: 'auto',
 };
 
 const modalTitleStyle: React.CSSProperties = {
   color: '#374151',
   fontSize: '1.5rem',
   fontWeight: 'bold',
-  marginBottom: '1.5rem',
+  marginBottom: '3rem',
+  marginTop: '0',
   textAlign: 'center',
   fontFamily: 'Montserrat, sans-serif',
 };
@@ -1652,6 +1732,7 @@ const labelStyle: React.CSSProperties = {
   color: '#374151',
   fontSize: '0.875rem',
   fontWeight: '500',
+  fontFamily: 'Montserrat, sans-serif',
 };
 
 const selectStyle: React.CSSProperties = {
@@ -1685,13 +1766,14 @@ const closeButtonStyle: React.CSSProperties = {
   border: 'none',
   fontSize: '1.5rem',
   cursor: 'pointer',
-  padding: '0.5rem',
   color: '#6b7280',
   transition: 'color 0.2s ease',
   borderRadius: '4px',
   width: '2rem',
   height: '2rem',
   display: 'flex',
+  marginBottom: '3.5rem',
+  marginTop: '0',
   alignItems: 'center',
   justifyContent: 'center',
 };

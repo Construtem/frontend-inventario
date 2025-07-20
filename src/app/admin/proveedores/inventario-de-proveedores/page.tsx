@@ -389,7 +389,6 @@ export default function InventarioProveedoresPage() {
         </div>
 
           {filteredData.length > 0 && (
-          <div style={paginationContainerStyle}>
             <div style={{
               ...paginationControlsStyle,
               flexDirection: isMobile ? "column" : "row",
@@ -422,7 +421,7 @@ export default function InventarioProveedoresPage() {
                   flex: isMobile ? "0 0 auto" : "none"
                 }}>
                   {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>página(s)</span>}
                 </div>
                 
                 <button
@@ -449,7 +448,6 @@ export default function InventarioProveedoresPage() {
                 </div>
               )}
             </div>
-          </div>
         )}
       </div>
     </div>
@@ -662,24 +660,16 @@ const modifyProductButtonStyle: React.CSSProperties = {
   display: 'block',
 };
 
-const paginationContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'center',
-  marginTop: '2rem',
-  padding: '1rem',
-  backgroundColor: '#f3f4f6',
-  borderRadius: '10px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-};
-
 const paginationControlsStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '1rem',
   backgroundColor: '#fff',
+  marginTop: '1rem',
   borderRadius: '8px',
   padding: '0.5rem 1rem',
   boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  justifyContent: 'center',
 };
 
 const paginationButtonBaseStyle: React.CSSProperties = {

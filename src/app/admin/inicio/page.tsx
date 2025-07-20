@@ -1226,6 +1226,7 @@ if (card.subText === 'Bodegas') {
             type="text"
             placeholder={`Buscar en ${card.subText}...`}
             value={searchTerm}
+            maxLength={75}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
               flex: 1,

@@ -760,6 +760,7 @@ export default function GestionProveedoresPage() {
                 type="text"
                 placeholder="Buscar por ID, Marca, Email..."
                 value={searchTerm}
+                maxLength={100}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
               />
@@ -990,7 +991,6 @@ export default function GestionProveedoresPage() {
       </div>
 
         {filteredData.length > 0 && (
-          <div style={paginationContainerStyle}>
             <div style={{
               ...paginationControlsStyle,
               flexDirection: isMobile ? "column" : "row",
@@ -1050,7 +1050,6 @@ export default function GestionProveedoresPage() {
                 </div>
               )}
             </div>
-          </div>
         )}
         
       {/* Modal de Edición */}
@@ -1083,6 +1082,7 @@ export default function GestionProveedoresPage() {
                   type="text"
                   value={editFormData.marca}
                   onChange={(e) => setEditFormData({...editFormData, marca: e.target.value})}
+                  maxLength={30}
                   style={{
                     ...selectStyle,
                     borderColor: !editFormData.marca.trim() ? '#ef4444' : '#ddd'
@@ -1497,24 +1497,17 @@ const modifyProductButtonStyle: React.CSSProperties = {
   display: 'block',
 };
 
-const paginationContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'center',
-  marginTop: '2rem',
-  padding: '1rem',
-  backgroundColor: '#f3f4f6',
-  borderRadius: '10px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-};
 
 const paginationControlsStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '1rem',
+  marginTop: '1rem',
   backgroundColor: '#fff',
   borderRadius: '8px',
   padding: '0.5rem 1rem',
   boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  justifyContent: 'center',
 };
 
 const paginationButtonBaseStyle: React.CSSProperties = {

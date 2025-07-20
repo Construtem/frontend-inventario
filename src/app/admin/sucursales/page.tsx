@@ -534,7 +534,7 @@ const filterPhoneInput = (value: string): string => {
     telefono: '',
     ciudad: '',
     comuna: '',
-    tipo: '2' // valor por defecto (2 = Sucursal)
+    tipo: '' // Cambiar a string vacío para mostrar placeholder
   });
 
   // Agregar función para manejar la edición - eliminar lógica de determinación de tipo
@@ -707,7 +707,7 @@ const filterPhoneInput = (value: string): string => {
             ¡<b>Error</b>!
           </div>
           <div style="${swalTextoConMargenCssString}">
-            El teléfono es requerido
+            El número de celular es requerido
           </div>
         `,
         icon: 'error',
@@ -761,7 +761,7 @@ const filterPhoneInput = (value: string): string => {
       // Preparar los datos para enviar con tipo_id
       const dataToSend = {
         nombre: addFormData.tipo === '1' 
-          ? `Bodega ${addFormData.nombre}` 
+          ? `${addFormData.nombre}`
           : addFormData.nombre,
         direccion: addFormData.direccion,
         telefono: addFormData.telefono,
@@ -891,7 +891,6 @@ const filterPhoneInput = (value: string): string => {
         setSucursalesData(prevData => prevData.filter(item => item.id !== sucursal.id));
 
         Swal.fire({
-          title: 'Eliminado',
           html: `
             <div style="${swalTituloCssString}">
               ¡<b>Eliminado</b>!
@@ -952,22 +951,14 @@ const filterPhoneInput = (value: string): string => {
       return;
     }
 
-    // Determinar qué tipos están disponibles
-    const tiposDisponibles = [];
-    if (sucursales < 3) tiposDisponibles.push('2');
-    if (bodegas < 3) tiposDisponibles.push('1');
-
-    // Si solo hay un tipo disponible, preseleccionarlo
-    const tipoInicial = tiposDisponibles.length === 1 ? tiposDisponibles[0] : '2';
-
-    // Resetear el formulario
+    // Resetear el formulario con valor vacío para el tipo
     setAddFormData({
       nombre: '',
       direccion: '',
       telefono: '',
       ciudad: '',
       comuna: '',
-      tipo: tipoInicial
+      tipo: '' // Cambiar a string vacío para mostrar placeholder
     });
     setShowAddModal(true);
   };
@@ -1244,7 +1235,7 @@ const filterPhoneInput = (value: string): string => {
                   <th style={thStyle}>ID</th>
                   <th style={thStyle}>Nombre</th>
                   <th style={thStyle}>Dirección</th>
-                  <th style={thStyle}>Teléfono</th>
+                  <th style={thStyle}>Celular</th>
                   <th style={thStyle}>Comuna</th>
                   <th style={thStyle}>Ciudad</th>
                   <th style={thStyle}>Tipo</th>
@@ -1275,10 +1266,10 @@ const filterPhoneInput = (value: string): string => {
                                    sucursal.nombre?.toLowerCase()?.includes('bodega')) ? '#10b981' : '#3b82f6';
                           })(),
                           color: 'white',
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '4px',
+                          padding: '0.4rem',
+                          borderRadius: '10px',
                           fontSize: '0.75rem',
-                          fontWeight: 'semibold'
+                          fontWeight: 'bold',
                         }}>
                           {(() => {
                             const tipoValue = sucursal.tipo_id || sucursal.tipo;
@@ -1287,7 +1278,7 @@ const filterPhoneInput = (value: string): string => {
                           })()}
                         </span>
                       </td>
-                      <td style={{...tdStyle, minWidth: '200px'}}>
+                      <td style={{...tdStyle, minWidth: '10px', textAlign: 'center'}}>
                         <div style={{
                           display: 'flex',
                           justifyContent: 'center',
@@ -1331,7 +1322,6 @@ const filterPhoneInput = (value: string): string => {
 
 
       {filteredData.length > 0 && (
-          <div style={paginationContainerStyle}>
             <div style={{
               ...paginationControlsStyle,
               flexDirection: isMobile ? "column" : "row",
@@ -1364,7 +1354,7 @@ const filterPhoneInput = (value: string): string => {
                   flex: isMobile ? "0 0 auto" : "none"
                 }}>
                   {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>páginas</span>}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>página(s)</span>}
                 </div>
                 
                 <button
@@ -1391,7 +1381,6 @@ const filterPhoneInput = (value: string): string => {
                 </div>
               )}
             </div>
-          </div>
         )}
 
       {/* Modal de Filtros */}
@@ -1504,7 +1493,7 @@ const filterPhoneInput = (value: string): string => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
         <h2 style={{ ...modalTitleStyle, margin: 0 }}>Editar Sucursal</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+          <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontFamily: 'Montserrat, sans-serif' }}>
             ID: <strong>{editFormData.id}</strong>
           </div>
           <button
@@ -1589,7 +1578,7 @@ const filterPhoneInput = (value: string): string => {
         </div>
 
         <div style={selectGroupStyle}>
-          <label style={labelStyle}>Teléfono</label>
+          <label style={labelStyle}>Celular</label>
           <input
             type="text"
             value={editFormData.telefono || ''}
@@ -1656,25 +1645,6 @@ const filterPhoneInput = (value: string): string => {
             ))}
           </select>
         </div>
-
-        <div style={selectGroupStyle}>
-          <label style={labelStyle}>Tipo de Sucursal</label>
-          <select
-            value={editFormData.tipo || ''}
-            onChange={(e) => {
-              setEditFormData({ ...editFormData, tipo: e.target.value });
-            }}
-            style={selectStyle}
-            disabled={
-              (editFormData.tipo === 'Bodega' && totalBodegas >= maxPorTipo) ||
-              (editFormData.tipo === 'Sucursal' && totalSucursales >= maxPorTipo)
-            }
-          >
-            <option value="">Seleccionar tipo</option>
-            <option value="Bodega" disabled={totalBodegas >= maxPorTipo}>Bodega</option>
-            <option value="Sucursal" disabled={totalSucursales >= maxPorTipo}>Sucursal</option>
-          </select>
-        </div>
       </div>
 
       <div style={modalButtonsStyle}>
@@ -1738,16 +1708,16 @@ const filterPhoneInput = (value: string): string => {
               fontSize: '0.875rem',
               color: '#374151'
             }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>Estado actual:</div>
-              <div>• Sucursales: {countByType.sucursales}/3</div>
-              <div>• Bodegas: {countByType.bodegas}/3</div>
+              <div style={subtitleModalStyle}>Estado actual:</div>
+              <div style={labelStyle}>• Sucursales: {countByType.sucursales}/3</div>
+              <div style={labelStyle}>• Bodegas: {countByType.bodegas}/3</div>
               {countByType.sucursales >= 3 && (
-                <div style={{ color: '#ef4444', marginTop: '0.5rem' }}>
+                <div style={limitReachedStyle}>
                   Límite de sucursales alcanzado
                 </div>
               )}
               {countByType.bodegas >= 3 && (
-                <div style={{ color: '#ef4444', marginTop: '0.5rem' }}>
+                <div style={limitReachedStyle}>
                   Límite de bodegas alcanzado
                 </div>
               )}
@@ -1761,17 +1731,25 @@ const filterPhoneInput = (value: string): string => {
                   onChange={(e) => {
                     setAddFormData({...addFormData, tipo: e.target.value});
                   }}
-                  style={selectStyle}
+                  style={{
+                    ...selectStyle,
+                    color: addFormData.tipo === '' ? '#9ca3af' : '#374151' // Color gris para placeholder
+                  }}
                 >
+                  <option value="" disabled style={{ color: '#9ca3af' }}>
+                    Seleccionar tipo
+                  </option>
                   <option 
                     value="2" 
                     disabled={countByType.sucursales >= 3}
+                    style={{ color: '#374151' }}
                   >
                     Sucursal {countByType.sucursales >= 3 ? '(Límite alcanzado)' : `(${countByType.sucursales}/3)`}
                   </option>
                   <option 
                     value="1" 
                     disabled={countByType.bodegas >= 3}
+                    style={{ color: '#374151' }}
                   >
                     Bodega {countByType.bodegas >= 3 ? '(Límite alcanzado)' : `(${countByType.bodegas}/3)`}
                   </option>
@@ -1780,7 +1758,7 @@ const filterPhoneInput = (value: string): string => {
 
               <div style={selectGroupStyle}>
                 <label style={labelStyle}>
-                  Nombre {addFormData.tipo === '1' && <span style={{fontSize: '0.8rem', color: '#666'}}>(se agregará &quot;Bodega&quot; al inicio automáticamente)</span>}
+                  Nombre 
                 </label>
                 <input
                   type="text"
@@ -1803,7 +1781,7 @@ const filterPhoneInput = (value: string): string => {
               </div>
 
               <div style={selectGroupStyle}>
-                <label style={labelStyle}>Teléfono</label>
+                <label style={labelStyle}>Celular</label>
                 <input
                   type="text"
                   value={addFormData.telefono}
@@ -2028,7 +2006,6 @@ const lupaButtonStyle: React.CSSProperties = {
 const editButtonStyle: React.CSSProperties = {
   backgroundColor: "#ff7300",
   color: "white",
-  padding: "0.5rem 1.2rem",
   borderRadius: "8px",
   border: "none",
   cursor: "pointer",
@@ -2062,25 +2039,16 @@ const searchIconStyle: React.CSSProperties = {
   height: '30px',
 };
 
-
-const paginationContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'center',
-  marginTop: '2rem',
-  padding: '1rem',
-  backgroundColor: '#f3f4f6',
-  borderRadius: '10px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-};
-
 const paginationControlsStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '1rem',
   backgroundColor: '#fff',
+  marginTop: '1rem',
   borderRadius: '8px',
   padding: '0.5rem 1rem',
   boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  justifyContent:'center',
 };
 
 const paginationButtonsWrapperStyle: React.CSSProperties = {
@@ -2134,6 +2102,7 @@ const modalTitleStyle: React.CSSProperties = {
   fontWeight: 'bold',
   marginBottom: '1.5rem',
   textAlign: 'center',
+  fontFamily: 'Montserrat, sans-serif',
 };
 
 const modalFormStyle: React.CSSProperties = {
@@ -2152,6 +2121,7 @@ const labelStyle: React.CSSProperties = {
   color: '#374151',
   fontSize: '0.875rem',
   fontWeight: '500',
+  fontFamily: 'Montserrat, sans-serif',
 };
 
 const selectStyle: React.CSSProperties = {
@@ -2220,5 +2190,20 @@ const pageIndicatorStyle: React.CSSProperties = {
   paddingBottom: '0.5rem',
 };
 
+const subtitleModalStyle: React.CSSProperties = {
+  color: '#6b7280',
+  fontSize: '1rem',
+  fontWeight: 'semibold',
+  marginBottom: '1rem',
+  textAlign: 'left',
+  fontFamily: 'Montserrat, sans-serif',
+};
 
-
+const limitReachedStyle: React.CSSProperties = {
+  color: '#ef4444',
+  fontSize: '0.875rem',
+  fontWeight: '500',
+  marginTop: '0.5rem',
+  textAlign: 'left',
+  fontFamily: 'Montserrat, sans-serif',
+};

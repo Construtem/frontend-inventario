@@ -732,7 +732,6 @@ export default function DespachoPage() {
         )}
       </div>
         {filteredDespachos.length > 0 && (
-          <div style={paginationContainerStyle}>
             <div style={{
               ...paginationControlsStyle,
               flexDirection: isMobile ? "column" : "row",
@@ -792,7 +791,6 @@ export default function DespachoPage() {
                 </div>
               )}
             </div>
-          </div>
         )}
 
       {/* Modal de Productos */}
@@ -856,7 +854,7 @@ export default function DespachoPage() {
                               No hay productos para este despacho
                             </td>
                           </tr>
-                        ) : (                          productos.map((producto) => (
+                        ) : (productos.map((producto) => (
                             <tr key={producto.id}>
                               <td style={tdStyle}>{producto.sku || 'N/A'}</td>
                               <td style={tdStyle}>{producto.nombre || 'N/A'}</td>
@@ -1020,24 +1018,17 @@ const deleteButtonStyle: React.CSSProperties = {
   transition: "background-color 0.3s ease",
 };
 
-const paginationContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'center',
-  marginTop: '2rem',
-  padding: '1rem',
-  backgroundColor: '#f3f4f6',
-  borderRadius: '10px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-};
 
 const paginationControlsStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '1rem',
+  marginTop: '1rem',
   backgroundColor: '#fff',
   borderRadius: '8px',
   padding: '0.5rem 1rem',
   boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  justifyContent: 'center',
 };
 
 const paginationButtonsWrapperStyle: React.CSSProperties = {
