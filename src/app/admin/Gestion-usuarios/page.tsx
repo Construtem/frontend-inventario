@@ -1343,7 +1343,7 @@ Swal.fire({
                 onClick={handleApplyFilters}
                 style={modalButtonStyle}
               >
-                Aplicar Filtros
+                Aplicar Filtro
               </button>
             </div>
           </div>

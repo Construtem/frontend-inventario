@@ -1023,7 +1023,7 @@ export default function GestionProveedoresPage() {
                   flex: isMobile ? "0 0 auto" : "none"
                 }}>
                   {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>págin(a)s</span>}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>página(s)</span>}
                 </div>
                 
                 <button
