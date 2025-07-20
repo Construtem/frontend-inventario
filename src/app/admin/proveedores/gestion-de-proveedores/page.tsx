@@ -227,7 +227,7 @@ const [addFormData, setAddFormData] = useState({
     };
 
     fetchProveedores();
-  }, []);
+  }, [apiInventarioUrl]);
 
   // Función para reintentar la carga de datos
   const retryFetch = () => {

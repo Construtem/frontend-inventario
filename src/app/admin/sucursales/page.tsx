@@ -348,7 +348,7 @@ const filterPhoneInput = (value: string): string => {
     };
 
     fetchSucursales();
-  }, []);
+  }, [apiInventarioUrl]);
 
 
   // Función para reintentar la carga de datos

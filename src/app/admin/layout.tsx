@@ -32,7 +32,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       // Si NO existe, redirige al login principal porque no ha pasado por el flujo correcto
       window.location.href = `${frontLoginUrl}`; // Redirige a la página de login
     }
-  }, []); // Se ejecuta solo una vez al cargar el layout
+  }, [frontLoginUrl]); // Se ejecuta solo una vez al cargar el layout
 
   const handleToggleSidebar = () => setSidebarOpen((open) => !open);
 

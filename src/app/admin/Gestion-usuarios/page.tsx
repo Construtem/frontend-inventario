@@ -226,7 +226,7 @@ export default function GestionUsuariosPage() {
     };
 
     fetchUsuarios();
-  }, []);
+  }, [apiInventarioUrl]);
 
   // Función para reintentar la carga de datos
   const retryFetch = () => {

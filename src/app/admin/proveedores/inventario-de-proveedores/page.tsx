@@ -116,7 +116,7 @@ export default function InventarioProveedoresPage() {
       }
     };
     fetchInventario();
-  }, []);
+  }, [apiInventarioUrl]);
 
   // Filtrar datos según búsqueda
   const filteredData = useMemo(() => {
