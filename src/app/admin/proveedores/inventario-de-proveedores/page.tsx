@@ -405,6 +405,7 @@ export default function InventarioProveedoresPage() {
                   setSearchTerm(valor);
                 }
               }}
+
               maxLength={70}
                 value={searchTerm}
                 style={inputStyle}

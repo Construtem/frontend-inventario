@@ -1036,11 +1036,11 @@ export default function DespachoPage() {
                   style={filterSelectStyle}
                 >
                   <option value="">Todos los Estados</option>
-                  <option value="pendiente">Pendiente</option>
-                  <option value="enviada">Enviada</option>
-                  <option value="aprobada">Aprobada</option>
-                  <option value="cancelada">Cancelada</option>
-                  <option value="rechazada">Rechazada</option>
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="Enviada">Enviada</option>
+                  <option value="Aprobada">Aprobada</option>
+                  <option value="Cancelada">Cancelada</option>
+                  <option value="Rechazada">Rechazada</option>
                 </select>
               </div>
             </div>
@@ -1061,13 +1061,7 @@ export default function DespachoPage() {
             </div>
           </div>
         </div>
-      )}
-
-
-
-
-
-      
+      )}        
     </div>
   );
 }

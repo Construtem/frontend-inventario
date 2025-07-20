@@ -1087,6 +1087,7 @@ const filterPhoneInput = (value: string): string => {
                 type="text"
                 placeholder="Buscar por Nombre..."
                 maxLength={70}
+
                 onChange={(e) => {
                   const valor = e.target.value;
                   if (valor === '' || /^[a-zA-ZÀ-ÿ0-9ñÑ\u00f1\u00d1\s]*$/.test(valor)) {
@@ -1563,7 +1564,7 @@ const filterPhoneInput = (value: string): string => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
         <h2 style={{ ...modalTitleStyle, margin: 0 }}>Editar Sucursal</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+          <div style={{ fontSize: '0.9rem', color: '#666', backgroundColor: '#f3f4f6', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontFamily: 'Montserrat, sans-serif' }}>
             ID: <strong>{editFormData.id}</strong>
           </div>
           <button
@@ -1647,6 +1648,8 @@ const filterPhoneInput = (value: string): string => {
           />
         </div>
 
+
+
 {/* Teléfono de la Sucursal */}
 <div style={selectGroupStyle}>
   <label style={labelStyle}>Celular</label>
@@ -1662,6 +1665,7 @@ const filterPhoneInput = (value: string): string => {
         // Si borra el prefijo, resetearlo
         valor = '+56 9 ';
       }
+
 
       // Extraer solo números después del prefijo
       let numeros = valor.replace('+56 9 ', '').replace(/\D/g, '');
@@ -1851,6 +1855,7 @@ const filterPhoneInput = (value: string): string => {
                 <input
                   type="text"
                   value={addFormData.direccion}
+                  maxLength={100}
                   onChange={(e) => setAddFormData({...addFormData, direccion: e.target.value})}
                   style={inputStyle}
                   placeholder="Ej: Av. Principal 123"
@@ -1861,6 +1866,8 @@ const filterPhoneInput = (value: string): string => {
               <div style={selectGroupStyle}>
                 <label style={labelStyle}>Celular</label>
                 <input
+
+
                   type="tel"
                   value={addFormData.telefono || '+56 9 '}
                   maxLength={15}
@@ -1890,6 +1897,7 @@ const filterPhoneInput = (value: string): string => {
 
                     setAddFormData({ ...addFormData, telefono: formateado });
                   }}
+
                   style={inputStyle}
                   placeholder="+56 9 1234 5678"
                 />
@@ -1903,7 +1911,7 @@ const filterPhoneInput = (value: string): string => {
                     setAddFormData({
                       ...addFormData,
                       ciudad: e.target.value,
-                      comuna: '' // Reset comuna when city changes
+                      comuna: ''
                     });
                   }}
                   style={selectStyle}
@@ -2330,6 +2338,7 @@ const firstPieceFilterButtonStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '0.5rem'
 };
+
 
 const secondPieceFilterButtonStyle: React.CSSProperties = {
   backgroundColor: '#ef4444',

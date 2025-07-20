@@ -242,9 +242,7 @@ export default function InventarioPage() {
       return (
         <div style={loadingContainerStyle}>
           <div style={loadingSpinnerStyle} />
-          <div style={loadingTextStyle}>Cargando sucursales...</div>
-          <div style={loadingSubTextStyle}>
-          </div>
+          <div style={loadingTextStyle}>Cargando sucursales. Espere un momento...</div>
         </div>
       );
     }
