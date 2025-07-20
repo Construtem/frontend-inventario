@@ -218,6 +218,7 @@ const fetchClientes = async (): Promise<ClienteAPI[]> => {
   }
 };
 
+// Función para obtener sucursales del endpoint
 const fetchSucursales = async (): Promise<SucursalesAPI[]> => {
   try {
     const controller = new AbortController();
@@ -251,7 +252,7 @@ const fetchSucursales = async (): Promise<SucursalesAPI[]> => {
   }
 };
 
-
+// Función para obtener bodegas del endpoint
 const fetchBodegas = async (): Promise<BodegasAPI[]> => {
   try {
     const controller = new AbortController();
@@ -284,7 +285,6 @@ const fetchBodegas = async (): Promise<BodegasAPI[]> => {
     return [];
   }
 };
-
 
 // Función para obtener despachos del endpoint
 const fetchDespachos = async (): Promise<DespachoAPI[]> => {
@@ -542,16 +542,16 @@ export default function InicioPage() {
   const cardData: CardProps[] = [
     { id: 1, mainText: clientesCount.toString(), subText: 'Clientes', imagePath: '/images/inicio/clientes.png' },
     { id: 2, mainText: proveedoresCount.toString(), subText: 'Proveedores', imagePath: '/images/inicio/proveedores.png' },
-    { id: 3, mainText: bodegasCount.toString(), subText: 'Bodegas', imagePath: '/images/inicio/bodegas.png' },
-    { id: 4, mainText: productosCount.toString(), subText: 'Productos registrados', imagePath: '/images/inicio/productos.png' },
-    { id: 5, mainText: '25', subText: 'Productos disponibles', imagePath: '/images/inicio/productos.png' },
-    //{ id: 6, mainText: '25', subText: 'Productos no disponibles', imagePath: '/images/inicio/productos.png' },
-    { id: 7, mainText: despachosCount.toString(), subText: 'Despachos', imagePath: '/images/inicio/pedidos.png' },
+    { id: 3, mainText: usuariosCount.toString(), subText: 'Usuarios registrados', imagePath: '/images/inicio/usuarios_registrados.png' },
+    { id: 4, mainText: sucursalesCount.toString(), subText: 'Sucursales', imagePath: '/images/inicio/sucursales.png' },
+    { id: 5, mainText: bodegasCount.toString(), subText: 'Bodegas', imagePath: '/images/inicio/bodegas.png' },
+    { id: 6, mainText: despachosCount.toString(), subText: 'Despachos', imagePath: '/images/inicio/pedidos.png' },
+    { id: 7, mainText: productosCount.toString(), subText: 'Productos registrados', imagePath: '/images/inicio/productos.png' },
+    { id: 8, mainText: '25', subText: 'Productos no disponibles', imagePath: '/images/inicio/productos.png' },
     { id: 9, mainText: '150', subText: 'Existencia total', imagePath: '/images/inicio/existencias.png' },
     //{ id: 10, mainText: '100', subText: 'Existencia vendida', imagePath: '/images/inicio/existencias.png' },
-    { id: 11, mainText: sucursalesCount.toString(), subText: 'Sucursales', imagePath: '/images/inicio/sucursales.png' },
-    //{ id: 12, mainText: '50', subText: 'Ventas', imagePath: '/images/inicio/ventas.png' },
-    { id: 13, mainText: usuariosCount.toString(), subText: 'Usuarios registrados', imagePath: '/images/inicio/usuarios_registrados.png' },
+    //{ id: 11, mainText: '50', subText: 'Ventas', imagePath: '/images/inicio/ventas.png' },
+    //{ id: 12, mainText: '25', subText: 'Productos disponibles', imagePath: '/images/inicio/productos.png' },
   ];
 
   return (
