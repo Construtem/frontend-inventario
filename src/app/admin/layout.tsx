@@ -12,9 +12,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     // Solo revisa si existe el item 'user' en localStorage
-    // const user = localStorage.getItem("user");    // Descomentar esta linea para produccion
+    const user = localStorage.getItem("user");    // Descomentar esta linea para produccion
 
-    if (!localStorage.getItem("user")) {    // esto no va para produccion xddd
+    // ----------------------- Descomentar esto para desarrollo -----------------------
+    /*if (!localStorage.getItem("user")) {    // esto no va para produccion xddd
       const mockUser = {
         uid: '123456',
         nombre: 'Usuario Ficticio',
@@ -24,9 +25,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       localStorage.setItem('user', JSON.stringify(mockUser))
       console.log('Usuario ficticio guardado en localStorage')
-    }
-
-    if (localStorage.getItem("user")) {     // Para produccion cambiar localStorage.getItem("user") por user
+    }*/
+    // -------------------------------------------------------------------------------
+    
+    if (user) {     // Para produccion cambiar localStorage.getItem("user") por user
       setIsAuth(true); // Si existe, el usuario está autenticado. Puede ver el contenido.
     } else {
       // Si NO existe, redirige al login principal porque no ha pasado por el flujo correcto
