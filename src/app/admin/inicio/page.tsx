@@ -186,6 +186,21 @@ interface UsuarioAPI {
   };
 }
 
+// Interfaz para los datos de stock de sucursal de la API
+interface StockSucursalAPI {
+  id: number;
+  producto_id: number;
+  sucursal_id: number;
+  cantidad: number;
+  producto: {
+    sku: string;
+    nombre: string;
+  };
+  sucursal: {
+    nombre: string;
+  };
+}
+
 // Función para obtener clientes del endpoint
 const fetchClientes = async (): Promise<ClienteAPI[]> => {
   try {
@@ -451,6 +466,32 @@ const fetchProductosInactivos = async (): Promise<ProductoInactivo[]> => {
   }
 };
 
+// Función para obtener existencia total de stock por sucursal
+const fetchExistenciaTotal = async (): Promise<StockSucursalAPI[]> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const response = await fetch(`${API_BASE_URL}/api/stock-sucursal`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn('⚠️ Error al obtener existencia total:', error);
+    return [];
+  }
+};
+
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
   const [windowSize, setWindowSize] = useState({
@@ -521,6 +562,9 @@ export default function InicioPage() {
   const [bodegasCount, setBodegasCount] = useState<number>(0);
   const [realProductosInactivos, setRealProductosInactivos] = useState<ProductoInactivo[]>([]);
   const [productosInactivosCount, setProductosInactivosCount] = useState<number>(0);
+  const [stockData, setStockData] = useState<StockSucursalAPI[]>([]);
+  const [existenciaTotal, setExistenciaTotal] = useState<number>(0);
+  const [todasLasUbicaciones, setTodasLasUbicaciones] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -546,7 +590,8 @@ export default function InicioPage() {
           productos,
           proveedores,
           bodegas,
-          inactivos // ← nuevo
+          inactivos, // ← nuevo
+          stock // ← nuevo
         ] = await Promise.all([
           fetchUsuarios(),
           fetchClientes(),
@@ -555,7 +600,8 @@ export default function InicioPage() {
           fetchProductos(),
           fetchProveedores(),
           fetchBodegas(),
-          fetchProductosInactivos() // ← nuevo
+          fetchProductosInactivos(), // ← nuevo
+          fetchExistenciaTotal() // ← nuevo
         ]);
 
         setUsuariosCount(usuarios.length);
@@ -567,6 +613,8 @@ export default function InicioPage() {
         setProveedoresCount(proveedores.length);
         setRealProductosInactivos(inactivos); // ← CORREGIDO
         setProductosInactivosCount(inactivos.length);
+        setStockData(stock); // <- nuevo
+        setExistenciaTotal(stock.reduce((acc, item) => acc + item.cantidad, 0)); // ← nuevo
 
         console.log("📊 Conteos cargados:", { 
           usuarios: usuarios.length, 
@@ -594,7 +642,6 @@ export default function InicioPage() {
     loadCounts();
   }, []);
 
-
   const handleCardClick = (cardId: number) => {
     setOpenCard(cardId);
   };
@@ -612,7 +659,7 @@ export default function InicioPage() {
     { id: 6, mainText: despachosCount.toString(), subText: 'Despachos', imagePath: '/images/inicio/pedidos.png' },
     { id: 7, mainText: productosCount.toString(), subText: 'Productos registrados', imagePath: '/images/inicio/productos.png' },
     { id: 8, mainText: productosInactivosCount.toString(), subText: 'Productos no disponibles', imagePath: '/images/inicio/productos.png' },
-    { id: 9, mainText: '150', subText: 'Existencia total', imagePath: '/images/inicio/existencias.png' },
+    { id: 9, mainText: existenciaTotal.toString(), subText: 'Existencia total', imagePath: '/images/inicio/existencias.png' },
     //{ id: 10, mainText: '100', subText: 'Existencia vendida', imagePath: '/images/inicio/existencias.png' },
     //{ id: 11, mainText: '50', subText: 'Ventas', imagePath: '/images/inicio/ventas.png' },
     //{ id: 12, mainText: '25', subText: 'Productos disponibles', imagePath: '/images/inicio/productos.png' },
@@ -787,12 +834,41 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   const [realProveedores, setRealProveedores] = useState<ProveedorAPI[]>([]);
   const [realProductosInactivos, setRealProductosInactivos] = useState<ProductoInactivo[]>([]);
   const [productosInactivosCount, setProductosInactivosCount] = useState<number>(0);
+  const [stockData, setStockData] = useState<StockSucursalAPI[]>([]);
+  const [todasLasUbicaciones, setTodasLasUbicaciones] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Estado para manejar la existencia total y las ubicaciones
+  const pivotStockData = (data: StockSucursalAPI[], ubicaciones: string[]) => {
+    const result: Record<string, any>[] = [];
+    const productosMap = new Map<string, Record<string, any>>();
+
+    data.forEach(item => {
+      const { sku, nombre } = item.producto;
+      const sucursal = item.sucursal.nombre;
+      const key = sku;
+
+      if (!productosMap.has(key)) {
+        productosMap.set(key, { sku, nombre });
+      }
+
+      productosMap.get(key)![sucursal] = item.cantidad;
+    });
+
+    for (const prod of productosMap.values()) {
+      for (const ubic of ubicaciones) {
+        if (!(ubic in prod)) prod[ubic] = 0;
+      }
+      result.push(prod);
+    }
+
+    return result;
+  };
 
   // Cargar datos reales de usuarios, clientes, sucursales, despachos, productos, proveedores y productos no disponibles cuando el modal se abre
   useEffect(() => {
     const loadRealData = async () => {
-      if (card.subText !== 'Usuarios registrados' && card.subText !== 'Clientes' && card.subText !== 'Sucursales' && card.subText !== 'Bodegas' && card.subText !== 'Despachos' && card.subText !== 'Productos registrados' && card.subText !== 'Proveedores'&& card.subText !== 'Productos no disponibles') {
+      if (card.subText !== 'Usuarios registrados' && card.subText !== 'Clientes' && card.subText !== 'Sucursales' && card.subText !== 'Bodegas' && card.subText !== 'Despachos' && card.subText !== 'Productos registrados' && card.subText !== 'Proveedores'&& card.subText !== 'Productos no disponibles' && card.subText !== 'Existencia total') {
         setRealUsuarios([]);
         setRealClientes([]);
         setRealSucursales([]);
@@ -838,6 +914,18 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
           const productosInactivos = await fetchProductosInactivos();
           setRealProductosInactivos(productosInactivos);
           setProductosInactivosCount(productosInactivos.length);
+        } else if (card.subText === 'Existencia total') {
+          const stock = await fetchExistenciaTotal();
+          const sucursales = await fetchSucursales();
+          const bodegas = await fetchBodegas();
+
+          const nombresUbicaciones = [
+            ...sucursales.map(s => s.nombre),
+            ...bodegas.map(b => b.nombre)
+          ];
+
+          setTodasLasUbicaciones(nombresUbicaciones);
+          setStockData(stock);
         }
 
       } catch (error) {
@@ -1086,29 +1174,45 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
     }
 
     // Si es la card de productos no disponibles, usar datos reales del endpoint
-if (card.subText === 'Productos no disponibles') {
-  if (loading) {
-    return [{
-      id: 1,
-      mensaje: 'Cargando productos no disponibles...',
-      descripcion: 'Por favor espere mientras se cargan los productos inactivos'
-    }];
-  }
-  if (realProductosInactivos.length > 0) {
-    return realProductosInactivos.map((prod, index) => ({
-      id: index + 1,
-      sku: prod.sku,
-      nombre: prod.nombre,
-      sucursal: prod.sucursal,
-    }));
-  }
-  return [{
-    id: 1,
-    mensaje: 'No hay productos no disponibles',
-    descripcion: 'No se encontraron productos inactivos en el sistema'
-  }];
-}
+    if (card.subText === 'Productos no disponibles') {
+      if (loading) {
+        return [{
+          id: 1,
+          mensaje: 'Cargando productos no disponibles...',
+          descripcion: 'Por favor espere mientras se cargan los productos inactivos'
+        }];
+      }
+      if (realProductosInactivos.length > 0) {
+        return realProductosInactivos.map((prod, index) => ({
+          id: index + 1,
+          sku: prod.sku,
+          nombre: prod.nombre,
+          sucursal: prod.sucursal,
+        }));
+      }
+      return [{
+        id: 1,
+        mensaje: 'No hay productos no disponibles',
+        descripcion: 'No se encontraron productos inactivos en el sistema'
+      }];
+    }
 
+    // Si es la card de existencia total, usar datos reales del endpoint
+    if (card.subText === 'Existencia total') {
+      if (loading) {
+        return [{ id: 1, mensaje: 'Cargando existencia total...' }];
+      }
+
+      if (stockData.length > 0 && todasLasUbicaciones.length > 0) {
+        const result = pivotStockData(stockData, todasLasUbicaciones);
+        return result.map((item, index) => ({
+          id: index + 1,
+          ...item,
+        }));
+      }
+
+      return [{ id: 1, mensaje: 'No se encontró stock registrado.' }];
+    }
 
     // Para otras cards, usar datos estáticos o mostrar mensaje de no implementado
     return generateSampleData(card.subText);
