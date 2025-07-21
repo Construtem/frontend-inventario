@@ -1,4 +1,3 @@
-// Tu archivo de layout actual (ej. /components/admin/AdminLayout.js)
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -7,43 +6,45 @@ import Header from "@/components/admin/header";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isAuth, setIsAuth] = useState(false); // Estado para saber si está autenticado
-  const frontLoginUrl = process.env.NEXT_PUBLIC_FRONT_LOGIN || 'https://login.tssw.cl';
+  const [isAuth, setIsAuth] = useState(false);
+  const frontLoginUrl = process.env.NEXT_PUBLIC_FRONT_LOGIN || "https://login.tssw.cl";
+
+  // Cambiar este flag a true para desarrollo local
+  const isDevelopment = true;
 
   useEffect(() => {
-    // Solo revisa si existe el item 'user' en localStorage
-    const user = localStorage.getItem("user");    // Descomentar esta linea para produccion
+    if (isDevelopment) {
+      // ---------------- MODO DESARROLLO LOCAL ----------------
+      if (!localStorage.getItem("user")) {
+        const mockUser = {
+          uid: "123456",
+          nombre: "Usuario Ficticio",
+          correo: "prueba@utem.cl",
+          rol: "Administrador",
+        };
 
-    // ----------------------- Descomentar esto para desarrollo -----------------------
-    /*if (!localStorage.getItem("user")) {    // esto no va para produccion xddd
-      const mockUser = {
-        uid: '123456',
-        nombre: 'Usuario Ficticio',
-        correo: 'prueba@utem.cl',
-        rol: 'Administrador',
+        localStorage.setItem("user", JSON.stringify(mockUser));
+        console.log("✅ Usuario ficticio guardado en localStorage");
       }
-
-      localStorage.setItem('user', JSON.stringify(mockUser))
-      console.log('Usuario ficticio guardado en localStorage')
-    }*/
-    // -------------------------------------------------------------------------------
-    
-    if (user) {     // Para produccion cambiar localStorage.getItem("user") por user
-      setIsAuth(true); // Si existe, el usuario está autenticado. Puede ver el contenido.
+      setIsAuth(true);
     } else {
-      // Si NO existe, redirige al login principal porque no ha pasado por el flujo correcto
-      window.location.href = `${frontLoginUrl}`; // Redirige a la página de login
+      // ---------------- MODO PRODUCCIÓN ----------------
+      const user = localStorage.getItem("user");
+      if (user) {
+        setIsAuth(true);
+      } else {
+        window.location.href = frontLoginUrl;
+      }
     }
-  }, [frontLoginUrl]); // Se ejecuta solo una vez al cargar el layout
+  }, [frontLoginUrl, isDevelopment]);
 
   const handleToggleSidebar = () => setSidebarOpen((open) => !open);
 
-  // Mientras se verifica, no muestres nada para evitar parpadeos (FOUC)
+  // Mientras se verifica la autenticación
   if (!isAuth) {
-    return null; // O un componente de carga global
+    return null; // o un componente tipo loading spinner
   }
 
-  // Si está autenticado, muestra el layout y el contenido de la página
   return (
     <>
       <Header onToggleSidebar={handleToggleSidebar} />

@@ -540,6 +540,7 @@ interface CardProps {
   imagePath: string;
   onClick?: () => void;
   isMobile?: boolean;
+  loading?: boolean;
 }
 
 interface UserData {
@@ -565,7 +566,7 @@ export default function InicioPage() {
   const [stockData, setStockData] = useState<StockSucursalAPI[]>([]);
   const [existenciaTotal, setExistenciaTotal] = useState<number>(0);
   const [todasLasUbicaciones, setTodasLasUbicaciones] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -636,6 +637,8 @@ export default function InicioPage() {
         setProveedoresCount(0);
         setBodegasCount(0);
         setRealProductosInactivos([]); // ← manejo de error
+      } finally {
+        setLoading(false); 
       }
     };
 
@@ -658,7 +661,7 @@ export default function InicioPage() {
     { id: 5, mainText: bodegasCount.toString(), subText: 'Bodegas', imagePath: '/images/inicio/bodegas.png' },
     { id: 6, mainText: despachosCount.toString(), subText: 'Despachos', imagePath: '/images/inicio/pedidos.png' },
     { id: 7, mainText: productosCount.toString(), subText: 'Productos registrados', imagePath: '/images/inicio/productos.png' },
-    { id: 8, mainText: productosInactivosCount.toString(), subText: 'Productos no disponibles', imagePath: '/images/inicio/productos.png' },
+    { id: 8, mainText: productosInactivosCount.toString(), subText: 'Productos no activos', imagePath: '/images/inicio/productos.png' },
     { id: 9, mainText: existenciaTotal.toString(), subText: 'Existencia total', imagePath: '/images/inicio/existencias.png' },
     //{ id: 10, mainText: '100', subText: 'Existencia vendida', imagePath: '/images/inicio/existencias.png' },
     //{ id: 11, mainText: '50', subText: 'Ventas', imagePath: '/images/inicio/ventas.png' },
@@ -712,6 +715,7 @@ export default function InicioPage() {
               {...card} 
               onClick={() => handleCardClick(card.id)}
               isMobile={isMobile}
+              loading={loading}
             />
           ))}
         </div>
@@ -728,7 +732,7 @@ export default function InicioPage() {
   );
 }
 
-const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick, isMobile }) => {
+const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick, isMobile, loading }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const cardContainerStyle: React.CSSProperties = {
@@ -738,7 +742,7 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick, isMo
     width: isMobile ? '100%' : 'calc(25% - 1.5rem)',
     height: isMobile ? '100px' : '120px',
     display: 'grid',
-    gridTemplateColumns: '1fr 80px', // 2 columnas: texto e ícono
+    gridTemplateColumns: '1fr 80px',
     gap: '10px',
     alignItems: 'center',
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
@@ -801,10 +805,26 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick, isMo
       onClick={onClick}
     >
       <div style={textContainerStyle}>
-        <p style={mainTextStyle}>{mainText}</p>
+        <p style={mainTextStyle}>
+          {loading ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="spinner" style={{
+                display: 'inline-block',
+                width: '18px',
+                height: '18px',
+                border: '3px solid #fff',
+                borderTop: '3px solid #FF7300',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }}></span>
+              <span style={{ color: "#FF7300", fontWeight: "bold" }}>Cargando...</span>
+            </span>
+          ) : (
+            mainText
+          )}
+        </p>
         <p style={subTextStyle}>{subText}</p>
       </div>
-
       <Image
         src={imagePath}
         alt={subText}
@@ -812,6 +832,14 @@ const Card: React.FC<CardProps> = ({ mainText, subText, imagePath, onClick, isMo
         height={isMobile ? 65 : 75}
         style={imageStyle}
       />
+      <style>
+      {`
+      @keyframes spin {
+        0% { transform: rotate(0deg);}
+        100% { transform: rotate(360deg);}
+      }
+      `}
+      </style>
     </div>
   );
 };
@@ -836,7 +864,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   const [productosInactivosCount, setProductosInactivosCount] = useState<number>(0);
   const [stockData, setStockData] = useState<StockSucursalAPI[]>([]);
   const [todasLasUbicaciones, setTodasLasUbicaciones] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Estado para manejar la existencia total y las ubicaciones
   const pivotStockData = (data: StockSucursalAPI[], ubicaciones: string[]) => {
@@ -868,7 +896,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   // Cargar datos reales de usuarios, clientes, sucursales, despachos, productos, proveedores y productos no disponibles cuando el modal se abre
   useEffect(() => {
     const loadRealData = async () => {
-      if (card.subText !== 'Usuarios registrados' && card.subText !== 'Clientes' && card.subText !== 'Sucursales' && card.subText !== 'Bodegas' && card.subText !== 'Despachos' && card.subText !== 'Productos registrados' && card.subText !== 'Proveedores'&& card.subText !== 'Productos no disponibles' && card.subText !== 'Existencia total') {
+      if (card.subText !== 'Usuarios registrados' && card.subText !== 'Clientes' && card.subText !== 'Sucursales' && card.subText !== 'Bodegas' && card.subText !== 'Despachos' && card.subText !== 'Productos registrados' && card.subText !== 'Proveedores'&& card.subText !== 'Productos no activos' && card.subText !== 'Existencia total') {
         setRealUsuarios([]);
         setRealClientes([]);
         setRealSucursales([]);
@@ -880,7 +908,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
         return;
       }
 
-      setLoading(true);
+      setLoading(false);
       try {
         if (card.subText === 'Usuarios registrados') {
           const usuarios = await fetchUsuarios();
@@ -910,7 +938,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
           const proveedores = await fetchProveedores();
           setRealProveedores(proveedores);
           console.log("📊 Proveedores cargados en modal:", proveedores);
-        } else if (card.subText === 'Productos no disponibles') {
+        } else if (card.subText === 'Productos no activos') {
           const productosInactivos = await fetchProductosInactivos();
           setRealProductosInactivos(productosInactivos);
           setProductosInactivosCount(productosInactivos.length);
@@ -1174,7 +1202,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
     }
 
     // Si es la card de productos no disponibles, usar datos reales del endpoint
-    if (card.subText === 'Productos no disponibles') {
+    if (card.subText === 'Productos no activos') {
       if (loading) {
         return [{
           id: 1,
@@ -1303,7 +1331,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   };
 
   const modalContentStyle: React.CSSProperties = {
-    backgroundColor: 'white',
+    backgroundColor: '#F4F0E8', //o white
     borderRadius: '20px',
     padding: isMobile ? '1rem' : '2rem',
     width: isMobile ? '95vw' : '80vw',
@@ -1365,7 +1393,7 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
   };
 
   const headerRowStyle: React.CSSProperties = {
-    backgroundColor: '#5c5c5c',
+    backgroundColor: '#ff7300',
     position: 'sticky',
     top: 0,
     zIndex: 1,
@@ -1487,18 +1515,14 @@ const CardModal: React.FC<CardModalProps> = ({ card, onClose, isMobile }) => {
             </tbody>
           </table>
         </div>
-
         {/* Información adicional */}
         <div style={{ 
           marginTop: '1rem', 
           padding: '1rem', 
-          backgroundColor: '#f8f9fa', 
+          backgroundColor: '#f4f0e8', 
           borderRadius: '8px',
           flexShrink: 0
         }}>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>
-            Total de registros: {dataToShow.length} | Mostrando: {filteredData.length}
-          </p>
         </div>
       </div>
     </div>
