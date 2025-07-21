@@ -753,8 +753,7 @@ const [addFormData, setAddFormData] = useState({
                 type="text"
                 placeholder="Buscar por ID, Marca, Email..."
                 value={searchTerm}
-                                            maxLength={70}
-
+                maxLength={70}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={inputStyle}
               />
@@ -982,8 +981,6 @@ const [addFormData, setAddFormData] = useState({
           </table>
         </div>
       </div>
-
-
       
           {filteredData.length > 0 && (
             <div style={{
@@ -1018,7 +1015,7 @@ const [addFormData, setAddFormData] = useState({
                   flex: isMobile ? "0 0 auto" : "none"
                 }}>
                   {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>págin(a)s</span>}
+                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>página(s)</span>}
                 </div>
                 
                 <button
@@ -1045,10 +1042,9 @@ const [addFormData, setAddFormData] = useState({
                 </div>
               )}
             </div>
-          )}  
-
-{/* Modal de Edición */}
-{/* Modal de Edición */}
+        )}
+        
+      {/* Modal de Edición */}
       {showEditModal && editFormData && (
         <div style={modalOverlayStyle}>
           <div style={{...modalContentStyle, maxWidth: '500px', padding: '2rem'}}>
@@ -1078,6 +1074,7 @@ const [addFormData, setAddFormData] = useState({
                   type="text"
                   value={editFormData.marca}
                   onChange={(e) => setEditFormData({...editFormData, marca: e.target.value})}
+                  maxLength={30}
                   style={{
                     ...selectStyle,
                     borderColor: !editFormData.marca.trim() ? '#ef4444' : '#ddd'
@@ -1151,6 +1148,7 @@ const [addFormData, setAddFormData] = useState({
                 <input
                   type="text"
                   value={editFormData.direccion}
+                  maxLength={100}
                   onChange={(e) => setEditFormData({...editFormData, direccion: e.target.value})}
                   style={{
                     ...selectStyle,

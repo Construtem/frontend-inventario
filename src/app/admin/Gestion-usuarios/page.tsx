@@ -1013,7 +1013,9 @@ Swal.fire({
                 type="text"
                 placeholder="Buscar por Nombre, Email o Rol..."
                 value={searchTerm}
+
                 maxLength={50}
+
                 onChange={(e) => {
                   const valor = e.target.value;
                   if (valor === '' || /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s@]*$/.test(valor)) {
@@ -1342,7 +1344,7 @@ Swal.fire({
                 onClick={handleApplyFilters}
                 style={modalButtonStyle}
               >
-                Aplicar Filtros
+                Aplicar Filtro
               </button>
             </div>
           </div>
