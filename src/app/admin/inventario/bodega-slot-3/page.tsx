@@ -3286,6 +3286,7 @@ const buttonStyle: React.CSSProperties = {
   minWidth: "fit-content"
 };
 
+
 const arrastraStyle: React.CSSProperties = {
   fontSize: '0.875rem',
   color: '#555',
@@ -3295,7 +3296,7 @@ const arrastraStyle: React.CSSProperties = {
   fontWeight: 400,
 };
 
-const preVisualTextStyle: React.CSSProperties = {
+const preVisualTextStyle: Re
   fontSize: '1rem', 
   fontFamily: 'Montserrat, sans-serif', 
   fontWeight: 'semibold',
@@ -3406,3 +3407,4 @@ const normalTextStyle: React.CSSProperties = {
   fontSize: '1rem',
   color: '#333',
 };
+

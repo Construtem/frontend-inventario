@@ -1272,6 +1272,7 @@ const AddProductsModal: React.FC<AddProductsModalProps> = ({
           )}
         </div>
 
+
         {errorMessage && <p style={errorTextStyle}>{errorMessage}</p>}
 
         {(datosParseadosTabla.length > 0 || datosStockUpdate.length > 0) && (
@@ -1424,6 +1425,11 @@ const AddProductsModal: React.FC<AddProductsModalProps> = ({
     </div>
   );
 };
+
+
+// =====================
+// 5. COMPONENTES REACT
+// =====================
 
 const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFilters, activeFilters }) => {
   const [categoria, setCategoria] = useState("");
@@ -3285,6 +3291,7 @@ const buttonStyle: React.CSSProperties = {
   gap: "0.5rem",
   minWidth: "fit-content"
 };
+
 
 const arrastraStyle: React.CSSProperties = {
   fontSize: '0.875rem',

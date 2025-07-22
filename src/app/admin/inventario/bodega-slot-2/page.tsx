@@ -3286,6 +3286,7 @@ const buttonStyle: React.CSSProperties = {
   minWidth: "fit-content"
 };
 
+
 const arrastraStyle: React.CSSProperties = {
   fontSize: '0.875rem',
   color: '#555',

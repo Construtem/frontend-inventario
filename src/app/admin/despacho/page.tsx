@@ -319,32 +319,69 @@ export default function DespachoPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("¿Deseas eliminar este despacho?")) return;
+  const result = await Swal.fire({
+    title: '¿Estás seguro?',
+    text: `¿Deseas eliminar el despacho #${id}?`,
+    icon: 'warning',
+    showCancelButton: true,
+    showCloseButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar',
+  });
 
-    if (isOffline) {
-      alert("No se puede eliminar en modo offline. Reconecta al servidor.");
-      return;
+  if (!result.isConfirmed) return;
+
+
+  if (isOffline) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Sin conexión',
+      text: 'No se puede eliminar en modo offline. Reconecta al servidor.',
+      confirmButtonColor: '#ff7300',
+    });
+    return;
+  }
+
+  try {
+    const res = await fetch(`${apiInventarioUrl}/api/despachos/${id}`, {
+      method: "DELETE",
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Error al eliminar despacho: ${res.status} ${res.statusText}`);
+
     }
 
-    try {
-      const res = await fetch(`${apiInventarioUrl}/api/despachos/${id}`, {
-        method: "DELETE",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!res.ok) {
-        throw new Error(`Error al eliminar despacho: ${res.status} ${res.statusText}`);
-      }
-      
-      setDespachos((prev) => prev.filter((d) => d.id !== id));
-      
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Error desconocido al eliminar";
-      alert(`Error: ${message}`);
-    }
-  };
+    setDespachos((prev) => prev.filter((d) => d.id !== id));
+
+    // Mensaje personalizado
+    Swal.fire({
+      html: `
+        <div style="text-align: left;">
+          <p><strong>El despacho #${id} ha sido eliminado permanentemente.</strong></p>
+        </div>
+      `,
+      icon: 'success',
+      confirmButtonColor: '#ff7300',
+      showCloseButton: true,
+      timer: 5000,
+      timerProgressBar: true
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error desconocido al eliminar";
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: message,
+      confirmButtonColor: '#ff7300',
+    });
+  }
+};
 
   const handleViewProducts = async (despachoId: number) => {
     setSelectedDespachoId(despachoId);
@@ -576,7 +613,7 @@ export default function DespachoPage() {
                 type="text"
                 placeholder="Buscar por cliente, origen o destino..."
                 value={search}
-                maxLength={100}
+                maxLength={70}
                 onChange={(e) => {
                   const valor = e.target.value;
                   if (valor === '' || /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s@]*$/.test(valor)) {

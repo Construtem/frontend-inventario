@@ -1451,6 +1451,7 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
     }
   }, [isOpen]);
 
+
   const handleApplyFilters = () => {
     onApplyFilters({ categoria, estado });
     onClose();
@@ -1535,6 +1536,7 @@ const FiltersModal: React.FC<FiltersModalProps> = ({ isOpen, onClose, onApplyFil
               value={estado} 
               onChange={(e) => setEstado(e.target.value)}
               style={selectStyle}
+              disabled
             >
               <option value="">Todos los estados</option>
               <option value="activo">Activo</option>
