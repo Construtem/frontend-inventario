@@ -490,8 +490,6 @@ const [addFormData, setAddFormData] = useState({
       direccion: editFormData.direccion.trim(),
     };
 
-    console.log('Payload enviado al backend:', payload);
-
     const response = await fetch(`${apiInventarioUrl}/api/proveedores/${editingProveedor.id}`, {
       method: 'PUT',
       headers: {
@@ -602,10 +600,10 @@ const [addFormData, setAddFormData] = useState({
     return filteredData.slice(startIndex, endIndex);
   }, [filteredData, currentPage, itemsPerPage]);
 
-  // Calcular total de páginas
+
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  // Funciones de paginación
+
   const handleNextPage = () => {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
@@ -614,62 +612,7 @@ const [addFormData, setAddFormData] = useState({
     if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
-  const handlePageClick = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-  };
 
-  // Renderizar botones de paginación
-  const renderPaginationButtons = () => {
-    const buttons = [];
-    const maxButtonsToShow = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxButtonsToShow / 2));
-    const endPage = Math.min(totalPages, startPage + maxButtonsToShow - 1);
-
-    if (endPage - startPage + 1 < maxButtonsToShow) {
-      startPage = Math.max(1, endPage - maxButtonsToShow + 1);
-    }
-
-    if (startPage > 1) {
-      buttons.push(
-        <button key="1" onClick={() => handlePageClick(1)} style={paginationButtonBaseStyle}>
-          1
-        </button>
-      );
-      if (startPage > 2) {
-        buttons.push(<span key="dots-start" style={paginationDotsStyle}>...</span>);
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      buttons.push(
-        <button
-          key={i}
-          onClick={() => handlePageClick(i)}
-          style={{
-            ...paginationButtonBaseStyle,
-            ...(currentPage === i ? paginationButtonActiveStyle : {}),
-          }}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        buttons.push(<span key="dots-end" style={paginationDotsStyle}>...</span>);
-      }
-      buttons.push(
-        <button key={totalPages} onClick={() => handlePageClick(totalPages)} style={paginationButtonBaseStyle}>
-          {totalPages}
-        </button>
-      );
-    }
-
-    return buttons;
-  };
-
-  // Calcular ancho de búsqueda basado en el tamaño de la ventana
   const getSearchWidth = () => {
     if (isExtraLarge) return "700px";
     if (isLarge) return "600px";
@@ -767,25 +710,6 @@ const [addFormData, setAddFormData] = useState({
                 />
               </button>
             </div>
-            
-            <button 
-              onClick={handleFiltros}
-              style={{
-              ...filterButtonStyle,
-              width: isMobile ? "100%" : "auto",
-              fontSize: isMobile ? "0.875rem" : "1rem",
-              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-              }}
-            >
-              <Image
-                src={filtrosImg.src}
-                alt="Filtros"
-                width={20}
-                height={20}
-                style={filterIconStyle}
-              />
-              Filtros
-            </button>
           </div>
 
           <div style={{

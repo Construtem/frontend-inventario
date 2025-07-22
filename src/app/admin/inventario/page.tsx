@@ -11,7 +11,7 @@ interface Sucursal {
   telefono: string;
   direccion: string;
   comuna: string;
-  tipo_id?: number; // Agregar tipo_id que viene del backend
+  tipo_id?: number;
 }
 
 interface CardProps {
@@ -167,8 +167,6 @@ export default function InventarioPage() {
   const cardData: CardProps[] = useMemo(() => {
     if (sucursales.length === 0) return [];
 
-
-
     const sucursalesOnly = sucursales
       .filter(item => {
         const tipoValue = item.tipo_id || item.tipo;
@@ -222,9 +220,6 @@ export default function InventarioPage() {
     return cards;
   }, [sucursales]);
 
-
-  
-
   const handleCardClick = (cardId: number) => {
     const card = cardData.find(c => c.id === cardId);
     if (card?.route) {
@@ -265,7 +260,6 @@ export default function InventarioPage() {
     if (sucursales.length === 0) {
       return (
         <div style={emptyStateStyle}>
-          <div style={emptyIconStyle}>🏢</div>
           <div style={emptyTitleStyle}>No hay sucursales disponibles</div>
           <div style={emptySubtitleStyle}>
             Agregue sucursales desde la sección de gestión para verlas aquí
@@ -581,12 +575,6 @@ const loadingTextStyle: React.CSSProperties = {
   marginBottom: '0.5rem',
 };
 
-const loadingSubTextStyle: React.CSSProperties = {
-  fontSize: '0.9rem',
-  color: '#999',
-  fontFamily: 'Roboto, sans-serif',
-};
-
 // Estilos para estado de error
 const errorContainerStyle: React.CSSProperties = {
   display: 'flex',
@@ -629,21 +617,6 @@ const errorButtonsStyle: React.CSSProperties = {
 
 const retryButtonStyle: React.CSSProperties = {
   backgroundColor: '#ef4444',
-  color: 'white',
-  padding: '0.75rem 1.5rem',
-  borderRadius: '8px',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: '1rem',
-  fontFamily: 'Montserrat, sans-serif',
-  fontWeight: 'semibold',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-  transition: 'all 0.3s ease',
-  minWidth: '120px',
-};
-
-const diagnosticButtonStyle: React.CSSProperties = {
-  backgroundColor: '#6b7280',
   color: 'white',
   padding: '0.75rem 1.5rem',
   borderRadius: '8px',

@@ -206,7 +206,6 @@ export default function GestionUsuariosPage() {
         setLoading(true);
         setError(null);
         
-        console.log('Usando API URL:', apiInventarioUrl);
         
         // Timeout manual con AbortController
         const controller = new AbortController();
@@ -222,21 +221,18 @@ export default function GestionUsuariosPage() {
         
         clearTimeout(timeoutId);
         
-        console.log('Response status:', response.status);
         
         if (!response.ok) {
           throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('Datos recibidos:', data);
+
         
         // Validar que los datos tengan la estructura esperada
         if (Array.isArray(data)) {
-          console.log('Cantidad de usuarios:', data.length);
           setUsuariosData(sortUsuarios(data)); // Apply sorting here
         } else {
-          console.log('Los datos no son un array:', typeof data);
           setUsuariosData([]);
         }
         
@@ -277,8 +273,6 @@ export default function GestionUsuariosPage() {
         setLoading(true);
         setError(null);
         
-        console.log('Reintentando con API URL:', apiInventarioUrl);
-        
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
@@ -292,20 +286,15 @@ export default function GestionUsuariosPage() {
         
         clearTimeout(timeoutId);
         
-        console.log('Retry response status:', response.status);
-        
         if (!response.ok) {
           throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('Datos del retry:', data);
         
         if (Array.isArray(data)) {
-          console.log('Cantidad de usuarios en retry:', data.length);
           setUsuariosData(sortUsuarios(data)); // Apply sorting here
         } else {
-          console.log('Los datos del retry no son un array:', typeof data);
           setUsuariosData([]);
         }
         
@@ -338,12 +327,7 @@ export default function GestionUsuariosPage() {
 
   // Función de filtrado para usuarios
   const filteredData = useMemo(() => {
-    console.log('Calculando datos filtrados...');
-    console.log('usuariosData.length:', usuariosData.length);
-    console.log('searchTerm:', searchTerm);
-    console.log('selectedRol:', selectedRol);
-    console.log('selectedEstado:', selectedEstado);
-    
+
     const result = sortUsuarios(usuariosData.filter(usuario => {
       const searchLower = searchTerm.toLowerCase();
       const rolNombre = usuario.rol?.nombre || '';
@@ -356,8 +340,7 @@ export default function GestionUsuariosPage() {
 
       return matchesSearch && matchesRol && matchesEstado;
     }));
-    
-    console.log('Datos filtrados length:', result.length);
+  
     return result;
   }, [usuariosData, searchTerm, selectedRol, selectedEstado]);
 
@@ -366,15 +349,7 @@ export default function GestionUsuariosPage() {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const result = filteredData.slice(startIndex, endIndex);
-    
-    console.log('Calculando datos de tabla...');
-    console.log('currentPage:', currentPage);
-    console.log('itemsPerPage:', itemsPerPage);
-    console.log('startIndex:', startIndex);
-    console.log('endIndex:', endIndex);
-    console.log('filteredData.length:', filteredData.length);
-    console.log('currentTableData.length:', result.length);
-    
+
     return result;
   }, [filteredData, currentPage, itemsPerPage]);
 
@@ -569,8 +544,6 @@ export default function GestionUsuariosPage() {
         rol_id: editFormData.rol_id || editFormData.rol?.id || 1
       };
 
-      console.log('Enviando datos al servidor:', dataToSend);
-
     // Usar siempre el id si existe, para permitir cambiar el email
 let identifier;
 let url;
@@ -581,10 +554,6 @@ if (editFormData.id) {
   identifier = originalEmail;
   url = `${apiInventarioUrl}/api/usuarios/${identifier}`;
 }
-console.log('Identificador para editar:', identifier);
-console.log('Email original:', originalEmail);
-console.log('Email editado:', editFormData.email);
-console.log('URL del endpoint:', url);
 
 const response = await fetch(url, {
   method: 'PUT',
@@ -594,16 +563,14 @@ const response = await fetch(url, {
   body: JSON.stringify(dataToSend),
 });
 
-console.log('Respuesta del servidor:', response.status, response.statusText);
+
 
 if (!response.ok) {
   const errorText = await response.text();
-  console.error('Error response:', errorText);
   throw new Error(`Error al actualizar: ${response.status} - ${errorText}`);
 }
 
 const updatedUsuario = await response.json();
-console.log('Usuario actualizado recibido:', updatedUsuario);
 
 // Asegurar que el usuario actualizado tenga el objeto rol completo
 const usuarioConRol = {
@@ -646,7 +613,7 @@ Swal.fire({
 });
 
     } catch (err) {
-      console.error('Error completo:', err);
+
       let errorMessage = "Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.";
       if (err instanceof Error) {
         if (err.message.includes('500')) {
@@ -724,8 +691,6 @@ Swal.fire({
         rol_id: addFormData.rol_id
       };
 
-      console.log('Creando nuevo usuario:', dataToSend);
-
       const response = await fetch(`${apiInventarioUrl}/api/usuarios`, {
         method: 'POST',
         headers: {
@@ -734,18 +699,12 @@ Swal.fire({
         body: JSON.stringify(dataToSend),
       });
 
-      console.log('Respuesta del servidor:', response.status, response.statusText);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Error response:', errorText);
         throw new Error(`Error al crear usuario: ${response.status} - ${errorText}`);
       }
-
       const nuevoUsuario = await response.json();
-      console.log('Usuario creado:', nuevoUsuario);
 
-      // Asegurar que el nuevo usuario tenga el objeto rol completo
       const usuarioConRol = {
         ...nuevoUsuario,
         rol: ROLES_MAP.find(rol => rol.id === nuevoUsuario.rol_id) || { id: nuevoUsuario.rol_id, nombre: 'N/A' }
@@ -776,7 +735,6 @@ Swal.fire({
         timerProgressBar: true
       });
     } catch (err) {
-      console.error('Error completo:', err);
       let errorMessage = "Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.";
       if (err instanceof Error) {
         if (err.message.includes('500')) {
@@ -846,9 +804,6 @@ Swal.fire({
       try {
         // Usar email como identificador si no hay id numérico
         const identifier = usuario.id || usuario.email;
-        console.log('Eliminando usuario con identificador:', identifier);
-        console.log('URL del endpoint:', `${apiInventarioUrl}/api/usuarios/${identifier}`);
-
         const response = await fetch(`${apiInventarioUrl}/api/usuarios/${identifier}`, {
           method: 'DELETE',
           headers: {
@@ -856,25 +811,19 @@ Swal.fire({
           },
         });
 
-        console.log('Respuesta del servidor:', response.status, response.statusText);
+
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('Error response:', errorText);
           throw new Error(`Error al eliminar: ${response.status} - ${errorText}`);
         }
 
         // Actualizar el estado eliminando SOLO el usuario específico
         setUsuariosData(prevData => {
-          console.log('Datos antes de eliminar:', prevData.length);
-          console.log('Usuario a eliminar:', usuario.nombre, 'con identificador:', identifier);
-
           const newData = prevData.filter(item => {
             const itemIdentifier = item.id || item.email;
             return itemIdentifier !== identifier;
           });
-          console.log('Datos después de eliminar:', newData.length);
-
           return newData;
         });
 
@@ -891,7 +840,7 @@ Swal.fire({
           timerProgressBar: true
         });
       } catch (err) {
-        console.error('Error al eliminar usuario:', err);
+
         let errorMessage = "Error inesperado. Por favor, intente nuevamente o contacte al administrador del sistema.";
         if (err instanceof Error) {
           if (err.message.includes('500')) {
@@ -923,14 +872,10 @@ Swal.fire({
   });
 };
 
-
-    const handleFiltersUsuarios = () => {
-
+  const handleFiltersUsuarios = () => {
     setShowFilterModal(true);
   };
 
-
-    // Agregar función para limpiar filtros desde la barra de herramientas
   const handleClearFilters = () => {
     setSelectedRol('');
     setSelectedEstado('');

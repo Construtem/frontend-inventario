@@ -68,8 +68,7 @@ export default function RutaDespachoPage() {
   // Función para obtener despacho específico
   const fetchDespachoById = async (id: string): Promise<DespachoInfo | null> => {
     try {
-      console.log('📡 Intentando obtener despachos desde:', `${API_BASE_URL}/api/despachos`);
-      
+
       const response = await axios.get(`${API_BASE_URL}/api/despachos`, {
         timeout: 10000, // 10 segundos de timeout
         headers: {
@@ -78,27 +77,17 @@ export default function RutaDespachoPage() {
         }
       });
       
-      console.log('✅ Respuesta recibida:', response.status, response.statusText);
-      console.log('📦 Datos recibidos:', response.data);
-      
       const despachos: DespachoBackend[] = response.data;
       
       if (!Array.isArray(despachos)) {
-        console.error('❌ La respuesta no es un array:', typeof despachos);
+
         throw new Error('Formato de respuesta inválido del servidor');
       }
       
-      console.log(`🔍 Buscando despacho con ID: ${id} en ${despachos.length} despachos`);
-      
       const despacho = despachos.find(d => d.id.toString() === id);
       if (!despacho) {
-        console.warn(`⚠️ Despacho con ID ${id} no encontrado en la lista`);
         throw new Error(`Despacho con ID ${id} no encontrado`);
       }
-
-      console.log('✅ Despacho encontrado:', despacho);
-      console.log('🔍 Estado del despacho:', despacho.estado);
-      console.log('🔍 Estado de la cotización:', despacho.cotizacion?.estado);
 
       // Formatear direcciones
       const origenDir = despacho.origen_sucursal 
@@ -120,36 +109,20 @@ export default function RutaDespachoPage() {
         precio: despacho.precio_calculado
       };
 
-      console.log('✅ Despacho formateado:', despachoFormateado);
+
       return despachoFormateado;
       
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.warn('⚠️ Error al obtener despachos del backend:', {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          message: error.message,
-          url: error.config?.url
-        });
-        
+
         // No lanzar error, simplemente devolver null para usar datos de ejemplo
-        console.log('🔄 Servidor no disponible, se usarán datos de ejemplo');
         return null;
       } else {
-        console.error('❌ Error desconocido:', error);
+
         return null;
       }
     }
   };
-
-  /*// Función para calcular distancia si no está calculada
-  const calcularDistancia = async (origen: string, destino: string) => {
-    // Por ahora, no intentar calcular distancia desde el backend
-    // Ya que los endpoints no están disponibles todavía
-    console.log('ℹ️ Saltando cálculo de distancia del backend - endpoints no disponibles');
-    console.log('🗺️ Google Maps calculará la distancia directamente en el mapa');
-    return null;
-  };*/
 
   useEffect(() => {
     const loadDespachoData = async () => {
@@ -167,12 +140,10 @@ export default function RutaDespachoPage() {
         const despacho = await fetchDespachoById(despachoId);
         
         if (despacho) {
-          // Si obtuvo datos del backend, usarlos
-          console.log('✅ Usando datos del backend');
+
           setDespachoInfo(despacho);
         } else {
           // Si no obtuvo datos del backend, usar datos de ejemplo
-          console.log('🔄 Usando datos de ejemplo');
           setError('Servidor no disponible - usando datos de ejemplo');
           setDespachoInfo({
             id: despachoId,
@@ -185,7 +156,7 @@ export default function RutaDespachoPage() {
           });
         }
       } catch (error) {
-        console.error('❌ Error inesperado:', error);
+
         setError('Error inesperado - usando datos de ejemplo');
         
         // Fallback a datos de ejemplo

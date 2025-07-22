@@ -180,9 +180,6 @@ const estiloSwalTextoConMargenObj: React.CSSProperties = {
 const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
 const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 
-
-
-
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
   const [windowSize, setWindowSize] = useState({
@@ -262,7 +259,6 @@ const validateTextInput = (value: string): { isValid: boolean; message: string }
 
 // Función para validar teléfono (solo números, espacios, guiones y +)
 const validatePhoneInput = (value: string): { isValid: boolean; message: string } => {
-  // Solo permitir números, espacios, guiones y el símbolo +
   const validChars = /^[0-9\s\-+]*$/;
   
   if (!validChars.test(value)) {
@@ -277,13 +273,11 @@ const validatePhoneInput = (value: string): { isValid: boolean; message: string 
 
 // Función para filtrar caracteres en tiempo real
 const filterTextInput = (value: string): string => {
-  // Remover caracteres prohibidos automáticamente
   return value.replace(/[;%$@#&*()[\]{}|\\/?<>"'`~!^=]/g, '');
 };
 
 // Función para filtrar teléfono en tiempo real
 const filterPhoneInput = (value: string): string => {
-  // Solo mantener números, espacios, guiones y +
   return value.replace(/[^0-9\s\-+]/g, '');
 };
 
@@ -312,8 +306,6 @@ const filterPhoneInput = (value: string): string => {
         setLoading(true);
         setError(null);
         
-
-        
         // Timeout manual con AbortController
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
@@ -328,26 +320,20 @@ const filterPhoneInput = (value: string): string => {
         
         clearTimeout(timeoutId);
         
-
-        
         if (!response.ok) {
           throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
-
         
-        // Validar que los datos tengan la estructura esperada
         if (Array.isArray(data)) {
-          setSucursalesData(sortSucursales(data)); // Apply sorting here
+          setSucursalesData(sortSucursales(data)); 
         } else {
-
           setSucursalesData([]);
         }
         
       } catch (err) {
 
-        
         let errorMessage = "Error desconocido al cargar datos";
         if (err instanceof Error) {
           if (err.name === 'AbortError') {
@@ -378,9 +364,7 @@ const filterPhoneInput = (value: string): string => {
       try {
         setLoading(true);
         setError(null);
-        
-
-        
+    
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
@@ -431,7 +415,7 @@ const filterPhoneInput = (value: string): string => {
     fetchSucursales();
   };
 
-  // Modificar la función de filtrado para usar el campo tipo en lugar del nombre
+  // ===================== para el filtrado de tipo de sucursal
   const filteredData = useMemo(() => {
     return sortSucursales(sucursalesData.filter(sucursal => {
       const searchLower = searchTerm.toLowerCase();
@@ -444,11 +428,17 @@ const filterPhoneInput = (value: string): string => {
       if (selectedTipo) {
         const tipoValue = sucursal.tipo_id || sucursal.tipo;
         if (selectedTipo === 'bodega') {
-          matchesTipo = tipoValue === 1 || tipoValue === '1' || 
-                       sucursal.nombre?.toLowerCase()?.includes('bodega');
+          if (tipoValue) {
+            matchesTipo = tipoValue === 1 || tipoValue === '1'; //Esto sirve para asegurarse de que incluya tipo_id
+          } else {
+            matchesTipo = sucursal.nombre?.toLowerCase()?.includes('bodega');
+          }
         } else if (selectedTipo === 'sucursal') {
-          matchesTipo = tipoValue === 2 || tipoValue === '2' || 
-                       !sucursal.nombre?.toLowerCase()?.includes('bodega');
+          if (tipoValue) {
+            matchesTipo = tipoValue === 2 || tipoValue === '2'; //Lo mismo pero para las sucursales
+          } else {
+            matchesTipo = !sucursal.nombre?.toLowerCase()?.includes('bodega');
+          }
         }
       }
 
@@ -883,20 +873,25 @@ const filterPhoneInput = (value: string): string => {
     }
   };
 
-  // Función para contar sucursales y bodegas - corregir lógica
   const countByType = useMemo(() => {
     const sucursales = sucursalesData.filter(item => {
-      // Verificar tanto tipo como tipo_id y también el nombre como fallback
       const tipoValue = item.tipo_id || item.tipo;
-      return tipoValue === 2 || tipoValue === '2' || 
-             (!item.nombre?.toLowerCase()?.includes('bodega') && !tipoValue);
+
+      if (tipoValue) {
+        return tipoValue === 2 || tipoValue === '2';
+      } else {
+        return !item.nombre?.toLowerCase()?.includes('bodega');
+      }
     }).length;
     
     const bodegas = sucursalesData.filter(item => {
-      // Verificar tanto tipo como tipo_id y también el nombre como fallback
       const tipoValue = item.tipo_id || item.tipo;
-      return tipoValue === 1 || tipoValue === '1' || 
-             (item.nombre?.toLowerCase()?.includes('bodega') && !tipoValue);
+
+      if (tipoValue) {
+        return tipoValue === 1 || tipoValue === '1';
+      } else {
+        return item.nombre?.toLowerCase()?.includes('bodega');
+      }
     }).length;
     
 
@@ -906,8 +901,13 @@ const filterPhoneInput = (value: string): string => {
 
   const handleDelete = (sucursal: Sucursal) => {
   const tipoValue = sucursal.tipo_id || sucursal.tipo;
-  const tipo = (tipoValue === 1 || tipoValue === '1' ||
-    sucursal.nombre?.toLowerCase()?.includes('bodega')) ? 'bodega' : 'sucursal';
+  // Priorizar tipo_id, usar nombre solo como fallback si no hay tipo_id
+  let tipo: string;
+  if (tipoValue) {
+    tipo = (tipoValue === 1 || tipoValue === '1') ? 'bodega' : 'sucursal';
+  } else {
+    tipo = sucursal.nombre?.toLowerCase()?.includes('bodega') ? 'bodega' : 'sucursal';
+  }
 
   Swal.fire({
 
@@ -1349,7 +1349,7 @@ const filterPhoneInput = (value: string): string => {
                           })()}
                         </span>
                       </td>
-                      <td style={{...tdStyle, minWidth: '10px', textAlign: 'center'}}>
+                      <td style={tdStyle}>
                         <div style={{
                           display: 'flex',
                           justifyContent: 'center',
@@ -1387,10 +1387,7 @@ const filterPhoneInput = (value: string): string => {
             </table>
           )}
         </div>
-
       </div>
-
-
 
       {filteredData.length > 0 && (
             <div style={{
@@ -2074,8 +2071,8 @@ const tdStyle: React.CSSProperties = {
   padding: "0.55rem 0.9rem",
   borderBottom: "1px solid #e5e7eb",
   fontSize: "0.9375rem",
-  fontFamily: "roboto, sans-serif",
-  fontWeight: 400,
+  fontFamily:"roboto, sans-serif",
+  fontWeight:400,
   minHeight: "38px",
   height: "38px",
   lineHeight: "1.15",
