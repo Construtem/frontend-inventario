@@ -80,6 +80,21 @@ function useWindowSize() {
   };
 }
 
+type EditFormData = {
+  id: number;
+  sku: string;
+  nombreProducto: string;
+  proveedor: string;
+  proveedor_id: number;
+  pesoKg: string | number;
+  largoCm: string | number;
+  anchoCm: string | number;
+  altoCm: string | number;
+  precioCU: number | "";
+  stock: number | "";
+  fechaIngreso: string;
+};
+
 // Add sorting function outside the component
 // Define the type for inventory data
 type InventarioData = {
@@ -87,6 +102,7 @@ type InventarioData = {
   sku: string;
   nombreProducto: string;
   proveedor: string;
+  proveedor_id: number;
   pesoKg: string | number;
   largoCm: string | number;
   anchoCm: string | number;
@@ -118,12 +134,173 @@ export default function InventarioProveedoresPage() {
   const [tempFechaHasta, setTempFechaHasta] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
+
+  // Estados para el modal de editar 
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventarioData | null>(null);
+  const [editFormData, setEditFormData] = useState<EditFormData | null>(null);
+
+  // Funcion para editar
+  const handleEditar = (item: InventarioData) => {
+    setEditingItem(item);
+    setEditFormData({ ...item });
+    setShowEditModal(true);
+  };
+
+// Funcion para guardar cambios
+const handleSaveEditChanges = async () => {
+  if (
+    !editFormData ||
+    !editingItem ||
+    typeof editFormData.precioCU !== "number" ||
+    typeof editFormData.stock !== "number" ||
+    editFormData.precioCU <= 0 ||
+    editFormData.stock <= 0
+  ) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Precio y stock deben ser mayores a 0',
+      confirmButtonColor: '#ff7300',
+    });
+    return;
+  }
+
+  const body = {
+    proveedor_id: editingItem.proveedor_id,
+    sku: editingItem.sku,
+    stock: editFormData.stock,
+    fecha_ingreso: editingItem.fechaIngreso,
+    proveedor: {
+      id: editingItem.proveedor_id,
+      marca: editFormData.proveedor,
+      email: "",
+      telefono: "",
+      direccion: ""
+    },
+    producto: {
+      sku: editingItem.sku,
+      nombre: editFormData.nombreProducto,
+      descripcion: "",
+      proveedor_id: editingItem.proveedor_id,
+      peso: editFormData.pesoKg,
+      largo: editFormData.largoCm,
+      ancho: editFormData.anchoCm,
+      alto: editFormData.altoCm,
+      precio: editFormData.precioCU,
+      categoria_id: 1,
+      estado: true,
+      proveedor: {
+        id: editingItem.proveedor_id,
+        marca: editFormData.proveedor,
+        email: "",
+        telefono: "",
+        direccion: ""
+      },
+      categoria: {
+        id: 0,
+        nombre: ""
+      }
+    }
+  };
+
+  try {
+    const url = `${apiInventarioUrl}/api/stock-proveedor/${editingItem.proveedor_id}/${editingItem.sku}`;
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) throw new Error('Error al actualizar el producto');
+
+    // Mapea la respuesta al formato de InventarioData
+    const updatedRaw = await response.json();
+    const updatedItem: InventarioData = {
+      id: editingItem.id,
+      sku: updatedRaw.sku,
+      nombreProducto: updatedRaw.producto?.nombre || "",
+      proveedor: updatedRaw.proveedor?.marca || "",
+      proveedor_id: updatedRaw.proveedor_id,
+      pesoKg: updatedRaw.producto?.peso || "",
+      largoCm: updatedRaw.producto?.largo || "",
+      anchoCm: updatedRaw.producto?.ancho || "",
+      altoCm: updatedRaw.producto?.alto || "",
+      precioCU: updatedRaw.producto?.precio || 0,
+      stock: updatedRaw.stock,
+      fechaIngreso: updatedRaw.fecha_ingreso
+    };
+
+    setInventarioData(prev =>
+      prev.map(p => (String(p.sku) === String(updatedItem.sku) ? updatedItem : p))
+    );
+
+    setShowEditModal(false);
+    setEditingItem(null);
+    setEditFormData(null);
+
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: '¡Producto actualizado!',
+      showConfirmButton: false,
+      timer: 3000,
+    });
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No se pudo actualizar el producto',
+      confirmButtonColor: '#ff7300',
+    });
+  }
+};
   
-  const [inventarioData, setInventarioData] = useState<Array<{
+// Funcion para borrar
+
+const handleEliminar = async (item: InventarioData) => {
+  const result = await Swal.fire({
+    title: '¿Estás seguro?',
+    text: `¿Deseas eliminar el producto SKU ${item.sku}?`,
+    icon: 'warning',
+    showCancelButton: true,
+    showCloseButton: true,
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar',
+  });
+
+  if (result.isConfirmed) {
+    try {
+      const url = `${apiInventarioUrl}/api/stock-proveedor/${item.proveedor_id}/${item.sku}`;
+      const response = await fetch(url, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Error al eliminar');
+      setInventarioData(prev => prev.filter(p => p.sku !== item.sku));
+      Swal.fire({
+        title: 'Eliminado',
+        text: 'Producto eliminado correctamente',
+        icon: 'success',
+        confirmButtonColor: '#ff7300',
+      });
+    } catch (error) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo eliminar el producto',
+        icon: 'error',
+        confirmButtonColor: '#ff7300',
+      });
+    }
+  }
+};
+
+const [inventarioData, setInventarioData] = useState<Array<{
   id: number;
   sku: string;
   nombreProducto: string;
   proveedor: string;
+  proveedor_id: number; // ✅ este es el que falta
   pesoKg: string | number;
   largoCm: string | number;
   anchoCm: string | number;
@@ -144,9 +321,10 @@ export default function InventarioProveedoresPage() {
         // Mapear los datos para la tabla
         const mapped = Array.isArray(data) ? data.map((item, idx) => ({
           id: idx + 1,
-          sku: item.sku,
+          sku: item.sku || "",
           nombreProducto: item.producto?.nombre || "",
           proveedor: item.proveedor?.marca || "",
+          proveedor_id: item.proveedor_id,
           pesoKg: item.producto?.peso || "",
           largoCm: item.producto?.largo || "",
           anchoCm: item.producto?.ancho || "",
@@ -567,21 +745,27 @@ export default function InventarioProveedoresPage() {
                     <td style={tdStyle}>{new Date(item.fechaIngreso).toISOString().split('T')[0]}</td>
                     <td style={tdStyle}>
                       <div style={{ display: "flex", justifyContent: "center", gap: "5px" }}>
-                        <button style={{
-                          ...modifyProductButtonStyle,
-                          fontSize: '0.75rem',
-                          padding: '0.25rem 0.5rem',
-                          maxWidth: '60px'
-                        }}>
+                        <button
+                          onClick={() => handleEditar(item)}
+                          style={{
+                            ...modifyProductButtonStyle,
+                            fontSize: '0.75rem',
+                            padding: '0.25rem 0.5rem',
+                            maxWidth: '60px',
+                          }}
+                        >
                           EDITAR
                         </button>
-                        <button style={{
-                          ...modifyProductButtonStyle,
-                          backgroundColor: '#ef4444',
-                          fontSize: '0.75rem',
-                          padding: '0.25rem 0.5rem',
-                          maxWidth: '60px'
-                        }}>
+                        <button
+                          onClick={() => handleEliminar(item)}
+                          style={{
+                            ...modifyProductButtonStyle,
+                            backgroundColor: '#ef4444',
+                            fontSize: '0.75rem',
+                            padding: '0.25rem 0.5rem',
+                            maxWidth: '60px',
+                          }}
+                        >
                           ELIMINAR
                         </button>
                       </div>
@@ -803,6 +987,111 @@ export default function InventarioProveedoresPage() {
                 }}
               >
                 Aplicar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showEditModal && editFormData && (
+        <div style={modalOverlayStyle}>
+          <div style={{ ...modalContentStyle, maxWidth: '500px', padding: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <h2 style={{ ...modalTitleStyle, margin: 0 }}>Editar Producto</h2>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingItem(null);
+                  setEditFormData(null);
+                }}
+                style={closeButtonStyle}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div style={{ ...modalFormStyle, padding: '0 1rem' }}>
+                <div style={selectGroupStyle}>
+                  <label style={labelStyle}>Nombre Producto</label>
+                  <input
+                    type="text"
+                    value={editFormData.nombreProducto}
+                    maxLength={50}
+                    pattern="^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$"
+                    onChange={(e) => {
+                      const valor = e.target.value;
+                      if (/^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
+                        setEditFormData({ ...editFormData, nombreProducto: valor });
+                      }
+                    }}
+                    style={selectStyle}
+                    placeholder="Edita el nombre del Producto"
+                  />
+                </div>
+
+                <div style={selectGroupStyle}>
+                  <label style={labelStyle}>Proveedor</label>
+                  <input
+                    type="text"
+                    value={editFormData.proveedor}
+                    maxLength={40}
+                    pattern="^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$"
+                    onChange={(e) => {
+                      const valor = e.target.value;
+                      if (/^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
+                        setEditFormData({ ...editFormData, proveedor: valor });
+                      }
+                    }}
+                    style={selectStyle}
+                    placeholder="Edita el nombre del Proveedor"
+                  />
+                </div>
+
+                <div style={selectGroupStyle}>
+                  <label style={labelStyle}>Precio (C/U)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={1000000}
+                    value={editFormData.precioCU === 0 ? "" : editFormData.precioCU}
+                    onChange={(e) => {
+                      const valor = e.target.value === "" ? "" : Math.max(1, Math.min(1000000, parseInt(e.target.value)));
+                      setEditFormData({ ...editFormData, precioCU: valor });
+                    }}
+                    style={selectStyle}
+                    placeholder="Edita el Precio unitario"
+                  />
+                </div>
+
+                <div style={selectGroupStyle}>
+                  <label style={labelStyle}>Stock</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100000}
+                    value={editFormData.stock === 0 ? "" : editFormData.stock}
+                    onChange={(e) => {
+                      const valor = e.target.value === "" ? "" : Math.max(1, Math.min(100000, parseInt(e.target.value)));
+                      setEditFormData({ ...editFormData, stock: valor });
+                    }}
+                    style={selectStyle}
+                    placeholder="Edita el Stock disponible"
+                  />
+                </div>
+            </div>
+
+            <div style={{ ...modalButtonsStyle, padding: '0 1rem' }}>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingItem(null);
+                  setEditFormData(null);
+                }}
+                style={{ ...modalButtonStyle, backgroundColor: '#6b7280' }}
+              >
+                Cancelar
+              </button>
+              <button onClick={handleSaveEditChanges} style={modalButtonStyle}>
+                Guardar Cambios
               </button>
             </div>
           </div>
@@ -1237,4 +1526,101 @@ const secondPieceFilterButtonStyle: React.CSSProperties = {
 const xClosebuttonStyle: React.CSSProperties = {
   fontSize: '1rem',
   lineHeight: '1' 
+};
+
+// =====================
+// ESTILOS MODAL DE EDICIÓN
+// =====================
+
+const modalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100vw',
+  height: '100vh',
+  backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000,
+  padding: '1rem',
+  overflowY: 'auto'
+};
+
+const modalContentStyle: React.CSSProperties = {
+  backgroundColor: '#fff',
+  borderRadius: '10px',
+  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+  padding: '2rem',
+  width: '100%',
+  maxWidth: '500px',
+  zIndex: 1001,
+  position: 'relative',
+};
+
+const modalTitleStyle: React.CSSProperties = {
+  fontSize: '1.5rem',
+  fontWeight: '600',
+  fontFamily: 'Montserrat, sans-serif',
+  color: '#222',
+  marginBottom: '1rem'
+};
+
+const modalFormStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+  marginTop: '1rem'
+};
+
+const selectGroupStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.25rem'
+};
+
+const labelStyle: React.CSSProperties = {
+  fontWeight: 500,
+  fontSize: '0.875rem',
+  color: '#374151'
+};
+
+const selectStyle: React.CSSProperties = {
+  borderRadius: '6px',
+  padding: '0.5rem 0.75rem',
+  border: '1px solid #d1d5db',
+  fontSize: '0.875rem',
+  fontFamily: 'Roboto, sans-serif',
+  outline: 'none',
+  transition: 'border-color 0.2s ease-in-out'
+};
+
+const modalButtonsStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '1rem',
+  marginTop: '1.5rem'
+};
+
+const modalButtonStyle: React.CSSProperties = {
+  backgroundColor: '#ff7300',
+  color: 'white',
+  padding: '0.6rem 1.2rem',
+  borderRadius: '8px',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '0.875rem',
+  fontFamily: 'Montserrat, sans-serif',
+  fontWeight: 600,
+  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  transition: 'all 0.3s ease'
+};
+
+const closeButtonStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontSize: '1.5rem',
+  color: '#666',
+  cursor: 'pointer',
+  lineHeight: 1
 };
