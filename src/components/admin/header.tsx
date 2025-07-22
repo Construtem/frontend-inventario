@@ -5,6 +5,7 @@ import Image from "next/image";
 import logo from "@/styles/images/logo_barra_superior.png";
 import exit from "@/styles/images/logout2.png";
 import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -36,12 +37,25 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
     }
   }, []);
 
+  // Función para manejar el logout con confirmación
   const handleLogout = async () => {
-    localStorage.removeItem("user");
-    console.log("Usuario ha cerrado sesión");
-    // Redirige al usuario a la página raíz
-    window.location.href = `${frontLoginUrl}`; // Redirige a la página principal
-  };
+  const result = await Swal.fire({
+    title: "¿Deseas cerrar la sesión?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Sí, cerrar sesión",
+    cancelButtonText: "Cancelar",
+    showCloseButton: true,
+  });
+
+  if (!result.isConfirmed) return;
+
+  localStorage.removeItem("user");
+  console.log("Usuario ha cerrado sesión");
+  window.location.href = `${frontLoginUrl}`;
+};
 
   return (
     <header style={styles.header}>

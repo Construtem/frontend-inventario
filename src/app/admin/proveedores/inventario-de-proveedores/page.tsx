@@ -1476,16 +1476,17 @@ export default function InventarioProveedoresPage() {
                 <label style={labelStyle}>SKU*</label>
                 <input
                   type="text"
-                  value={addFormData.sku}
-                  maxLength={20}
+                  value={"H" + addFormData.sku.slice(1)}
+                  maxLength={4}
                   onChange={(e) => {
                     const valor = e.target.value.toUpperCase();
-                    if (/^[A-Z0-9]*$/.test(valor)) {
+                    // Solo permite H seguido de 3 numeros
+                    if (/^H\d{0,3}$/.test(valor)) {
                       setAddFormData({ ...addFormData, sku: valor });
                     }
                   }}
                   style={selectStyle}
-                  placeholder="Ejemplo: PROD001"
+                  placeholder="Ejemplo: H001"
                 />
               </div>
 
