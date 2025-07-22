@@ -3296,7 +3296,7 @@ const arrastraStyle: React.CSSProperties = {
   fontWeight: 400,
 };
 
-const preVisualTextStyle: Re
+const preVisualTextStyle: React.CSSProperties = {
   fontSize: '1rem', 
   fontFamily: 'Montserrat, sans-serif', 
   fontWeight: 'semibold',
