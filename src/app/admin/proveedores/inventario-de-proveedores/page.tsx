@@ -10,49 +10,46 @@ import buscarImg from "@/styles/images/buscar.png";
 import Swal from "sweetalert2";
 import { clearLine } from "readline";
 
-
-
 // =====================
 // 2. SWEET ALERT2 ESTILOS
 // =====================
 function objToInlineCss(styleObj: React.CSSProperties): string {
   return Object.entries(styleObj)
     .map(([key, value]) => {
-      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      const cssKey = key.replace(/([A-Z])/g, "-$1").toLowerCase();
       return `${cssKey}: ${value};`;
     })
-    .join(' ');
+    .join(" ");
 }
 
 const estiloSwalTituloObj: React.CSSProperties = {
   fontFamily: "'Montserrat', sans-serif",
-  fontSize: '1.5rem',
-  fontWeight: '600',
-  color: '#222'
+  fontSize: "1.5rem",
+  fontWeight: "600",
+  color: "#222",
 };
 
 const estiloSwalTextoObj: React.CSSProperties = {
   fontFamily: "'Roboto', sans-serif",
-  fontSize: '1rem',
-  fontWeight: '400',
-  color: '#333'
+  fontSize: "1rem",
+  fontWeight: "400",
+  color: "#333",
 };
 
 const estiloSwalTextoConMargenObj: React.CSSProperties = {
   ...estiloSwalTextoObj,
-  marginTop: '10px'
+  marginTop: "10px",
 };
 
 const swalTituloCssString = objToInlineCss(estiloSwalTituloObj);
 const swalTextoCssString = objToInlineCss(estiloSwalTextoObj);
 const swalTextoConMargenCssString = objToInlineCss(estiloSwalTextoConMargenObj);
 
-
 // Hook para manejar el tamaño de la ventana
 function useWindowSize() {
   const [windowSize, setWindowSize] = useState({
-    width: typeof window !== 'undefined' ? window.innerWidth : 0,
-    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+    width: typeof window !== "undefined" ? window.innerWidth : 0,
+    height: typeof window !== "undefined" ? window.innerHeight : 0,
   });
 
   useEffect(() => {
@@ -63,10 +60,10 @@ function useWindowSize() {
       });
     }
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', handleResize);
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", handleResize);
       handleResize();
-      return () => window.removeEventListener('resize', handleResize);
+      return () => window.removeEventListener("resize", handleResize);
     }
   }, []);
 
@@ -76,7 +73,7 @@ function useWindowSize() {
     isLarge: windowSize.width <= 1440 && windowSize.width > 1200,
     isMedium: windowSize.width <= 1200 && windowSize.width > 992,
     isSmall: windowSize.width <= 992 && windowSize.width > 768,
-    isMobile: windowSize.width <= 768
+    isMobile: windowSize.width <= 768,
   };
 }
 
@@ -114,20 +111,22 @@ type InventarioData = {
 
 const sortInventario = (data: InventarioData[]) => {
   return [...data].sort((a, b) => {
-    const skuA = (a.sku || '').toString().toLowerCase();
-    const skuB = (b.sku || '').toString().toLowerCase();
+    const skuA = (a.sku || "").toString().toLowerCase();
+    const skuB = (b.sku || "").toString().toLowerCase();
     return skuA.localeCompare(skuB);
   });
 };
 
 export default function InventarioProveedoresPage() {
-  const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } = useWindowSize();
+  const { isExtraLarge, isLarge, isMedium, isSmall, isMobile } =
+    useWindowSize();
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const apiInventarioUrl = process.env.NEXT_PUBLIC_API_INVENTARIO || 'https://api-inventario.tssw.cl';
+  const apiInventarioUrl =
+    process.env.NEXT_PUBLIC_API_INVENTARIO || "https://api-inventario.tssw.cl";
   const itemsPerPage = 10;
-  
+
   // Estados para el modal de filtros
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [tempFechaDesde, setTempFechaDesde] = useState("");
@@ -135,144 +134,29 @@ export default function InventarioProveedoresPage() {
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
 
-  // Estados para el modal de editar 
+  // Estados para el modal de editar
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventarioData | null>(null);
   const [editFormData, setEditFormData] = useState<EditFormData | null>(null);
 
-  // Estados para el modal de agregar
+  // Estados para el modal de agregar productos
   const [showAddModal, setShowAddModal] = useState(false);
-
-  // Interfaz de datos para add
-  type NewProductData = {
-  nombre: string;
-  proveedor: string;
-  pesoKg: number | "";
-  largoCm: number | "";
-  anchoCm: number | "";
-  altoCm: number | "";
-  precioCU: number | "";
-  stock: number | "";
-};
-  const [newProductData, setNewProductData] = useState<NewProductData>({
-    nombre: "",
-    proveedor: "",
+  const [proveedoresData, setProveedoresData] = useState<
+    Array<{ id: number; marca: string }>
+  >([]);
+  const [addFormData, setAddFormData] = useState({
+    sku: "",
+    nombreProducto: "",
+    descripcion: "",
+    proveedor_id: 0,
     pesoKg: "",
     largoCm: "",
     anchoCm: "",
     altoCm: "",
-    precioCU: "",
-    stock: ""
+    precio: "",
+    stock: "",
+    categoria_id: 1,
   });
-
-// FUNCION PARA AGREGAR PRODUCTOS
-
-const handleAddProduct = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  // Convierte los valores a número para validar
-  const precio = Number(newProductData.precioCU);
-  const stock = Number(newProductData.stock);
-  const peso = Number(newProductData.pesoKg);
-  const largo = Number(newProductData.largoCm);
-  const ancho = Number(newProductData.anchoCm);
-  const alto = Number(newProductData.altoCm);
-
-  // Validación básica
-  if (
-    !newProductData.nombre ||
-    !newProductData.proveedor ||
-    isNaN(precio) || precio <= 0 ||
-    isNaN(stock) || stock <= 0 ||
-    isNaN(peso) || peso <= 0 ||
-    isNaN(largo) || largo <= 0 ||
-    isNaN(ancho) || ancho <= 0 ||
-    isNaN(alto) || alto <= 0
-  ) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Completa todos los campos correctamente',
-      confirmButtonColor: '#ff7300',
-    });
-    return;
-  }
-
-  // Construye el body para el backend
-const body = {
-  stock: stock,
-  proveedor: {
-    marca: newProductData.proveedor,
-    email: "",
-    telefono: "",
-    direccion: ""
-  },
-  producto: {
-    nombre: newProductData.nombre,
-    descripcion: "",
-    proveedor_id: 0, // Si tienes el id, ponlo aquí
-    peso: peso,
-    largo: largo,
-    ancho: ancho,
-    alto: alto,
-    precio: precio,
-    categoria_id: 1, // O el id que corresponda
-    estado: true,
-    proveedor: {
-      id: 0,
-      marca: newProductData.proveedor,
-      email: "",
-      telefono: "",
-      direccion: ""
-    },
-    categoria: {
-      id: 0,
-      nombre: ""
-    }
-  }
-  // El SKU y la fecha de ingreso los genera el backend
-};
-
-  try {
-    const response = await fetch(`${apiInventarioUrl}/api/stock-proveedor`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) throw new Error('Error al agregar producto');
-
-    Swal.fire({
-      icon: 'success',
-      title: '¡Producto agregado!',
-      confirmButtonColor: '#ff7300',
-      timer: 2500,
-      showCloseButton: true,
-    });
-
-    setNewProductData({
-      nombre: "",
-      proveedor: "",
-      pesoKg: "",
-      largoCm: "",
-      anchoCm: "",
-      altoCm: "",
-      precioCU: "",
-      stock: "",
-    });
-
-    // Opcional: recargar inventario
-    // fetchInventario();
-
-  } catch (error) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'No se pudo agregar el producto',
-      confirmButtonColor: '#ff7300',
-    });
-  }
-};
 
   // Funcion para editar
   const handleEditar = (item: InventarioData) => {
@@ -281,170 +165,354 @@ const body = {
     setShowEditModal(true);
   };
 
-// Funcion para guardar cambios
-const handleSaveEditChanges = async () => {
-  if (
-    !editFormData ||
-    !editingItem ||
-    typeof editFormData.precioCU !== "number" ||
-    typeof editFormData.stock !== "number" ||
-    editFormData.precioCU <= 0 ||
-    editFormData.stock <= 0
-  ) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Precio y stock deben ser mayores a 0',
-      confirmButtonColor: '#ff7300',
-    });
-    return;
-  }
+  // Funcion para guardar cambios
+  const handleSaveEditChanges = async () => {
+    if (
+      !editFormData ||
+      !editingItem ||
+      typeof editFormData.precioCU !== "number" ||
+      typeof editFormData.stock !== "number" ||
+      editFormData.precioCU <= 0 ||
+      editFormData.stock <= 0
+    ) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Precio y stock deben ser mayores a 0",
+        confirmButtonColor: "#ff7300",
+      });
+      return;
+    }
 
-  const body = {
-    proveedor_id: editingItem.proveedor_id,
-    sku: editingItem.sku,
-    stock: editFormData.stock,
-    fecha_ingreso: editingItem.fechaIngreso,
-    proveedor: {
-      id: editingItem.proveedor_id,
-      marca: editFormData.proveedor,
-      email: "",
-      telefono: "",
-      direccion: ""
-    },
-    producto: {
-      sku: editingItem.sku,
-      nombre: editFormData.nombreProducto,
-      descripcion: "",
+    const body = {
       proveedor_id: editingItem.proveedor_id,
-      peso: editFormData.pesoKg,
-      largo: editFormData.largoCm,
-      ancho: editFormData.anchoCm,
-      alto: editFormData.altoCm,
-      precio: editFormData.precioCU,
-      categoria_id: 1,
-      estado: true,
+      sku: editingItem.sku,
+      stock: editFormData.stock,
+      fecha_ingreso: editingItem.fechaIngreso,
       proveedor: {
         id: editingItem.proveedor_id,
         marca: editFormData.proveedor,
         email: "",
         telefono: "",
-        direccion: ""
+        direccion: "",
       },
-      categoria: {
-        id: 0,
-        nombre: ""
+      producto: {
+        sku: editingItem.sku,
+        nombre: editFormData.nombreProducto,
+        descripcion: "",
+        proveedor_id: editingItem.proveedor_id,
+        peso: editFormData.pesoKg,
+        largo: editFormData.largoCm,
+        ancho: editFormData.anchoCm,
+        alto: editFormData.altoCm,
+        precio: editFormData.precioCU,
+        categoria_id: 1,
+        estado: true,
+        proveedor: {
+          id: editingItem.proveedor_id,
+          marca: editFormData.proveedor,
+          email: "",
+          telefono: "",
+          direccion: "",
+        },
+        categoria: {
+          id: 0,
+          nombre: "",
+        },
+      },
+    };
+
+    try {
+      const url = `${apiInventarioUrl}/api/stock-proveedor/${editingItem.proveedor_id}/${editingItem.sku}`;
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) throw new Error("Error al actualizar el producto");
+
+      // Mapea la respuesta al formato de InventarioData
+      const updatedRaw = await response.json();
+      const updatedItem: InventarioData = {
+        id: editingItem.id,
+        sku: updatedRaw.sku,
+        nombreProducto: updatedRaw.producto?.nombre || "",
+        proveedor: updatedRaw.proveedor?.marca || "",
+        proveedor_id: updatedRaw.proveedor_id,
+        pesoKg: updatedRaw.producto?.peso || "",
+        largoCm: updatedRaw.producto?.largo || "",
+        anchoCm: updatedRaw.producto?.ancho || "",
+        altoCm: updatedRaw.producto?.alto || "",
+        precioCU: updatedRaw.producto?.precio || 0,
+        stock: updatedRaw.stock,
+        fechaIngreso: updatedRaw.fecha_ingreso,
+      };
+
+      setInventarioData((prev) =>
+        prev.map((p) =>
+          String(p.sku) === String(updatedItem.sku) ? updatedItem : p
+        )
+      );
+
+      setShowEditModal(false);
+      setEditingItem(null);
+      setEditFormData(null);
+
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: "¡Producto actualizado!",
+        showConfirmButton: false,
+        timer: 3000,
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo actualizar el producto",
+        confirmButtonColor: "#ff7300",
+      });
+    }
+  };
+
+  // Funcion para borrar
+
+  const handleEliminar = async (item: InventarioData) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: `¿Deseas eliminar el producto SKU ${item.sku}?`,
+      icon: "warning",
+      showCancelButton: true,
+      showCloseButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const url = `${apiInventarioUrl}/api/stock-proveedor/${item.proveedor_id}/${item.sku}`;
+        const response = await fetch(url, { method: "DELETE" });
+        if (!response.ok) throw new Error("Error al eliminar");
+        setInventarioData((prev) => prev.filter((p) => p.sku !== item.sku));
+        Swal.fire({
+          title: "Eliminado",
+          text: "Producto eliminado correctamente",
+          icon: "success",
+          confirmButtonColor: "#ff7300",
+        });
+      } catch (error) {
+        Swal.fire({
+          title: "Error",
+          text: "No se pudo eliminar el producto",
+          icon: "error",
+          confirmButtonColor: "#ff7300",
+        });
       }
     }
   };
 
-  try {
-    const url = `${apiInventarioUrl}/api/stock-proveedor/${editingItem.proveedor_id}/${editingItem.sku}`;
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+  // Función para abrir el modal de agregar productos
+  const handleAgregarProducto = () => {
+    setAddFormData({
+      sku: "",
+      nombreProducto: "",
+      descripcion: "",
+      proveedor_id: 0,
+      pesoKg: "",
+      largoCm: "",
+      anchoCm: "",
+      altoCm: "",
+      precio: "",
+      stock: "",
+      categoria_id: 1,
     });
+    setShowAddModal(true);
+  };
 
-    if (!response.ok) throw new Error('Error al actualizar el producto');
+  // Función para guardar el nuevo producto
+  const handleSaveNewProduct = async () => {
+    // Validaciones
+    if (!addFormData.sku.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "El SKU es requerido",
+        confirmButtonColor: "#ff7300",
+      });
+      return;
+    }
 
-    // Mapea la respuesta al formato de InventarioData
-    const updatedRaw = await response.json();
-    const updatedItem: InventarioData = {
-      id: editingItem.id,
-      sku: updatedRaw.sku,
-      nombreProducto: updatedRaw.producto?.nombre || "",
-      proveedor: updatedRaw.proveedor?.marca || "",
-      proveedor_id: updatedRaw.proveedor_id,
-      pesoKg: updatedRaw.producto?.peso || "",
-      largoCm: updatedRaw.producto?.largo || "",
-      anchoCm: updatedRaw.producto?.ancho || "",
-      altoCm: updatedRaw.producto?.alto || "",
-      precioCU: updatedRaw.producto?.precio || 0,
-      stock: updatedRaw.stock,
-      fechaIngreso: updatedRaw.fecha_ingreso
+    if (!addFormData.nombreProducto.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "El nombre del producto es requerido",
+        confirmButtonColor: "#ff7300",
+      });
+      return;
+    }
+
+    if (addFormData.proveedor_id === 0) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Debe seleccionar un proveedor",
+        confirmButtonColor: "#ff7300",
+      });
+      return;
+    }
+
+    if (!addFormData.precio || parseFloat(addFormData.precio) <= 0) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "El precio debe ser mayor a 0",
+        confirmButtonColor: "#ff7300",
+      });
+      return;
+    }
+
+    if (!addFormData.stock || parseInt(addFormData.stock) <= 0) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "El stock debe ser mayor a 0",
+        confirmButtonColor: "#ff7300",
+      });
+      return;
+    }
+
+    // Obtener información del proveedor seleccionado
+    const proveedorSeleccionado = proveedoresData.find(
+      (p) => p.id === addFormData.proveedor_id
+    );
+    if (!proveedorSeleccionado) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Proveedor no encontrado",
+        confirmButtonColor: "#ff7300",
+      });
+      return;
+    }
+
+    // Preparar el body para el endpoint completo (recomendado)
+    const body = {
+      proveedor_id: addFormData.proveedor_id,
+      sku: addFormData.sku.trim(),
+      stock: parseInt(addFormData.stock),
+      fecha_ingreso: new Date().toISOString(),
+      producto: {
+        sku: addFormData.sku.trim(),
+        nombre: addFormData.nombreProducto.trim(),
+        descripcion: addFormData.descripcion.trim() || "",
+        peso: parseFloat(addFormData.pesoKg) || 0,
+        largo: parseFloat(addFormData.largoCm) || 0,
+        ancho: parseFloat(addFormData.anchoCm) || 0,
+        alto: parseFloat(addFormData.altoCm) || 0,
+        precio: parseFloat(addFormData.precio),
+        categoria_id: addFormData.categoria_id,
+        estado: true,
+      },
+      proveedor: {
+        id: addFormData.proveedor_id,
+        marca: proveedorSeleccionado.marca,
+        email: "",
+        telefono: "",
+        direccion: "",
+      },
     };
 
-    setInventarioData(prev =>
-      prev.map(p => (String(p.sku) === String(updatedItem.sku) ? updatedItem : p))
-    );
-
-    setShowEditModal(false);
-    setEditingItem(null);
-    setEditFormData(null);
-
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'success',
-      title: '¡Producto actualizado!',
-      showConfirmButton: false,
-      timer: 3000,
-    });
-  } catch (error) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'No se pudo actualizar el producto',
-      confirmButtonColor: '#ff7300',
-    });
-  }
-};
-  
-// Funcion para borrar
-
-const handleEliminar = async (item: InventarioData) => {
-  const result = await Swal.fire({
-    title: '¿Estás seguro?',
-    text: `¿Deseas eliminar el producto SKU ${item.sku}?`,
-    icon: 'warning',
-    showCancelButton: true,
-    showCloseButton: true,
-    confirmButtonColor: '#ef4444',
-    cancelButtonColor: '#6b7280',
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar',
-  });
-
-  if (result.isConfirmed) {
     try {
-      const url = `${apiInventarioUrl}/api/stock-proveedor/${item.proveedor_id}/${item.sku}`;
-      const response = await fetch(url, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Error al eliminar');
-      setInventarioData(prev => prev.filter(p => p.sku !== item.sku));
+      // Intentar primero con el endpoint completo (recomendado)
+      let response = await fetch(
+        `${apiInventarioUrl}/api/stock-proveedor/completo`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
+
+      // Si falla el endpoint completo, intentar con el endpoint original (más simple)
+      if (!response.ok) {
+        const bodySimple = {
+          proveedor_id: addFormData.proveedor_id,
+          sku: addFormData.sku.trim(),
+          stock: parseInt(addFormData.stock),
+          fecha_ingreso: new Date().toISOString(),
+        };
+
+        response = await fetch(`${apiInventarioUrl}/api/stock-proveedor`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodySimple),
+        });
+      }
+
+      if (!response.ok) throw new Error("Error al crear el producto");
+
+      const nuevoProducto = await response.json();
+
+      // Mapear el nuevo producto al formato de la tabla
+      const nuevoItem: InventarioData = {
+        id: inventarioData.length + 1,
+        sku: nuevoProducto.sku,
+        nombreProducto: nuevoProducto.producto?.nombre || "",
+        proveedor: nuevoProducto.proveedor?.marca || "",
+        proveedor_id: nuevoProducto.proveedor_id,
+        pesoKg: nuevoProducto.producto?.peso || 0,
+        largoCm: nuevoProducto.producto?.largo || 0,
+        anchoCm: nuevoProducto.producto?.ancho || 0,
+        altoCm: nuevoProducto.producto?.alto || 0,
+        precioCU: nuevoProducto.producto?.precio || 0,
+        stock: nuevoProducto.stock,
+        fechaIngreso: nuevoProducto.fecha_ingreso,
+      };
+
+      // Agregar el nuevo producto a la lista
+      setInventarioData((prev) => [...prev, nuevoItem]);
+
+      setShowAddModal(false);
+
       Swal.fire({
-        title: 'Eliminado',
-        text: 'Producto eliminado correctamente',
-        icon: 'success',
-        confirmButtonColor: '#ff7300',
-        showCloseButton: true,
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: "¡Producto agregado exitosamente!",
+        showConfirmButton: false,
+        timer: 3000,
       });
     } catch (error) {
       Swal.fire({
-        title: 'Error',
-        text: 'No se pudo eliminar el producto',
-        icon: 'error',
-        confirmButtonColor: '#ff7300',
+        icon: "error",
+        title: "Error",
+        text: "No se pudo agregar el producto",
+        confirmButtonColor: "#ff7300",
       });
     }
-  }
-};
+  };
 
-const [inventarioData, setInventarioData] = useState<Array<{
-  id: number;
-  sku: string;
-  nombreProducto: string;
-  proveedor: string;
-  proveedor_id: number; // ✅ este es el que falta
-  pesoKg: string | number;
-  largoCm: string | number;
-  anchoCm: string | number;
-  altoCm: string | number;
-  precioCU: number;
-  stock: number;
-  fechaIngreso: string;
-}>>([]);
-
+  const [inventarioData, setInventarioData] = useState<
+    Array<{
+      id: number;
+      sku: string;
+      nombreProducto: string;
+      proveedor: string;
+      proveedor_id: number; // ✅ este es el que falta
+      pesoKg: string | number;
+      largoCm: string | number;
+      anchoCm: string | number;
+      altoCm: string | number;
+      precioCU: number;
+      stock: number;
+      fechaIngreso: string;
+    }>
+  >([]);
 
   useEffect(() => {
     const fetchInventario = async () => {
@@ -454,20 +522,22 @@ const [inventarioData, setInventarioData] = useState<Array<{
         if (!response.ok) throw new Error("Error al cargar inventario");
         const data = await response.json();
         // Mapear los datos para la tabla
-        const mapped = Array.isArray(data) ? data.map((item, idx) => ({
-          id: idx + 1,
-          sku: item.sku || "",
-          nombreProducto: item.producto?.nombre || "",
-          proveedor: item.proveedor?.marca || "",
-          proveedor_id: item.proveedor_id,
-          pesoKg: item.producto?.peso || "",
-          largoCm: item.producto?.largo || "",
-          anchoCm: item.producto?.ancho || "",
-          altoCm: item.producto?.alto || "",
-          precioCU: item.producto?.precio || "",
-          stock: item.stock,
-          fechaIngreso: item.fecha_ingreso
-        })) : [];
+        const mapped = Array.isArray(data)
+          ? data.map((item, idx) => ({
+              id: idx + 1,
+              sku: item.sku || "",
+              nombreProducto: item.producto?.nombre || "",
+              proveedor: item.proveedor?.marca || "",
+              proveedor_id: item.proveedor_id,
+              pesoKg: item.producto?.peso || "",
+              largoCm: item.producto?.largo || "",
+              anchoCm: item.producto?.ancho || "",
+              altoCm: item.producto?.alto || "",
+              precioCU: item.producto?.precio || "",
+              stock: item.stock,
+              fechaIngreso: item.fecha_ingreso,
+            }))
+          : [];
         setInventarioData(mapped);
       } catch (err) {
         setInventarioData([]);
@@ -478,15 +548,36 @@ const [inventarioData, setInventarioData] = useState<Array<{
     fetchInventario();
   }, [apiInventarioUrl]);
 
+  // Cargar proveedores para el modal de agregar
+  useEffect(() => {
+    const fetchProveedores = async () => {
+      try {
+        const response = await fetch(`${apiInventarioUrl}/api/proveedores`);
+        if (!response.ok) throw new Error("Error al cargar proveedores");
+        const data = await response.json();
+        const proveedoresMapped = Array.isArray(data)
+          ? data.map((proveedor) => ({
+              id: proveedor.id,
+              marca: proveedor.marca,
+            }))
+          : [];
+        setProveedoresData(proveedoresMapped);
+      } catch (err) {
+        console.error("Error al cargar proveedores:", err);
+        setProveedoresData([]);
+      }
+    };
+    fetchProveedores();
+  }, [apiInventarioUrl]);
+
   // Filtrar datos según búsqueda y fechas
   const filteredData = useMemo(() => {
-    const filtered = inventarioData.filter(item => {
+    const filtered = inventarioData.filter((item) => {
       const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = (
-        (item.sku || '-').toLowerCase().includes(searchLower) ||
-        (item.nombreProducto || '-').toLowerCase().includes(searchLower) ||
-        (item.proveedor || '-').toLowerCase().includes(searchLower)
-      );
+      const matchesSearch =
+        (item.sku || "-").toLowerCase().includes(searchLower) ||
+        (item.nombreProducto || "-").toLowerCase().includes(searchLower) ||
+        (item.proveedor || "-").toLowerCase().includes(searchLower);
 
       // Filtro por fecha
       let matchesDate = true;
@@ -532,7 +623,6 @@ const [inventarioData, setInventarioData] = useState<Array<{
     setCurrentPage(pageNumber);
   };
 
-
   // Calcular ancho de búsqueda basado en el tamaño de la ventana
   const getSearchWidth = () => {
     if (isExtraLarge) return "700px";
@@ -546,19 +636,19 @@ const [inventarioData, setInventarioData] = useState<Array<{
     if (isMobile) {
       return {
         flexDirection: "column" as const,
-        alignItems: "stretch" as const
+        alignItems: "stretch" as const,
       };
     }
     if (isSmall) {
       return {
         flexDirection: "row" as const,
         flexWrap: "wrap" as const,
-        alignItems: "flex-start" as const
+        alignItems: "flex-start" as const,
       };
     }
     return {
       flexDirection: "row" as const,
-      alignItems: "center" as const
+      alignItems: "center" as const,
     };
   };
 
@@ -566,19 +656,19 @@ const [inventarioData, setInventarioData] = useState<Array<{
     if (isMobile) {
       return {
         flexDirection: "column" as const,
-        width: "100%"
+        width: "100%",
       };
     }
     if (isSmall) {
       return {
         flexDirection: "row" as const,
         flexWrap: "wrap" as const,
-        width: "100%"
+        width: "100%",
       };
     }
     return {
       flexDirection: "row" as const,
-      width: "auto"
+      width: "auto",
     };
   };
 
@@ -596,7 +686,7 @@ const [inventarioData, setInventarioData] = useState<Array<{
       filtrosAplicados.push(`Fecha Hasta: ${tempFechaHasta}`);
     }
     if (filtrosAplicados.length === 0) {
-      filtrosAplicados.push('Sin filtros activos');
+      filtrosAplicados.push("Sin filtros activos");
     }
 
     Swal.fire({
@@ -605,18 +695,17 @@ const [inventarioData, setInventarioData] = useState<Array<{
           Filtros Aplicados
         </div>
         <div style="${swalTextoConMargenCssString}">
-          ${filtrosAplicados.join('<br>')}
+          ${filtrosAplicados.join("<br>")}
         </div>
       `,
-      icon: 'success',
-      confirmButtonText: 'ACEPTAR',
-      confirmButtonColor: '#ff7300',
+      icon: "success",
+      confirmButtonText: "ACEPTAR",
+      confirmButtonColor: "#ff7300",
       timer: 3000,
       timerProgressBar: true,
-      showCloseButton: true
+      showCloseButton: true,
     });
   };
-
 
   const handleFiltersProduct = () => {
     setTempFechaDesde(fechaDesde);
@@ -641,16 +730,16 @@ const [inventarioData, setInventarioData] = useState<Array<{
           Se han eliminado todos los filtros aplicados.
         </div>
       `,
-      icon: 'info',
-      confirmButtonText: 'ACEPTAR',
-      confirmButtonColor: '#ff7300',
+      icon: "info",
+      confirmButtonText: "ACEPTAR",
+      confirmButtonColor: "#ff7300",
       timer: 5000,
       timerProgressBar: true,
-      showCloseButton: true
+      showCloseButton: true,
     });
   };
 
-    const handleClearFiltersFromToolbar = () => {
+  const handleClearFiltersFromToolbar = () => {
     setTempFechaDesde("");
     setTempFechaHasta("");
     setFechaDesde("");
@@ -667,12 +756,12 @@ const [inventarioData, setInventarioData] = useState<Array<{
           Se han eliminado todos los filtros aplicados.
         </div>
       `,
-      icon: 'info',
-      confirmButtonText: 'ACEPTAR',
-      confirmButtonColor: '#ff7300',
+      icon: "info",
+      confirmButtonText: "ACEPTAR",
+      confirmButtonColor: "#ff7300",
       timer: 5000,
       timerProgressBar: true,
-      showCloseButton: true
+      showCloseButton: true,
     });
   };
 
@@ -681,45 +770,57 @@ const [inventarioData, setInventarioData] = useState<Array<{
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-        <h1 style={{
-          ...titleStyle,
-          fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
-          marginBottom: "1.5rem"
-        }}>Inventario de Proveedores</h1>
-        
-        <div style={{
-          ...toolbarStyle,
-          ...getToolbarLayout(),
-          flexWrap: "wrap",
-          gap: "1rem",
-          marginBottom: "1rem",
-          width: "100%",
-          boxSizing: "border-box"
-        }}>
-          <div style={{
-            ...leftControlsGroupStyle,
-            ...getControlsLayout(),
-            gap: isMobile ? "1rem" : "0.75rem",
-            boxSizing: "border-box"
-          }}>
-            <div style={{
-              ...searchContainerStyle,
-              width: getSearchWidth(),
-              minWidth: isMobile ? "unset" : "300px",
-              marginBottom: isMobile ? "1rem" : "0",
-              boxSizing: "border-box"
-            }}>
+        <h1
+          style={{
+            ...titleStyle,
+            fontSize: isMobile ? "1.5rem" : isSmall ? "1.75rem" : "2rem",
+            marginBottom: "1.5rem",
+          }}
+        >
+          Inventario de Proveedores
+        </h1>
+
+        <div
+          style={{
+            ...toolbarStyle,
+            ...getToolbarLayout(),
+            flexWrap: "wrap",
+            gap: "1rem",
+            marginBottom: "1rem",
+            width: "100%",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              ...leftControlsGroupStyle,
+              ...getControlsLayout(),
+              gap: isMobile ? "1rem" : "0.75rem",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                ...searchContainerStyle,
+                width: getSearchWidth(),
+                minWidth: isMobile ? "unset" : "300px",
+                marginBottom: isMobile ? "1rem" : "0",
+                boxSizing: "border-box",
+              }}
+            >
               <input
                 type="text"
                 placeholder="Buscar por SKU, Nombre, Proveedor..."
                 onChange={(e) => {
-                const valor = e.target.value;
-                if (valor === '' || /^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
-                  setSearchTerm(valor);
-                }
-              }}
-
-              maxLength={70}
+                  const valor = e.target.value;
+                  if (
+                    valor === "" ||
+                    /^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)
+                  ) {
+                    setSearchTerm(valor);
+                  }
+                }}
+                maxLength={70}
                 value={searchTerm}
                 style={inputStyle}
               />
@@ -733,73 +834,82 @@ const [inventarioData, setInventarioData] = useState<Array<{
                 />
               </button>
             </div>
-            
-              {!hasActiveFilters ? (
-                <button style={{
-                  ...filterButtonStyle, 
+
+            {!hasActiveFilters ? (
+              <button
+                style={{
+                  ...filterButtonStyle,
                   ...entirePieceFilterButtonStyle,
                   width: isMobile ? "100%" : "auto",
                   fontSize: isMobile ? "0.875rem" : "1rem",
                   padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
-                  }}
-                  onClick={handleFiltersProduct}>
-                    <Image
-                      src={filtrosImg.src}
-                      alt="Filtros"
-                      width={20}
-                      height={20}
-                      style={filterIconStyle}
-                    />
-                    Filtros
-                  </button>
-                ) : (
-                <div style={{ display: 'flex' }}>
-                  <button style={{
+                }}
+                onClick={handleFiltersProduct}
+              >
+                <Image
+                  src={filtrosImg.src}
+                  alt="Filtros"
+                  width={20}
+                  height={20}
+                  style={filterIconStyle}
+                />
+                Filtros
+              </button>
+            ) : (
+              <div style={{ display: "flex" }}>
+                <button
+                  style={{
                     ...filterButtonStyle,
                     ...firstPieceFilterButtonStyle,
                     width: isMobile ? "calc(100% - 80px)" : "auto",
                     fontSize: isMobile ? "0.875rem" : "1rem",
                     padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
-                  }} onClick={handleFiltersProduct}>
-                    <Image
-                      src={filtrosImg.src}
-                      alt="Filtros"
-                      width={20}
-                      height={20}
-                      style={filterIconStyle}
-                    />
-                    Filtros
-                  </button>
-                  <button
-                    onClick={handleClearFilters}
-                    style={{
-                      ...filterButtonStyle,
-                      ...secondPieceFilterButtonStyle,
-                      width: isMobile ? "80px" : "auto",
-                      fontSize: isMobile ? "0.75rem" : "0.875rem",
-                      padding: isMobile ? "0.75rem 0.5rem" : "0.5rem 1rem",
-                    }}
-                    title="Limpiar Filtros"
-                  >
-                    <span style={xClosebuttonStyle}>×</span>
-                    {!isMobile && 'Limpiar'}
-                  </button>
-                </div>
-              )}
+                  }}
+                  onClick={handleFiltersProduct}
+                >
+                  <Image
+                    src={filtrosImg.src}
+                    alt="Filtros"
+                    width={20}
+                    height={20}
+                    style={filterIconStyle}
+                  />
+                  Filtros
+                </button>
+                <button
+                  onClick={handleClearFilters}
+                  style={{
+                    ...filterButtonStyle,
+                    ...secondPieceFilterButtonStyle,
+                    width: isMobile ? "80px" : "auto",
+                    fontSize: isMobile ? "0.75rem" : "0.875rem",
+                    padding: isMobile ? "0.75rem 0.5rem" : "0.5rem 1rem",
+                  }}
+                  title="Limpiar Filtros"
+                >
+                  <span style={xClosebuttonStyle}>×</span>
+                  {!isMobile && "Limpiar"}
+                </button>
+              </div>
+            )}
           </div>
 
-          <div style={{
-            ...rightControlsWrapperStyle,
-            width: isMobile ? "100%" : "auto",
-            marginTop: isMobile ? "1rem" : isSmall ? "1rem" : "0"
-          }}>
-            <button style={{
-              ...editButtonStyle,
+          <div
+            style={{
+              ...rightControlsWrapperStyle,
               width: isMobile ? "100%" : "auto",
-              fontSize: isMobile ? "0.875rem" : "1rem",
-              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
+              marginTop: isMobile ? "1rem" : isSmall ? "1rem" : "0",
             }}
-            onClick={() => setShowAddModal(true)}>
+          >
+            <button
+              onClick={handleAgregarProducto}
+              style={{
+                ...editButtonStyle,
+                width: isMobile ? "100%" : "auto",
+                fontSize: isMobile ? "0.875rem" : "1rem",
+                padding: isMobile ? "0.75rem" : "0.5rem 1.2rem",
+              }}
+            >
               <Image
                 src={agregarImg.src}
                 alt="Agregar productos"
@@ -812,23 +922,29 @@ const [inventarioData, setInventarioData] = useState<Array<{
           </div>
         </div>
 
-        <div style={{
-          ...tableContainerStyle,
-          maxWidth: "100%",
-          marginTop: "1rem"
-        }}>
-          <table style={{
-            ...tableStyle,
-            fontSize: isMobile ? "0.875rem" : "1rem",
-            maxWidth: "100%"
-          }}>
-            <thead style={{ 
-              position: "sticky", 
-              top: 0, 
-              zIndex: 2, 
-              background: "#5C5C5C",
-              fontSize: isMobile ? "0.75rem" : "0.875rem"
-            }}>
+        <div
+          style={{
+            ...tableContainerStyle,
+            maxWidth: "100%",
+            marginTop: "1rem",
+          }}
+        >
+          <table
+            style={{
+              ...tableStyle,
+              fontSize: isMobile ? "0.875rem" : "1rem",
+              maxWidth: "100%",
+            }}
+          >
+            <thead
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 2,
+                background: "#5C5C5C",
+                fontSize: isMobile ? "0.75rem" : "0.875rem",
+              }}
+            >
               <tr>
                 <th style={thStyle}>SKU</th>
                 <th style={thStyle}>Nombre Producto</th>
@@ -846,23 +962,38 @@ const [inventarioData, setInventarioData] = useState<Array<{
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={11} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px" }}>
-                      <div style={{ 
-                        width: "20px", 
-                        height: "20px", 
-                        border: "2px solid #f3f3f3", 
-                        borderTop: "2px solid #ff7300", 
-                        borderRadius: "50%", 
-                        animation: "spin 1s linear infinite" 
-                      }}></div>
+                  <td
+                    colSpan={11}
+                    style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: "10px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          border: "2px solid #f3f3f3",
+                          borderTop: "2px solid #ff7300",
+                          borderRadius: "50%",
+                          animation: "spin 1s linear infinite",
+                        }}
+                      ></div>
                       Cargando productos...
                     </div>
                   </td>
                 </tr>
               ) : currentTableData.length === 0 ? (
                 <tr>
-                  <td colSpan={11} style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}>
+                  <td
+                    colSpan={11}
+                    style={{ ...tdStyle, textAlign: "center", padding: "2rem" }}
+                  >
                     No hay productos disponibles
                   </td>
                 </tr>
@@ -876,18 +1007,31 @@ const [inventarioData, setInventarioData] = useState<Array<{
                     <td style={tdStyle}>{item.largoCm}</td>
                     <td style={tdStyle}>{item.anchoCm}</td>
                     <td style={tdStyle}>{item.altoCm}</td>
-                    <td style={tdStyle}>${typeof item.precioCU === 'number' ? item.precioCU.toFixed(0) : '0'}</td>
-                    <td style={tdStyle}>{item.stock}</td>
-                    <td style={tdStyle}>{new Date(item.fechaIngreso).toISOString().split('T')[0]}</td>
                     <td style={tdStyle}>
-                      <div style={{ display: "flex", justifyContent: "center", gap: "5px" }}>
+                      $
+                      {typeof item.precioCU === "number"
+                        ? item.precioCU.toFixed(0)
+                        : "0"}
+                    </td>
+                    <td style={tdStyle}>{item.stock}</td>
+                    <td style={tdStyle}>
+                      {new Date(item.fechaIngreso).toISOString().split("T")[0]}
+                    </td>
+                    <td style={tdStyle}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          gap: "5px",
+                        }}
+                      >
                         <button
                           onClick={() => handleEditar(item)}
                           style={{
                             ...modifyProductButtonStyle,
-                            fontSize: '0.75rem',
-                            padding: '0.25rem 0.5rem',
-                            maxWidth: '60px',
+                            fontSize: "0.75rem",
+                            padding: "0.25rem 0.5rem",
+                            maxWidth: "60px",
                           }}
                         >
                           EDITAR
@@ -896,10 +1040,10 @@ const [inventarioData, setInventarioData] = useState<Array<{
                           onClick={() => handleEliminar(item)}
                           style={{
                             ...modifyProductButtonStyle,
-                            backgroundColor: '#ef4444',
-                            fontSize: '0.75rem',
-                            padding: '0.25rem 0.5rem',
-                            maxWidth: '60px',
+                            backgroundColor: "#ef4444",
+                            fontSize: "0.75rem",
+                            padding: "0.25rem 0.5rem",
+                            maxWidth: "60px",
                           }}
                         >
                           ELIMINAR
@@ -913,153 +1057,182 @@ const [inventarioData, setInventarioData] = useState<Array<{
           </table>
         </div>
 
-          {filteredData.length > 0 && (
-            <div style={{
+        {filteredData.length > 0 && (
+          <div
+            style={{
               ...paginationControlsStyle,
               flexDirection: isMobile ? "column" : "row",
               gap: isMobile ? "1rem" : "1rem",
-              padding: isMobile ? "1rem" : "0.5rem 1rem"
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+              padding: isMobile ? "1rem" : "0.5rem 1rem",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
                 width: isMobile ? "100%" : "auto",
-                gap: "1rem"
-              }}>
-                <button 
-                  onClick={handlePrevPage} 
-                  disabled={currentPage === 1} 
-                  style={{
-                    ...paginationButtonBaseStyle,
-                    ...(currentPage === 1 ? paginationButtonDisabledStyle : {}),
-                    flex: isMobile ? "1" : "none",
-                    minWidth: isMobile ? "auto" : "80px"
-                  }}
-                >
-                  Anterior
-                </button>
-                
-                <div style={{
+                gap: "1rem",
+              }}
+            >
+              <button
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+                style={{
+                  ...paginationButtonBaseStyle,
+                  ...(currentPage === 1 ? paginationButtonDisabledStyle : {}),
+                  flex: isMobile ? "1" : "none",
+                  minWidth: isMobile ? "auto" : "80px",
+                }}
+              >
+                Anterior
+              </button>
+
+              <div
+                style={{
                   ...pageIndicatorStyle,
                   margin: isMobile ? "0" : "0",
-                  flex: isMobile ? "0 0 auto" : "none"
-                }}>
-                  {currentPage} de {totalPages}
-                  {!isMobile && <span style={{ marginLeft: '0.5rem' }}>página(s)</span>}
-                </div>
-                
-                <button
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                  style={{
-                    ...paginationButtonBaseStyle,
-                    ...(currentPage === totalPages ? paginationButtonDisabledStyle : {}),
-                    flex: isMobile ? "1" : "none",
-                    minWidth: isMobile ? "auto" : "80px"
-                  }}
-                >
-                  Siguiente
-                </button>
+                  flex: isMobile ? "0 0 auto" : "none",
+                }}
+              >
+                {currentPage} de {totalPages}
+                {!isMobile && (
+                  <span style={{ marginLeft: "0.5rem" }}>página(s)</span>
+                )}
               </div>
-              
-              {totalPages > 1 && (
-                <div style={{
+
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                style={{
+                  ...paginationButtonBaseStyle,
+                  ...(currentPage === totalPages
+                    ? paginationButtonDisabledStyle
+                    : {}),
+                  flex: isMobile ? "1" : "none",
+                  minWidth: isMobile ? "auto" : "80px",
+                }}
+              >
+                Siguiente
+              </button>
+            </div>
+
+            {totalPages > 1 && (
+              <div
+                style={{
                   ...paginationButtonsWrapperStyle,
                   justifyContent: isMobile ? "center" : "flex-start",
                   flexWrap: isMobile ? "wrap" : "nowrap",
-                  width: isMobile ? "100%" : "auto"
-                }}>
-                </div>
-              )}
-            </div>
+                  width: isMobile ? "100%" : "auto",
+                }}
+              ></div>
+            )}
+          </div>
         )}
       </div>
 
       {/* Modal de Filtros */}
       {showFilterModal && (
         <div style={filterModalOverlayStyle}>
-          <div style={{
-            ...filterModalContentStyle,
-            width: isMobile ? "95%" : "90%",
-            maxWidth: isMobile ? "350px" : "500px",
-            padding: isMobile ? "1.5rem" : "2rem",
-            margin: isMobile ? "1rem" : "0"
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-              <h2 style={{
-                ...filterModalTitleStyle,
-                fontSize: isMobile ? "1.25rem" : "1.5rem"
-              }}>Filtrar por Fecha de Ingreso</h2>
-              <button 
+          <div
+            style={{
+              ...filterModalContentStyle,
+              width: isMobile ? "95%" : "90%",
+              maxWidth: isMobile ? "350px" : "500px",
+              padding: isMobile ? "1.5rem" : "2rem",
+              margin: isMobile ? "1rem" : "0",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <h2
+                style={{
+                  ...filterModalTitleStyle,
+                  fontSize: isMobile ? "1.25rem" : "1.5rem",
+                }}
+              >
+                Filtrar por Fecha de Ingreso
+              </h2>
+              <button
                 onClick={() => setShowFilterModal(false)}
                 style={filterCloseButtonStyle}
               >
                 &times;
               </button>
             </div>
-            
+
             {(() => {
               const today = new Date();
               const tenYearsAgo = new Date();
               tenYearsAgo.setFullYear(today.getFullYear() - 10); //10 años atrás
-              const minDate = tenYearsAgo.toISOString().split('T')[0];
-              const maxDate = today.toISOString().split('T')[0];
-              
+              const minDate = tenYearsAgo.toISOString().split("T")[0];
+              const maxDate = today.toISOString().split("T")[0];
+
               //Si la fecha seleccionada es anterior a 10 años, limpiar el campo
               if (tempFechaDesde && new Date(tempFechaDesde) < tenYearsAgo) {
                 Swal.fire({
-                  icon: 'error',
-                  html: 
-                    `<div style="${swalTituloCssString}">Error</div>
+                  icon: "error",
+                  html: `<div style="${swalTituloCssString}">Error</div>
                     <div style="${swalTextoCssString}">La fecha "Desde" no puede ser anterior a 10 años desde el día de hoy.</div>`,
-                  confirmButtonText: 'ACEPTAR',
-                  confirmButtonColor: '#ff7300',
+                  confirmButtonText: "ACEPTAR",
+                  confirmButtonColor: "#ff7300",
                   timer: 5000,
                   timerProgressBar: true,
-                  showCloseButton: true
+                  showCloseButton: true,
                 });
                 setTempFechaDesde("");
               }
               if (tempFechaHasta && new Date(tempFechaHasta) > today) {
                 setTempFechaHasta("");
                 Swal.fire({
-                  icon: 'error',
-                  html:
-                   `<div style="${swalTituloCssString}">Error</div>
+                  icon: "error",
+                  html: `<div style="${swalTituloCssString}">Error</div>
                     <div style="${swalTextoCssString}">La fecha "Hasta" no puede ser futura.</div>`,
-                  confirmButtonText: 'ACEPTAR',
-                  confirmButtonColor: '#ff7300',
-                  timer:5000,
-                  timerProgressBar: true,
-                  showCloseButton: true
-                });
-              }
-               // La fecha de inicio no puede ser posterior a la fecha de fin
-              if (tempFechaDesde && tempFechaHasta && new Date(tempFechaDesde) > new Date(tempFechaHasta)) {
-                Swal.fire({
-                  icon : 'error',
-                  html:
-                  `<div style="${swalTituloCssString}">Error</div>
-                  <div style="${swalTextoCssString}">La fecha "Desde" no puede ser posterior a la fecha "Hasta".</div>`,
-                  confirmButtonText: 'ACEPTAR',
-                  confirmButtonColor: '#ff7300',
+                  confirmButtonText: "ACEPTAR",
+                  confirmButtonColor: "#ff7300",
                   timer: 5000,
                   timerProgressBar: true,
-                  showCloseButton: true
+                  showCloseButton: true,
+                });
+              }
+              // La fecha de inicio no puede ser posterior a la fecha de fin
+              if (
+                tempFechaDesde &&
+                tempFechaHasta &&
+                new Date(tempFechaDesde) > new Date(tempFechaHasta)
+              ) {
+                Swal.fire({
+                  icon: "error",
+                  html: `<div style="${swalTituloCssString}">Error</div>
+                  <div style="${swalTextoCssString}">La fecha "Desde" no puede ser posterior a la fecha "Hasta".</div>`,
+                  confirmButtonText: "ACEPTAR",
+                  confirmButtonColor: "#ff7300",
+                  timer: 5000,
+                  timerProgressBar: true,
+                  showCloseButton: true,
                 });
                 setTempFechaDesde("");
                 setTempFechaHasta("");
               }
-              
+
               return (
                 <div style={filterModalFormStyle}>
                   <div style={filterSelectGroupStyle}>
-                    <label style={{
-                      ...filterLabelStyle,
-                      fontSize: isMobile ? "0.8rem" : "0.875rem"
-                    }}>Fecha Desde</label>
-                    <input 
+                    <label
+                      style={{
+                        ...filterLabelStyle,
+                        fontSize: isMobile ? "0.8rem" : "0.875rem",
+                      }}
+                    >
+                      Fecha Desde
+                    </label>
+                    <input
                       type="date"
                       id="fechaDesde"
                       value={tempFechaDesde}
@@ -1069,20 +1242,23 @@ const [inventarioData, setInventarioData] = useState<Array<{
                       style={{
                         ...filterInputStyle,
                         fontSize: isMobile ? "0.8rem" : "0.875rem",
-                        padding: isMobile ? "0.6rem" : "0.5rem"
+                        padding: isMobile ? "0.6rem" : "0.5rem",
                       }}
                     />
                   </div>
 
                   <div style={filterSelectGroupStyle}>
-                    <label style={{
-                      ...filterLabelStyle,
-                      fontSize: isMobile ? "0.8rem" : "0.875rem"
-                    }}>Fecha Hasta</label>
-                    <input 
+                    <label
+                      style={{
+                        ...filterLabelStyle,
+                        fontSize: isMobile ? "0.8rem" : "0.875rem",
+                      }}
+                    >
+                      Fecha Hasta
+                    </label>
+                    <input
                       type="date"
                       id="fechaHasta"
-
                       value={tempFechaHasta}
                       min={minDate} // No permitir fecha anterior a 10 años
                       max={maxDate} // No permitir fecha futura
@@ -1090,7 +1266,7 @@ const [inventarioData, setInventarioData] = useState<Array<{
                       style={{
                         ...filterInputStyle,
                         fontSize: isMobile ? "0.8rem" : "0.875rem",
-                        padding: isMobile ? "0.6rem" : "0.5rem"
+                        padding: isMobile ? "0.6rem" : "0.5rem",
                       }}
                     />
                   </div>
@@ -1098,28 +1274,30 @@ const [inventarioData, setInventarioData] = useState<Array<{
               );
             })()}
 
-            <div style={{
-              ...filterModalButtonsStyle,
-              flexDirection: isMobile ? "column" : "row",
-              gap: isMobile ? "0.5rem" : "1rem"
-            }}>
-              <button 
-                onClick={handleClearFilters} 
+            <div
+              style={{
+                ...filterModalButtonsStyle,
+                flexDirection: isMobile ? "column" : "row",
+                gap: isMobile ? "0.5rem" : "1rem",
+              }}
+            >
+              <button
+                onClick={handleClearFilters}
                 style={{
-                  ...filterModalButtonStyle, 
-                  backgroundColor: '#6b7280',
+                  ...filterModalButtonStyle,
+                  backgroundColor: "#6b7280",
                   width: isMobile ? "100%" : "auto",
-                  order: isMobile ? 2 : 1
+                  order: isMobile ? 2 : 1,
                 }}
               >
                 Limpiar filtros
               </button>
-              <button 
+              <button
                 onClick={handleApplyFilters}
                 style={{
                   ...filterModalButtonStyle,
                   width: isMobile ? "100%" : "auto",
-                  order: isMobile ? 1 : 2
+                  order: isMobile ? 1 : 2,
                 }}
               >
                 Aplicar Filtros
@@ -1130,8 +1308,17 @@ const [inventarioData, setInventarioData] = useState<Array<{
       )}
       {showEditModal && editFormData && (
         <div style={modalOverlayStyle}>
-          <div style={{ ...modalContentStyle, maxWidth: '500px', padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+          <div
+            style={{ ...modalContentStyle, maxWidth: "500px", padding: "2rem" }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginBottom: "1.5rem",
+              }}
+            >
               <h2 style={{ ...modalTitleStyle, margin: 0 }}>Editar Producto</h2>
               <button
                 onClick={() => {
@@ -1145,84 +1332,101 @@ const [inventarioData, setInventarioData] = useState<Array<{
               </button>
             </div>
 
-            <div style={{ ...modalFormStyle, padding: '0 1rem' }}>
-                <div style={selectGroupStyle}>
-                  <label style={labelStyle}>Nombre Producto</label>
-                  <input
-                    type="text"
-                    value={editFormData.nombreProducto}
-                    maxLength={50}
-                    pattern="^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$"
-                    onChange={(e) => {
-                      const valor = e.target.value;
-                      if (/^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
-                        setEditFormData({ ...editFormData, nombreProducto: valor });
-                      }
-                    }}
-                    style={selectStyle}
-                    placeholder="Edita el nombre del Producto"
-                  />
-                </div>
+            <div style={{ ...modalFormStyle, padding: "0 1rem" }}>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Nombre Producto</label>
+                <input
+                  type="text"
+                  value={editFormData.nombreProducto}
+                  maxLength={50}
+                  pattern="^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$"
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    if (/^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
+                      setEditFormData({
+                        ...editFormData,
+                        nombreProducto: valor,
+                      });
+                    }
+                  }}
+                  style={selectStyle}
+                  placeholder="Edita el nombre del Producto"
+                />
+              </div>
 
-                <div style={selectGroupStyle}>
-                  <label style={labelStyle}>Proveedor</label>
-                  <input
-                    type="text"
-                    value={editFormData.proveedor}
-                    maxLength={40}
-                    pattern="^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$"
-                    onChange={(e) => {
-                      const valor = e.target.value;
-                      if (/^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
-                        setEditFormData({ ...editFormData, proveedor: valor });
-                      }
-                    }}
-                    style={selectStyle}
-                    placeholder="Edita el nombre del Proveedor"
-                  />
-                </div>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Proveedor</label>
+                <input
+                  type="text"
+                  value={editFormData.proveedor}
+                  maxLength={40}
+                  pattern="^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$"
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    if (/^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
+                      setEditFormData({ ...editFormData, proveedor: valor });
+                    }
+                  }}
+                  style={selectStyle}
+                  placeholder="Edita el nombre del Proveedor"
+                />
+              </div>
 
-                <div style={selectGroupStyle}>
-                  <label style={labelStyle}>Precio (C/U)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={1000000}
-                    value={editFormData.precioCU === 0 ? "" : editFormData.precioCU}
-                    onChange={(e) => {
-                      const valor = e.target.value === "" ? "" : Math.max(1, Math.min(1000000, parseInt(e.target.value)));
-                      setEditFormData({ ...editFormData, precioCU: valor });
-                    }}
-                    style={selectStyle}
-                    placeholder="Edita el Precio unitario"
-                  />
-                </div>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Precio (C/U)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={1000000}
+                  value={
+                    editFormData.precioCU === 0 ? "" : editFormData.precioCU
+                  }
+                  onChange={(e) => {
+                    const valor =
+                      e.target.value === ""
+                        ? ""
+                        : Math.max(
+                            1,
+                            Math.min(1000000, parseInt(e.target.value))
+                          );
+                    setEditFormData({ ...editFormData, precioCU: valor });
+                  }}
+                  style={selectStyle}
+                  placeholder="Edita el Precio unitario"
+                />
+              </div>
 
-                <div style={selectGroupStyle}>
-                  <label style={labelStyle}>Stock</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={100000}
-                    value={editFormData.stock === 0 ? "" : editFormData.stock}
-                    onChange={(e) => {
-                      const valor = e.target.value === "" ? "" : Math.max(1, Math.min(100000, parseInt(e.target.value)));
-                      setEditFormData({ ...editFormData, stock: valor });
-                    }}
-                    style={selectStyle}
-                    placeholder="Edita el Stock disponible"
-                  />
-                </div>
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Stock</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={100000}
+                  value={editFormData.stock === 0 ? "" : editFormData.stock}
+                  onChange={(e) => {
+                    const valor =
+                      e.target.value === ""
+                        ? ""
+                        : Math.max(
+                            1,
+                            Math.min(100000, parseInt(e.target.value))
+                          );
+                    setEditFormData({ ...editFormData, stock: valor });
+                  }}
+                  style={selectStyle}
+                  placeholder="Edita el Stock disponible"
+                />
+              </div>
             </div>
 
-            <div style={{ ...modalButtonsStyle, padding: '0 1rem' }}>
+            <div style={{ ...modalButtonsStyle, padding: "0 1rem" }}>
               <button
                 onClick={() => {
                   setShowEditModal(false);
                   setEditingItem(null);
                   setEditFormData(null);
                 }}
-                style={{ ...modalButtonStyle, backgroundColor: '#6b7280' }}
+                style={{ ...modalButtonStyle, backgroundColor: "#6b7280" }}
               >
                 Cancelar
               </button>
@@ -1234,163 +1438,311 @@ const [inventarioData, setInventarioData] = useState<Array<{
         </div>
       )}
 
-      {/*Modal para agregar productos*/}
-        {showAddModal && (
-  <div style={modalOverlayStyle}>
-    <div style={{ ...modalContentStyle, maxWidth: '500px', padding: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-        <h2 style={{ ...modalTitleStyle, margin: 0 }}>Agregar Producto</h2>
-        <button
-          onClick={() => setShowAddModal(false)}
-          style={closeButtonStyle}
-        >
-          &times;
-        </button>
-      </div>
-      <form onSubmit={handleAddProduct}>
-        <div style={modalFormStyle}>
-          <div style={selectGroupStyle}>
-            <label style={labelStyle}>Nombre del Producto</label>
-            <input
-              type="text"
-              value={newProductData.nombre}
-              maxLength={50}
-              pattern="^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$"
-              onChange={(e) => {
-                const valor = e.target.value;
-                if (/^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
-                  setNewProductData({ ...newProductData, nombre: valor });
-                }
-              }}
-              style={selectStyle}
-              required
-            />
-          </div>
-          <div style={selectGroupStyle}>
-            <label style={labelStyle}>Proveedor</label>
-            <input
-              type="text"
-              value={newProductData.proveedor}
-              maxLength={40}
-              pattern="^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$"
-              onChange={(e) => {
-                const valor = e.target.value;
-                if (/^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
-                  setNewProductData({ ...newProductData, proveedor: valor });
-                }
-              }}
-              style={selectStyle}
-              required
-            />
-          </div>
-          <div style={selectGroupStyle}>
-            <label style={labelStyle}>Peso (KG)</label>
-            <input
-              type="number"
-              min={0.01}
-              max={1000}
-              step={0.01}
-              value={newProductData.pesoKg === "" ? "" : newProductData.pesoKg}
-              onChange={(e) => {
-                const valor = e.target.value === "" ? "" : Math.max(0.01, Math.min(1000, parseFloat(e.target.value)));
-                setNewProductData({ ...newProductData, pesoKg: valor });
-              }}
-              style={selectStyle}
-              required
-            />
-          </div>
-          <div style={selectGroupStyle}>
-            <label style={labelStyle}>Largo (CM)</label>
-            <input
-              type="number"
-              min={1}
-              max={1000}
-              value={newProductData.largoCm === "" ? "" : newProductData.largoCm}
-              onChange={(e) => {
-                const valor = e.target.value === "" ? "" : Math.max(1, Math.min(1000, parseInt(e.target.value)));
-                setNewProductData({ ...newProductData, largoCm: valor });
-              }}
-              style={selectStyle}
-              required
-            />
-          </div>
-          <div style={selectGroupStyle}>
-            <label style={labelStyle}>Ancho (CM)</label>
-            <input
-              type="number"
-              min={1}
-              max={1000}
-              value={newProductData.anchoCm === "" ? "" : newProductData.anchoCm}
-              onChange={(e) => {
-                const valor = e.target.value === "" ? "" : Math.max(1, Math.min(1000, parseInt(e.target.value)));
-                setNewProductData({ ...newProductData, anchoCm: valor });
-              }}
-              style={selectStyle}
-              required
-            />
-          </div>
-          <div style={selectGroupStyle}>
-            <label style={labelStyle}>Alto (CM)</label>
-            <input
-              type="number"
-              min={1}
-              max={1000}
-              value={newProductData.altoCm === "" ? "" : newProductData.altoCm}
-              onChange={(e) => {
-                const valor = e.target.value === "" ? "" : Math.max(1, Math.min(1000, parseInt(e.target.value)));
-                setNewProductData({ ...newProductData, altoCm: valor });
-              }}
-              style={selectStyle}
-              required
-            />
-          </div>
-          <div style={selectGroupStyle}>
-            <label style={labelStyle}>Precio (C/U)</label>
-            <input
-              type="number"
-              min={1}
-              max={1000000}
-              value={newProductData.precioCU === "" ? "" : newProductData.precioCU}
-              onChange={(e) => {
-                const valor = e.target.value === "" ? "" : Math.max(1, Math.min(1000000, parseInt(e.target.value)));
-                setNewProductData({ ...newProductData, precioCU: valor });
-              }}
-              style={selectStyle}
-              required
-            />
-          </div>
-          <div style={selectGroupStyle}>
-            <label style={labelStyle}>Stock</label>
-            <input
-              type="number"
-              min={1}
-              max={100000}
-              value={newProductData.stock === "" ? "" : newProductData.stock}
-              onChange={(e) => {
-                const valor = e.target.value === "" ? "" : Math.max(1, Math.min(100000, parseInt(e.target.value)));
-                setNewProductData({ ...newProductData, stock: valor });
-              }}
-              style={selectStyle}
-              required
-            />
-          </div>
-        </div>
-        <div style={modalButtonsStyle}>
-          <button
-            type="button"
-            onClick={() => setShowAddModal(false)}
-            style={{ ...modalButtonStyle, backgroundColor: '#6b7280' }}
+      {/* Modal de Agregar Producto */}
+      {showAddModal && (
+        <div style={modalOverlayStyle}>
+          <div
+            style={{ ...modalContentStyle, maxWidth: "600px", padding: "2rem" }}
           >
-            Cancelar
-          </button>
-          <button type="submit" style={modalButtonStyle}>
-            Agregar Producto
-          </button>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginBottom: "1.5rem",
+              }}
+            >
+              <h2 style={{ ...modalTitleStyle, margin: 0 }}>
+                Agregar Nuevo Producto
+              </h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                style={closeButtonStyle}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div
+              style={{
+                ...modalFormStyle,
+                padding: "0 1rem",
+                maxHeight: "400px",
+                overflowY: "auto",
+              }}
+            >
+              {/* SKU */}
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>SKU*</label>
+                <input
+                  type="text"
+                  value={addFormData.sku}
+                  maxLength={20}
+                  onChange={(e) => {
+                    const valor = e.target.value.toUpperCase();
+                    if (/^[A-Z0-9]*$/.test(valor)) {
+                      setAddFormData({ ...addFormData, sku: valor });
+                    }
+                  }}
+                  style={selectStyle}
+                  placeholder="Ejemplo: PROD001"
+                />
+              </div>
+
+              {/* Nombre Producto */}
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Nombre del Producto*</label>
+                <input
+                  type="text"
+                  value={addFormData.nombreProducto}
+                  maxLength={100}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    if (/^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
+                      setAddFormData({ ...addFormData, nombreProducto: valor });
+                    }
+                  }}
+                  style={selectStyle}
+                  placeholder="Ingresa el nombre del producto"
+                />
+              </div>
+
+              {/* Proveedor */}
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Proveedor*</label>
+                <select
+                  value={addFormData.proveedor_id}
+                  onChange={(e) =>
+                    setAddFormData({
+                      ...addFormData,
+                      proveedor_id: parseInt(e.target.value),
+                    })
+                  }
+                  style={selectStyle}
+                >
+                  <option value={0}>Seleccionar proveedor</option>
+                  {proveedoresData.map((proveedor) => (
+                    <option key={proveedor.id} value={proveedor.id}>
+                      {proveedor.marca}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Descripción */}
+              <div style={selectGroupStyle}>
+                <label style={labelStyle}>Descripción</label>
+                <textarea
+                  value={addFormData.descripcion}
+                  maxLength={200}
+                  onChange={(e) =>
+                    setAddFormData({
+                      ...addFormData,
+                      descripcion: e.target.value,
+                    })
+                  }
+                  style={{
+                    ...selectStyle,
+                    resize: "vertical",
+                    minHeight: "60px",
+                  }}
+                  placeholder="Descripción del producto (opcional)"
+                />
+              </div>
+
+              {/* Row para dimensiones */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                  gap: "1rem",
+                }}
+              >
+                {/* Peso */}
+                <div style={selectGroupStyle}>
+                  <label style={labelStyle}>Peso (kg)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="10000"
+                    value={addFormData.pesoKg}
+                    onChange={(e) => {
+                      const valor =
+                        e.target.value === ""
+                          ? ""
+                          : Math.max(
+                              0,
+                              Math.min(10000, parseFloat(e.target.value))
+                            );
+                      setAddFormData({
+                        ...addFormData,
+                        pesoKg: valor.toString(),
+                      });
+                    }}
+                    style={selectStyle}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                {/* Largo */}
+                <div style={selectGroupStyle}>
+                  <label style={labelStyle}>Largo (cm)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="10000"
+                    value={addFormData.largoCm}
+                    onChange={(e) => {
+                      const valor =
+                        e.target.value === ""
+                          ? ""
+                          : Math.max(
+                              0,
+                              Math.min(10000, parseFloat(e.target.value))
+                            );
+                      setAddFormData({
+                        ...addFormData,
+                        largoCm: valor.toString(),
+                      });
+                    }}
+                    style={selectStyle}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                {/* Ancho */}
+                <div style={selectGroupStyle}>
+                  <label style={labelStyle}>Ancho (cm)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="10000"
+                    value={addFormData.anchoCm}
+                    onChange={(e) => {
+                      const valor =
+                        e.target.value === ""
+                          ? ""
+                          : Math.max(
+                              0,
+                              Math.min(10000, parseFloat(e.target.value))
+                            );
+                      setAddFormData({
+                        ...addFormData,
+                        anchoCm: valor.toString(),
+                      });
+                    }}
+                    style={selectStyle}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                {/* Alto */}
+                <div style={selectGroupStyle}>
+                  <label style={labelStyle}>Alto (cm)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="10000"
+                    value={addFormData.altoCm}
+                    onChange={(e) => {
+                      const valor =
+                        e.target.value === ""
+                          ? ""
+                          : Math.max(
+                              0,
+                              Math.min(10000, parseFloat(e.target.value))
+                            );
+                      setAddFormData({
+                        ...addFormData,
+                        altoCm: valor.toString(),
+                      });
+                    }}
+                    style={selectStyle}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              {/* Row para precio y stock */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "1rem",
+                }}
+              >
+                {/* Precio */}
+                <div style={selectGroupStyle}>
+                  <label style={labelStyle}>Precio (C/U)*</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000000"
+                    value={addFormData.precio}
+                    onChange={(e) => {
+                      const valor =
+                        e.target.value === ""
+                          ? ""
+                          : Math.max(
+                              1,
+                              Math.min(1000000, parseInt(e.target.value))
+                            );
+                      setAddFormData({
+                        ...addFormData,
+                        precio: valor.toString(),
+                      });
+                    }}
+                    style={selectStyle}
+                    placeholder="Precio unitario"
+                  />
+                </div>
+
+                {/* Stock */}
+                <div style={selectGroupStyle}>
+                  <label style={labelStyle}>Stock*</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100000"
+                    value={addFormData.stock}
+                    onChange={(e) => {
+                      const valor =
+                        e.target.value === ""
+                          ? ""
+                          : Math.max(
+                              1,
+                              Math.min(100000, parseInt(e.target.value))
+                            );
+                      setAddFormData({
+                        ...addFormData,
+                        stock: valor.toString(),
+                      });
+                    }}
+                    style={selectStyle}
+                    placeholder="Cantidad disponible"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ ...modalButtonsStyle, padding: "0 1rem" }}>
+              <button
+                onClick={() => setShowAddModal(false)}
+                style={{ ...modalButtonStyle, backgroundColor: "#6b7280" }}
+              >
+                Cancelar
+              </button>
+              <button onClick={handleSaveNewProduct} style={modalButtonStyle}>
+                Agregar Producto
+              </button>
+            </div>
+          </div>
         </div>
-      </form>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 }
@@ -1410,13 +1762,14 @@ const containerStyle: React.CSSProperties = {
   overflowX: "hidden",
   padding: "1.5rem",
   display: "flex",
-  flexDirection: "column"
+  flexDirection: "column",
 };
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "white",
   borderRadius: "12px",
-  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)",
+  boxShadow:
+    "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)",
   transition: "all 0.3s ease",
   width: "100%",
   maxWidth: "100%",
@@ -1425,7 +1778,7 @@ const cardStyle: React.CSSProperties = {
   padding: "1.5rem",
   border: "1px solid rgba(0, 0, 0, 0.05)",
   boxSizing: "border-box",
-  margin: "0 auto"
+  margin: "0 auto",
 };
 
 const titleStyle: React.CSSProperties = {
@@ -1433,7 +1786,7 @@ const titleStyle: React.CSSProperties = {
   fontSize: "2rem",
   fontWeight: "bold",
   marginBottom: "1.5rem",
-  fontFamily: "Montserrat, sans-serif"
+  fontFamily: "Montserrat, sans-serif",
 };
 
 const toolbarStyle: React.CSSProperties = {
@@ -1441,27 +1794,27 @@ const toolbarStyle: React.CSSProperties = {
   justifyContent: "space-between",
   marginBottom: "1rem",
   gap: "1rem",
-  transition: "all 0.3s ease"
+  transition: "all 0.3s ease",
 };
 
 const leftControlsGroupStyle: React.CSSProperties = {
   display: "flex",
   gap: "1rem",
-  transition: "all 0.3s ease"
+  transition: "all 0.3s ease",
 };
 
 const searchContainerStyle: React.CSSProperties = {
-  position: 'relative',
-  height: '40px',
-  borderRadius: '8px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-  transition: "all 0.3s ease"
+  position: "relative",
+  height: "40px",
+  borderRadius: "8px",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+  transition: "all 0.3s ease",
 };
 
 const rightControlsWrapperStyle: React.CSSProperties = {
   display: "flex",
   gap: "1rem",
-  transition: "all 0.3s ease"
+  transition: "all 0.3s ease",
 };
 
 const tableContainerStyle: React.CSSProperties = {
@@ -1473,7 +1826,7 @@ const tableContainerStyle: React.CSSProperties = {
   marginTop: "1rem",
   border: "1px solid rgba(0, 0, 0, 0.05)",
   backgroundColor: "#ffffff",
-  boxSizing: "border-box"
+  boxSizing: "border-box",
 };
 
 const tableStyle: React.CSSProperties = {
@@ -1482,7 +1835,7 @@ const tableStyle: React.CSSProperties = {
   border: "none",
   backgroundColor: "#fff",
   minWidth: "1000px",
-  transition: "all 0.3s ease"
+  transition: "all 0.3s ease",
 };
 
 const thStyle: React.CSSProperties = {
@@ -1513,7 +1866,7 @@ const tdStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  width: '100%',
+  width: "100%",
   flexGrow: 1,
   padding: "0.3rem 2.5rem 0.3rem 1rem",
   borderTop: "1px solid #ccc",
@@ -1521,27 +1874,27 @@ const inputStyle: React.CSSProperties = {
   borderBottom: "1px solid #ccc",
   borderLeft: "1px solid #ccc",
   outline: "none",
-  height: '40px',
-  backgroundColor: 'white',
-  borderRadius: '8px',
-  boxSizing: 'border-box',
-  fontSize: '0.875rem',
-  fontFamily: 'Roboto, sans-serif',
+  height: "40px",
+  backgroundColor: "white",
+  borderRadius: "8px",
+  boxSizing: "border-box",
+  fontSize: "0.875rem",
+  fontFamily: "Roboto, sans-serif",
   fontWeight: 400,
 };
 
 const lupaButtonStyle: React.CSSProperties = {
-  position: 'absolute',
+  position: "absolute",
   top: 0,
   right: 0,
-  height: '40px',
-  width: '2.2rem',
-  background: 'transparent',
-  border: 'none',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  height: "40px",
+  width: "2.2rem",
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   padding: 0,
 };
 
@@ -1558,268 +1911,268 @@ const editButtonStyle: React.CSSProperties = {
   gap: "0.5rem",
   fontFamily: "Montserrat, sans-serif",
   fontSize: "1rem",
-  fontWeight: 'semibold',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  fontWeight: "semibold",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
 };
 
 const filterButtonStyle: React.CSSProperties = {
   ...editButtonStyle,
-  backgroundColor: '#5c5c5c',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '0.5rem',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+  backgroundColor: "#5c5c5c",
+  display: "flex",
+  alignItems: "center",
+  gap: "0.5rem",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
 };
 
 const filterIconStyle: React.CSSProperties = {
-  width: '1.2rem',
-  height: '1.2rem',
-  color: 'white',
+  width: "1.2rem",
+  height: "1.2rem",
+  color: "white",
 };
 
 const searchIconStyle: React.CSSProperties = {
-  width: '30px',
-  height: '30px',
+  width: "30px",
+  height: "30px",
 };
 
 const modifyProductButtonStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  color: 'white',
-  padding: '0.2rem 0.4rem',
-  borderRadius: '4px',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: '1rem',
-  fontWeight: 'semibold',
-  fontFamily: 'Montserrat, sans-serif',
-  transition: 'background-color 0.2s ease',
-  whiteSpace: 'nowrap',
-  boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-  maxWidth: '120px',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  display: 'block',
+  backgroundColor: "#ff7300",
+  color: "white",
+  padding: "0.2rem 0.4rem",
+  borderRadius: "4px",
+  border: "none",
+  cursor: "pointer",
+  fontSize: "1rem",
+  fontWeight: "semibold",
+  fontFamily: "Montserrat, sans-serif",
+  transition: "background-color 0.2s ease",
+  whiteSpace: "nowrap",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+  maxWidth: "120px",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  display: "block",
 };
 
 const paginationControlsStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '1rem',
-  backgroundColor: '#fff',
-  marginTop: '1rem',
-  borderRadius: '8px',
-  padding: '0.5rem 1rem',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-  justifyContent: 'center',
+  display: "flex",
+  alignItems: "center",
+  gap: "1rem",
+  backgroundColor: "#fff",
+  marginTop: "1rem",
+  borderRadius: "8px",
+  padding: "0.5rem 1rem",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+  justifyContent: "center",
 };
 
 const paginationButtonBaseStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  color: '#fff',
-  padding: '0.5rem 1rem',
-  borderRadius: '8px',
-  border: 'none',
-  cursor: 'pointer',
-  fontFamily: 'Montserrat, sans-serif',
-  fontSize: '0.9375rem',
-  fontWeight: 'semibold',
-  minWidth: '50px',
-  justifyContent: 'center',
-  display: 'flex',
-  alignItems: 'center',
+  backgroundColor: "#ff7300",
+  color: "#fff",
+  padding: "0.5rem 1rem",
+  borderRadius: "8px",
+  border: "none",
+  cursor: "pointer",
+  fontFamily: "Montserrat, sans-serif",
+  fontSize: "0.9375rem",
+  fontWeight: "semibold",
+  minWidth: "50px",
+  justifyContent: "center",
+  display: "flex",
+  alignItems: "center",
 };
 
 const paginationDotsStyle: React.CSSProperties = {
-  color: '#5c5c5c',
-  fontSize: '1rem',
-  fontFamily: 'Montserrat, sans-serif',
+  color: "#5c5c5c",
+  fontSize: "1rem",
+  fontFamily: "Montserrat, sans-serif",
 };
 
 const paginationButtonActiveStyle: React.CSSProperties = {
-  backgroundColor: '#5c5c5c',
-  color: '#fff',
+  backgroundColor: "#5c5c5c",
+  color: "#fff",
 };
 
 const paginationNextButtonStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  color: '#fff',
-  padding: '0.5rem 1rem',
-  borderRadius: '8px',
-  border: 'none',
-  cursor: 'pointer',
-  fontFamily: 'Montserrat, sans-serif',
-  fontSize: '0.9375rem',
-  fontWeight: 'semibold',
-  minWidth: '50px',
-  justifyContent: 'center',
-  display: 'flex',
-  alignItems: 'center',
+  backgroundColor: "#ff7300",
+  color: "#fff",
+  padding: "0.5rem 1rem",
+  borderRadius: "8px",
+  border: "none",
+  cursor: "pointer",
+  fontFamily: "Montserrat, sans-serif",
+  fontSize: "0.9375rem",
+  fontWeight: "semibold",
+  minWidth: "50px",
+  justifyContent: "center",
+  display: "flex",
+  alignItems: "center",
 };
 
 const paginationButtonsWrapperStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: '5px',
-  flexWrap: 'wrap',
-  justifyContent: 'center'
+  display: "flex",
+  gap: "5px",
+  flexWrap: "wrap",
+  justifyContent: "center",
 };
 
 const paginationButtonDisabledStyle: React.CSSProperties = {
-  backgroundColor: '#d1d5db',
-  color: '#9ca3af',
-  cursor: 'not-allowed',
-  opacity: 0.6
+  backgroundColor: "#d1d5db",
+  color: "#9ca3af",
+  cursor: "not-allowed",
+  opacity: 0.6,
 };
 
 const pageIndicatorStyle: React.CSSProperties = {
-  fontSize: '0.875rem',
-  fontWeight: '500',
-  color: '#f7f7f7',
-  fontFamily: 'Montserrat, sans-serif',
-  display: 'flex',
-  alignItems: 'center',
-  padding: '0 1rem',
-  backgroundColor: '#5c5c5c',
-  borderRadius: '6px',
-  border: '1px solid #e5e7eb',
-  minWidth: 'fit-content',
-  whiteSpace: 'nowrap',
-  paddingTop: '0.5rem',
-  paddingBottom: '0.5rem',
+  fontSize: "0.875rem",
+  fontWeight: "500",
+  color: "#f7f7f7",
+  fontFamily: "Montserrat, sans-serif",
+  display: "flex",
+  alignItems: "center",
+  padding: "0 1rem",
+  backgroundColor: "#5c5c5c",
+  borderRadius: "6px",
+  border: "1px solid #e5e7eb",
+  minWidth: "fit-content",
+  whiteSpace: "nowrap",
+  paddingTop: "0.5rem",
+  paddingBottom: "0.5rem",
 };
 
 // Estilos adicionales para el modal
 const filterModalOverlayStyle: React.CSSProperties = {
-  position: 'fixed',
+  position: "fixed",
   top: 0,
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
+  backgroundColor: "rgba(0, 0, 0, 0.5)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
   zIndex: 1000,
 };
 
 const filterModalContentStyle: React.CSSProperties = {
-  backgroundColor: 'white',
-  padding: '2rem',
-  borderRadius: '12px',
-  width: '90%',
-  maxWidth: '500px',
-  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-  maxHeight: '90vh',
-  overflow: 'hidden',
+  backgroundColor: "white",
+  padding: "2rem",
+  borderRadius: "12px",
+  width: "90%",
+  maxWidth: "500px",
+  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+  maxHeight: "90vh",
+  overflow: "hidden",
 };
 
 const filterModalTitleStyle: React.CSSProperties = {
-  color: '#374151',
-  fontSize: '1.5rem',
-  fontWeight: 'bold',
-  marginTop: '0',
-  marginBottom: '1.5rem',
-  textAlign: 'center',
-  fontFamily: 'Montserrat, sans-serif',
+  color: "#374151",
+  fontSize: "1.5rem",
+  fontWeight: "bold",
+  marginTop: "0",
+  marginBottom: "1.5rem",
+  textAlign: "center",
+  fontFamily: "Montserrat, sans-serif",
 };
 
 const filterModalFormStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '1rem',
+  display: "flex",
+  flexDirection: "column",
+  gap: "1rem",
 };
 
 const filterSelectGroupStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.5rem',
+  display: "flex",
+  flexDirection: "column",
+  gap: "0.5rem",
 };
 
 const filterLabelStyle: React.CSSProperties = {
-  color: '#374151',
-  fontSize: '0.875rem',
-  fontWeight: '500',
-  fontFamily: 'Roboto, sans-serif',
+  color: "#374151",
+  fontSize: "0.875rem",
+  fontWeight: "500",
+  fontFamily: "Roboto, sans-serif",
 };
 
 const filterInputStyle: React.CSSProperties = {
-  padding: '0.5rem',
-  borderRadius: '6px',
-  border: '1px solid #d1d5db',
-  fontSize: '0.875rem',
-  width: '100%',
-  fontFamily: 'Roboto, sans-serif',
-  outline: 'none',
-  transition: 'border-color 0.2s ease',
-  boxSizing: 'border-box',
+  padding: "0.5rem",
+  borderRadius: "6px",
+  border: "1px solid #d1d5db",
+  fontSize: "0.875rem",
+  width: "100%",
+  fontFamily: "Roboto, sans-serif",
+  outline: "none",
+  transition: "border-color 0.2s ease",
+  boxSizing: "border-box",
 };
 
 const filterModalButtonsStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: '1rem',
-  marginTop: '2rem',
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: "1rem",
+  marginTop: "2rem",
 };
 
 const filterModalButtonStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  color: 'white',
-  padding: '0.5rem 1rem',
-  borderRadius: '6px',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: '0.875rem',
-  fontWeight: '500',
-  fontFamily: 'Montserrat, sans-serif',
-  transition: 'background-color 0.2s ease',
+  backgroundColor: "#ff7300",
+  color: "white",
+  padding: "0.5rem 1rem",
+  borderRadius: "6px",
+  border: "none",
+  cursor: "pointer",
+  fontSize: "0.875rem",
+  fontWeight: "500",
+  fontFamily: "Montserrat, sans-serif",
+  transition: "background-color 0.2s ease",
 };
 
 const filterCloseButtonStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  fontSize: '1.5rem',
-  cursor: 'pointer',
-  padding: '0.5rem',
-  color: '#6b7280',
-  transition: 'color 0.2s ease',
-  borderRadius: '4px',
-  width: '2rem',
-  height: '2rem',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  background: "none",
+  border: "none",
+  fontSize: "1.5rem",
+  cursor: "pointer",
+  padding: "0.5rem",
+  color: "#6b7280",
+  transition: "color 0.2s ease",
+  borderRadius: "4px",
+  width: "2rem",
+  height: "2rem",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 };
 
 const entirePieceFilterButtonStyle: React.CSSProperties = {
-  backgroundColor: '#5c5c5c',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '0.5rem'
+  backgroundColor: "#5c5c5c",
+  display: "flex",
+  alignItems: "center",
+  gap: "0.5rem",
 };
 
 const firstPieceFilterButtonStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  borderTopRightRadius: '0',
-  borderBottomRightRadius: '0',
-  borderRight: '1px solid rgba(255, 255, 255, 0.3)',
-  position: 'relative',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '0.5rem'
+  backgroundColor: "#ff7300",
+  borderTopRightRadius: "0",
+  borderBottomRightRadius: "0",
+  borderRight: "1px solid rgba(255, 255, 255, 0.3)",
+  position: "relative",
+  display: "flex",
+  alignItems: "center",
+  gap: "0.5rem",
 };
 
 const secondPieceFilterButtonStyle: React.CSSProperties = {
-  backgroundColor: '#ef4444',
-  borderTopLeftRadius: '0',
-  borderBottomLeftRadius: '0',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '0.25rem'
+  backgroundColor: "#ef4444",
+  borderTopLeftRadius: "0",
+  borderBottomLeftRadius: "0",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "0.25rem",
 };
 
 const xClosebuttonStyle: React.CSSProperties = {
-  fontSize: '1rem',
-  lineHeight: '1' 
+  fontSize: "1rem",
+  lineHeight: "1",
 };
 
 // =====================
@@ -1827,94 +2180,94 @@ const xClosebuttonStyle: React.CSSProperties = {
 // =====================
 
 const modalOverlayStyle: React.CSSProperties = {
-  position: 'fixed',
+  position: "fixed",
   top: 0,
   left: 0,
-  width: '100vw',
-  height: '100vh',
-  backgroundColor: 'rgba(0, 0, 0, 0.4)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
+  width: "100vw",
+  height: "100vh",
+  backgroundColor: "rgba(0, 0, 0, 0.4)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
   zIndex: 1000,
-  padding: '1rem',
-  overflowY: 'auto'
+  padding: "1rem",
+  overflowY: "auto",
 };
 
 const modalContentStyle: React.CSSProperties = {
-  backgroundColor: '#fff',
-  borderRadius: '10px',
-  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
-  padding: '2rem',
-  width: '100%',
-  maxWidth: '500px',
+  backgroundColor: "#fff",
+  borderRadius: "10px",
+  boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+  padding: "2rem",
+  width: "100%",
+  maxWidth: "500px",
   zIndex: 1001,
-  position: 'relative',
+  position: "relative",
 };
 
 const modalTitleStyle: React.CSSProperties = {
-  fontSize: '1.5rem',
-  fontWeight: '600',
-  fontFamily: 'Montserrat, sans-serif',
-  color: '#222',
-  marginBottom: '1rem'
+  fontSize: "1.5rem",
+  fontWeight: "600",
+  fontFamily: "Montserrat, sans-serif",
+  color: "#222",
+  marginBottom: "1rem",
 };
 
 const modalFormStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '1rem',
-  marginTop: '1rem'
+  display: "flex",
+  flexDirection: "column",
+  gap: "1rem",
+  marginTop: "1rem",
 };
 
 const selectGroupStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.25rem'
+  display: "flex",
+  flexDirection: "column",
+  gap: "0.25rem",
 };
 
 const labelStyle: React.CSSProperties = {
   fontWeight: 500,
-  fontSize: '0.875rem',
-  color: '#374151'
+  fontSize: "0.875rem",
+  color: "#374151",
 };
 
 const selectStyle: React.CSSProperties = {
-  borderRadius: '6px',
-  padding: '0.5rem 0.75rem',
-  border: '1px solid #d1d5db',
-  fontSize: '0.875rem',
-  fontFamily: 'Roboto, sans-serif',
-  outline: 'none',
-  transition: 'border-color 0.2s ease-in-out'
+  borderRadius: "6px",
+  padding: "0.5rem 0.75rem",
+  border: "1px solid #d1d5db",
+  fontSize: "0.875rem",
+  fontFamily: "Roboto, sans-serif",
+  outline: "none",
+  transition: "border-color 0.2s ease-in-out",
 };
 
 const modalButtonsStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: '1rem',
-  marginTop: '1.5rem'
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: "1rem",
+  marginTop: "1.5rem",
 };
 
 const modalButtonStyle: React.CSSProperties = {
-  backgroundColor: '#ff7300',
-  color: 'white',
-  padding: '0.6rem 1.2rem',
-  borderRadius: '8px',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: '0.875rem',
-  fontFamily: 'Montserrat, sans-serif',
+  backgroundColor: "#ff7300",
+  color: "white",
+  padding: "0.6rem 1.2rem",
+  borderRadius: "8px",
+  border: "none",
+  cursor: "pointer",
+  fontSize: "0.875rem",
+  fontFamily: "Montserrat, sans-serif",
   fontWeight: 600,
-  boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-  transition: 'all 0.3s ease'
+  boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+  transition: "all 0.3s ease",
 };
 
 const closeButtonStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  fontSize: '1.5rem',
-  color: '#666',
-  cursor: 'pointer',
-  lineHeight: 1
+  background: "none",
+  border: "none",
+  fontSize: "1.5rem",
+  color: "#666",
+  cursor: "pointer",
+  lineHeight: 1,
 };
