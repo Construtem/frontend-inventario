@@ -270,7 +270,6 @@ export default function DespachoPage() {
         }
 
         const raw = await res.json();
-        console.log("Datos recibidos del backend:", raw);
 
         const clean: Despacho[] = raw.map((d: DespachoBackend) => ({
           id: d.id,
@@ -288,7 +287,6 @@ export default function DespachoPage() {
         setDespachos(clean);
         
       } catch (error: unknown) {
-        console.warn("Backend no disponible:", error);
         
         let errorMessage = "Error desconocido al cargar datos";
         if (error instanceof Error) {
@@ -343,7 +341,6 @@ export default function DespachoPage() {
       setDespachos((prev) => prev.filter((d) => d.id !== id));
       
     } catch (error) {
-      console.error("Error al eliminar despacho:", error);
       const message = error instanceof Error ? error.message : "Error desconocido al eliminar";
       alert(`Error: ${message}`);
     }
@@ -355,23 +352,19 @@ export default function DespachoPage() {
     setLoadingProductos(true);
     
     try {
-      console.log(`Consultando productos detallados para despacho ID: ${despachoId}`);
-      
       const res = await fetch(`${apiInventarioUrl}/api/productos_despacho/despacho/${despachoId}/detallado`, {
         headers: {
           'Content-Type': 'application/json',
         },
       });
       
-      console.log(`Respuesta del servidor: ${res.status} ${res.statusText}`);
+
       
       if (!res.ok) {
         throw new Error(`Error del servidor: ${res.status} ${res.statusText}`);
       }
 
       const productosData = await res.json();
-      console.log("Datos de productos detallados recibidos:", productosData);
-      
       const productosFormateados = productosData.map((item: ProductoDespachoDetallado) => ({
         id: item.productos?.id || item.id || item.sku || Math.random(),
         sku: item.sku || item.productos?.sku || 'N/A',
@@ -387,7 +380,7 @@ export default function DespachoPage() {
       setProductos(productosFormateados);
       
     } catch (error) {
-      console.error("Error al cargar productos:", error);
+
       setProductos([
         {
           id: 1,

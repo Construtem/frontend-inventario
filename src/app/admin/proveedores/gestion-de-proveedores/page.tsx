@@ -502,8 +502,6 @@ export default function GestionProveedoresPage() {
       direccion: editFormData.direccion.trim(),
     };
 
-    console.log('Payload enviado al backend:', payload);
-
     const response = await fetch(`${apiInventarioUrl}/api/proveedores/${editingProveedor.id}`, {
       method: 'PUT',
       headers: {
@@ -658,10 +656,10 @@ export default function GestionProveedoresPage() {
     return filteredData.slice(startIndex, endIndex);
   }, [filteredData, currentPage, itemsPerPage]);
 
-  // Calcular total de páginas
+
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  // Funciones de paginación
+
   const handleNextPage = () => {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
@@ -670,13 +668,6 @@ export default function GestionProveedoresPage() {
     if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
-  const handlePageClick = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-  };
-
-
-
-  // Calcular ancho de búsqueda basado en el tamaño de la ventana
   const getSearchWidth = () => {
     if (isExtraLarge) return "700px";
     if (isLarge) return "600px";
@@ -774,25 +765,6 @@ export default function GestionProveedoresPage() {
                 />
               </button>
             </div>
-            
-            <button 
-              onClick={handleFiltros}
-              style={{
-              ...filterButtonStyle,
-              width: isMobile ? "100%" : "auto",
-              fontSize: isMobile ? "0.875rem" : "1rem",
-              padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-              }}
-            >
-              <Image
-                src={filtrosImg.src}
-                alt="Filtros"
-                width={20}
-                height={20}
-                style={filterIconStyle}
-              />
-              Filtros
-            </button>
           </div>
 
           <div style={{
