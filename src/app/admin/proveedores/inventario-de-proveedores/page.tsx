@@ -140,6 +140,140 @@ export default function InventarioProveedoresPage() {
   const [editingItem, setEditingItem] = useState<InventarioData | null>(null);
   const [editFormData, setEditFormData] = useState<EditFormData | null>(null);
 
+  // Estados para el modal de agregar
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Interfaz de datos para add
+  type NewProductData = {
+  nombre: string;
+  proveedor: string;
+  pesoKg: number | "";
+  largoCm: number | "";
+  anchoCm: number | "";
+  altoCm: number | "";
+  precioCU: number | "";
+  stock: number | "";
+};
+  const [newProductData, setNewProductData] = useState<NewProductData>({
+    nombre: "",
+    proveedor: "",
+    pesoKg: "",
+    largoCm: "",
+    anchoCm: "",
+    altoCm: "",
+    precioCU: "",
+    stock: ""
+  });
+
+// FUNCION PARA AGREGAR PRODUCTOS
+
+const handleAddProduct = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // Convierte los valores a número para validar
+  const precio = Number(newProductData.precioCU);
+  const stock = Number(newProductData.stock);
+  const peso = Number(newProductData.pesoKg);
+  const largo = Number(newProductData.largoCm);
+  const ancho = Number(newProductData.anchoCm);
+  const alto = Number(newProductData.altoCm);
+
+  // Validación básica
+  if (
+    !newProductData.nombre ||
+    !newProductData.proveedor ||
+    isNaN(precio) || precio <= 0 ||
+    isNaN(stock) || stock <= 0 ||
+    isNaN(peso) || peso <= 0 ||
+    isNaN(largo) || largo <= 0 ||
+    isNaN(ancho) || ancho <= 0 ||
+    isNaN(alto) || alto <= 0
+  ) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Completa todos los campos correctamente',
+      confirmButtonColor: '#ff7300',
+    });
+    return;
+  }
+
+  // Construye el body para el backend
+const body = {
+  stock: stock,
+  proveedor: {
+    marca: newProductData.proveedor,
+    email: "",
+    telefono: "",
+    direccion: ""
+  },
+  producto: {
+    nombre: newProductData.nombre,
+    descripcion: "",
+    proveedor_id: 0, // Si tienes el id, ponlo aquí
+    peso: peso,
+    largo: largo,
+    ancho: ancho,
+    alto: alto,
+    precio: precio,
+    categoria_id: 1, // O el id que corresponda
+    estado: true,
+    proveedor: {
+      id: 0,
+      marca: newProductData.proveedor,
+      email: "",
+      telefono: "",
+      direccion: ""
+    },
+    categoria: {
+      id: 0,
+      nombre: ""
+    }
+  }
+  // El SKU y la fecha de ingreso los genera el backend
+};
+
+  try {
+    const response = await fetch(`${apiInventarioUrl}/api/stock-proveedor`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) throw new Error('Error al agregar producto');
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Producto agregado!',
+      confirmButtonColor: '#ff7300',
+      timer: 2500,
+      showCloseButton: true,
+    });
+
+    setNewProductData({
+      nombre: "",
+      proveedor: "",
+      pesoKg: "",
+      largoCm: "",
+      anchoCm: "",
+      altoCm: "",
+      precioCU: "",
+      stock: "",
+    });
+
+    // Opcional: recargar inventario
+    // fetchInventario();
+
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No se pudo agregar el producto',
+      confirmButtonColor: '#ff7300',
+    });
+  }
+};
+
   // Funcion para editar
   const handleEditar = (item: InventarioData) => {
     setEditingItem(item);
@@ -283,6 +417,7 @@ const handleEliminar = async (item: InventarioData) => {
         text: 'Producto eliminado correctamente',
         icon: 'success',
         confirmButtonColor: '#ff7300',
+        showCloseButton: true,
       });
     } catch (error) {
       Swal.fire({
@@ -663,7 +798,8 @@ const [inventarioData, setInventarioData] = useState<Array<{
               width: isMobile ? "100%" : "auto",
               fontSize: isMobile ? "0.875rem" : "1rem",
               padding: isMobile ? "0.75rem" : "0.5rem 1.2rem"
-            }}>
+            }}
+            onClick={() => setShowAddModal(true)}>
               <Image
                 src={agregarImg.src}
                 alt="Agregar productos"
@@ -1097,6 +1233,164 @@ const [inventarioData, setInventarioData] = useState<Array<{
           </div>
         </div>
       )}
+
+      {/*Modal para agregar productos*/}
+        {showAddModal && (
+  <div style={modalOverlayStyle}>
+    <div style={{ ...modalContentStyle, maxWidth: '500px', padding: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+        <h2 style={{ ...modalTitleStyle, margin: 0 }}>Agregar Producto</h2>
+        <button
+          onClick={() => setShowAddModal(false)}
+          style={closeButtonStyle}
+        >
+          &times;
+        </button>
+      </div>
+      <form onSubmit={handleAddProduct}>
+        <div style={modalFormStyle}>
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Nombre del Producto</label>
+            <input
+              type="text"
+              value={newProductData.nombre}
+              maxLength={50}
+              pattern="^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$"
+              onChange={(e) => {
+                const valor = e.target.value;
+                if (/^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
+                  setNewProductData({ ...newProductData, nombre: valor });
+                }
+              }}
+              style={selectStyle}
+              required
+            />
+          </div>
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Proveedor</label>
+            <input
+              type="text"
+              value={newProductData.proveedor}
+              maxLength={40}
+              pattern="^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$"
+              onChange={(e) => {
+                const valor = e.target.value;
+                if (/^[a-zA-ZÀ-ÿ0-9\u00f1\u00d1\s]*$/.test(valor)) {
+                  setNewProductData({ ...newProductData, proveedor: valor });
+                }
+              }}
+              style={selectStyle}
+              required
+            />
+          </div>
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Peso (KG)</label>
+            <input
+              type="number"
+              min={0.01}
+              max={1000}
+              step={0.01}
+              value={newProductData.pesoKg === "" ? "" : newProductData.pesoKg}
+              onChange={(e) => {
+                const valor = e.target.value === "" ? "" : Math.max(0.01, Math.min(1000, parseFloat(e.target.value)));
+                setNewProductData({ ...newProductData, pesoKg: valor });
+              }}
+              style={selectStyle}
+              required
+            />
+          </div>
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Largo (CM)</label>
+            <input
+              type="number"
+              min={1}
+              max={1000}
+              value={newProductData.largoCm === "" ? "" : newProductData.largoCm}
+              onChange={(e) => {
+                const valor = e.target.value === "" ? "" : Math.max(1, Math.min(1000, parseInt(e.target.value)));
+                setNewProductData({ ...newProductData, largoCm: valor });
+              }}
+              style={selectStyle}
+              required
+            />
+          </div>
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Ancho (CM)</label>
+            <input
+              type="number"
+              min={1}
+              max={1000}
+              value={newProductData.anchoCm === "" ? "" : newProductData.anchoCm}
+              onChange={(e) => {
+                const valor = e.target.value === "" ? "" : Math.max(1, Math.min(1000, parseInt(e.target.value)));
+                setNewProductData({ ...newProductData, anchoCm: valor });
+              }}
+              style={selectStyle}
+              required
+            />
+          </div>
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Alto (CM)</label>
+            <input
+              type="number"
+              min={1}
+              max={1000}
+              value={newProductData.altoCm === "" ? "" : newProductData.altoCm}
+              onChange={(e) => {
+                const valor = e.target.value === "" ? "" : Math.max(1, Math.min(1000, parseInt(e.target.value)));
+                setNewProductData({ ...newProductData, altoCm: valor });
+              }}
+              style={selectStyle}
+              required
+            />
+          </div>
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Precio (C/U)</label>
+            <input
+              type="number"
+              min={1}
+              max={1000000}
+              value={newProductData.precioCU === "" ? "" : newProductData.precioCU}
+              onChange={(e) => {
+                const valor = e.target.value === "" ? "" : Math.max(1, Math.min(1000000, parseInt(e.target.value)));
+                setNewProductData({ ...newProductData, precioCU: valor });
+              }}
+              style={selectStyle}
+              required
+            />
+          </div>
+          <div style={selectGroupStyle}>
+            <label style={labelStyle}>Stock</label>
+            <input
+              type="number"
+              min={1}
+              max={100000}
+              value={newProductData.stock === "" ? "" : newProductData.stock}
+              onChange={(e) => {
+                const valor = e.target.value === "" ? "" : Math.max(1, Math.min(100000, parseInt(e.target.value)));
+                setNewProductData({ ...newProductData, stock: valor });
+              }}
+              style={selectStyle}
+              required
+            />
+          </div>
+        </div>
+        <div style={modalButtonsStyle}>
+          <button
+            type="button"
+            onClick={() => setShowAddModal(false)}
+            style={{ ...modalButtonStyle, backgroundColor: '#6b7280' }}
+          >
+            Cancelar
+          </button>
+          <button type="submit" style={modalButtonStyle}>
+            Agregar Producto
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 }
